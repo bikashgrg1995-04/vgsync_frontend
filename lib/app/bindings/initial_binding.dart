@@ -1,7 +1,5 @@
 import 'package:get/get.dart';
-import 'package:vgsync_frontend/app/controllers/auth_controller.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
-import 'package:vgsync_frontend/app/data/repositories/auth_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/category_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/customer_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/followup_repository.dart';
@@ -11,7 +9,6 @@ import 'package:vgsync_frontend/app/data/repositories/sale_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/supplier_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/user_repository.dart';
 import 'package:vgsync_frontend/app/data/services/api_service.dart';
-import 'package:vgsync_frontend/app/data/services/auth_service.dart';
 import 'package:vgsync_frontend/app/data/services/category_service.dart';
 import 'package:vgsync_frontend/app/data/services/customer_service.dart';
 import 'package:vgsync_frontend/app/data/services/dashboard_service.dart';
@@ -33,6 +30,7 @@ class InitialBinding extends Bindings {
     Get.put(AuthService());
     Get.put(UserService());
 
+    Get.lazyPut(() => ApiService());
     Get.lazyPut(() => DashboardService());
     Get.lazyPut(() => CustomerService());
     Get.lazyPut(() => SupplierService());
