@@ -4,6 +4,7 @@ import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/data/repositories/auth_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/category_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/customer_repository.dart';
+import 'package:vgsync_frontend/app/data/repositories/dashboard_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/followup_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/item_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/purchase_repository.dart';
@@ -47,6 +48,7 @@ class InitialBinding extends Bindings {
     // -----------------------------
     Get.put(AuthRepository(authService: Get.find()), permanent: true);
     Get.put(UserRepository(userService: Get.find()), permanent: true);
+    Get.put(DashboardRepository(dashboardService: Get.find()), permanent: true);
     Get.put(CustomerRepository(customerService: Get.find()), permanent: true);
     Get.put(SupplierRepository(supplierService: Get.find()), permanent: true);
     Get.put(ItemRepository(itemService: Get.find()), permanent: true);
@@ -72,13 +74,7 @@ class InitialBinding extends Bindings {
     // DashboardController depends on multiple repositories
     Get.put(
       DashboardController(
-        customerRepository: Get.find(),
-        supplierRepository: Get.find(),
-        itemRepository: Get.find(),
-        categoryRepository: Get.find(),
-        saleRepository: Get.find(),
-        purchaseRepository: Get.find(),
-        followupRepository: Get.find(),
+        dashboardRepository: Get.find(),
       ),
       permanent: true,
     );

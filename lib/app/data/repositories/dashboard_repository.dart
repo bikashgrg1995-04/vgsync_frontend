@@ -6,7 +6,8 @@ class DashboardRepository {
 
   DashboardRepository({required this.dashboardService});
 
-  Future<DashboardSummary> getDashboardData() {
-    return dashboardService.fetchDashboard();
+  Future<DashboardResponse> getDashboard() async {
+    final res = await dashboardService.fetchDashboard();
+    return DashboardResponse.fromJson(res);
   }
 }

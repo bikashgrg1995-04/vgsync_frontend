@@ -1,12 +1,12 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:vgsync_frontend/app/controllers/auth_controller.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/routes/app_routes.dart';
 import '../../wigdets/app_card.dart';
 import 'dashboard_controller.dart';
+import '../../data/models/dashboard_model.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -20,11 +20,11 @@ class _DashboardPageState extends State<DashboardPage> {
   final AuthController authController = Get.find();
   final GlobalController globalController = Get.find();
 
-  final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
-
   @override
   void initState() {
     super.initState();
+
+    // Load dashboard data on start
     controller.loadDashboardData();
 
     // Listen for global refresh
@@ -53,6 +53,8 @@ class _DashboardPageState extends State<DashboardPage> {
           return const Center(child: CircularProgressIndicator());
         }
 
+        final summary = controller.summary.value;
+
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -63,76 +65,61 @@ class _DashboardPageState extends State<DashboardPage> {
                 spacing: 16,
                 runSpacing: 16,
                 children: [
-                  Obx(() => _buildMenuCard(
-                      'Customers',
-                      controller.customerCount.value,
-                      Icons.people,
-                      Colors.blue)),
-                  Obx(() => _buildMenuCard(
-                      'Categories',
-                      controller.categoryCount.value,
-                      Icons.category,
-                      Colors.purple)),
-                  Obx(() => _buildMenuCard(
-                      'Suppliers',
-                      controller.supplierCount.value,
-                      Icons.local_shipping,
-                      Colors.orange)),
-                  Obx(() => _buildMenuCard('Items', controller.itemCount.value,
-                      Icons.inventory, Colors.green)),
-                  Obx(() => _buildMenuCard('Sales', controller.salesCount.value,
-                      Icons.sell, Colors.red)),
-                  Obx(() => _buildMenuCard(
-                      'Purchases',
-                      controller.purchaseCount.value,
-                      Icons.shopping_cart,
-                      Colors.teal)),
-                  Obx(() => _buildMenuCard(
+                  _buildMenuCard('Customers', summary.customers, Icons.people,
+                      Colors.blue),
+                  _buildMenuCard('Categories', summary.categories,
+                      Icons.category, Colors.purple),
+                  _buildMenuCard('Suppliers', summary.suppliers,
+                      Icons.local_shipping, Colors.orange),
+                  _buildMenuCard(
+                      'Items', summary.items, Icons.inventory, Colors.green),
+                  _buildMenuCard(
+                      'Sales', summary.sales.count, Icons.sell, Colors.red),
+                  _buildMenuCard('Purchases', summary.purchases.count,
+                      Icons.shopping_cart, Colors.teal),
+                  _buildMenuCard(
                       'Follow-ups',
                       controller.upcomingFollowups.length,
                       Icons.alarm,
-                      Colors.brown)),
+                      Colors.brown),
                 ],
               ),
+
               const SizedBox(height: 24),
 
-              // ---------------- Charts ----------------
+              // ---------------- Chart ----------------
               const Text(
-                'Sales & Purchases Chart',
+                'Sales & Purchases',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               SizedBox(
                 height: 200,
                 child: _buildChart(
-                  controller.summary.value.sales.amount.toDouble(),
-                  controller.summary.value.purchases.amount.toDouble(),
+                  summary.sales.amount,
+                  summary.purchases.amount,
                 ),
               ),
+
               const SizedBox(height: 24),
 
-              // ---------------- Low Stock Table ----------------
+              // ---------------- Low Stock ----------------
               const Text(
                 'Low Stock Items',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: _buildLowStockTable(),
-              ),
+              _buildLowStockTable(controller.lowStockItems),
+
               const SizedBox(height: 24),
 
-              // ---------------- Upcoming Follow-ups ----------------
+              // ---------------- Follow-ups ----------------
               const Text(
                 'Upcoming Follow-ups',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: _buildFollowupTable(),
-              ),
+              _buildFollowupTable(controller.upcomingFollowups),
             ],
           ),
         );
@@ -207,8 +194,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildLowStockTable() {
-    final items = controller.lowStockItems;
+  Widget _buildLowStockTable(List<LowStockItem> items) {
     if (items.isEmpty) return const Text('No low stock items');
 
     return DataTable(
@@ -225,8 +211,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildFollowupTable() {
-    final followups = controller.upcomingFollowups;
+  Widget _buildFollowupTable(List<DashboardFollowupItem> followups) {
     if (followups.isEmpty) return const Text('No upcoming follow-ups');
 
     return DataTable(

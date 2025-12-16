@@ -1,6 +1,7 @@
+import 'package:vgsync_frontend/app/data/models/dashboard_model.dart';
+
 import '../services/followup_service.dart';
 import '../models/followup_model.dart';
-import '../../modules/dashboard/dashboard_controller.dart'; // For FollowupItem
 
 class FollowUpRepository {
   final FollowUpService followUpService;
@@ -28,20 +29,18 @@ class FollowUpRepository {
   }
 
   // ------------------------
-  // Dashboard helper: upcoming follow-ups
+  // Dashboard helper
   // ------------------------
-  Future<List<FollowupItem>> getUpcoming() async {
+  Future<List<DashboardFollowupItem>> getUpcoming() async {
     final followups = await getAllFollowUps();
     final now = DateTime.now();
 
-    // Filter follow-ups that are today or later
-    final upcoming = followups.where((f) {
-      final date = DateTime.tryParse(f.followUpDate) ?? now;
-      return date.isAfter(now.subtract(const Duration(days: 1)));
-    }).toList();
-
-    return upcoming
-        .map((f) => FollowupItem(
+    return followups
+        .where((f) {
+          final date = DateTime.tryParse(f.followUpDate) ?? now;
+          return date.isAfter(now.subtract(const Duration(days: 1)));
+        })
+        .map((f) => DashboardFollowupItem(
               customerName: f.id.toString(),
               date: f.followUpDate,
               priority: f.remarks,

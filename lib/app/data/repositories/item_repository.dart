@@ -1,5 +1,5 @@
+import 'package:vgsync_frontend/app/data/models/dashboard_model.dart';
 import 'package:vgsync_frontend/app/data/services/item_service.dart';
-import '../../modules/dashboard/dashboard_controller.dart'; // For LowStockItem
 
 class ItemRepository {
   final ItemService itemService;
@@ -16,22 +16,14 @@ class ItemRepository {
   }
 
   // ------------------------
-  // Dashboard helper: low stock items
+  // Dashboard helper
   // ------------------------
   Future<List<LowStockItem>> getLowStock({int threshold = 5}) async {
     final items = await getAllItems();
 
-    // Filter items with stock <= threshold
-    final lowStockItems = items.where((item) {
-      final stock = item['stock'] ?? 0;
-      return stock <= threshold;
-    }).toList();
-
-    return lowStockItems
-        .map((item) => LowStockItem(
-              name: item['name'] ?? 'Unknown',
-              stock: item['stock'] ?? 0,
-            ))
+    return items
+        .where((item) => (item['stock'] ?? 0) <= threshold)
+        .map((item) => LowStockItem.fromJson(item))
         .toList();
   }
 }
