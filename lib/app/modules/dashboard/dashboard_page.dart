@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:vgsync_frontend/app/controllers/auth_controller.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/routes/app_routes.dart';
 import '../../wigdets/app_card.dart';
 import 'dashboard_controller.dart';
+import '../../modules/customers/customer_controller.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -17,12 +19,22 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   final DashboardController controller = Get.find();
   final AuthController authController = Get.find();
+  final GlobalController globalController = Get.find();
+  final CustomerController customerController = Get.find();
 
   final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
 
   @override
   void initState() {
     super.initState();
+
+    // Fetch initial dashboard summary
+    controller.loadDashboardData();
+
+    // 🔥 LISTEN FOR GLOBAL CHANGES
+    ever(globalController.refreshTick, (_) {
+      controller.loadDashboardData();
+    });
   }
 
   @override
@@ -57,14 +69,17 @@ class _DashboardPageState extends State<DashboardPage> {
                 spacing: 16,
                 runSpacing: 16,
                 children: [
-                  _buildMenuCard('Customers', summary.customers, Icons.people,
-                      Colors.blue),
+                  Obx(() {
+                    return _buildMenuCard(
+                        'Customers',
+                        customerController.customers.length,
+                        Icons.people,
+                        Colors.blue);
+                  }),
                   _buildMenuCard('Suppliers', summary.suppliers,
                       Icons.local_shipping, Colors.orange),
                   _buildMenuCard(
                       'Items', summary.items, Icons.inventory, Colors.green),
-                  _buildMenuCard(
-                      'Categories', 0, Icons.category, Colors.purple),
                   _buildMenuCard(
                       'Sales', summary.sales.count, Icons.sell, Colors.red),
                   _buildMenuCard('Purchases', summary.purchases.count,
@@ -84,10 +99,8 @@ class _DashboardPageState extends State<DashboardPage> {
               const SizedBox(height: 12),
               SizedBox(
                 height: 200,
-                child: _buildChart(
-                  summary.sales.amount.toDouble(),
-                  summary.purchases.amount.toDouble(),
-                ),
+                child: _buildChart(summary.sales.amount.toDouble(),
+                    summary.purchases.amount.toDouble()),
               ),
 
               const SizedBox(height: 24),
@@ -110,14 +123,6 @@ class _DashboardPageState extends State<DashboardPage> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: _buildFollowupTable(),
-              ),
-
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () async {
-                  await authController.logout();
-                },
-                child: const Text('Logout'),
               ),
             ],
           ),
@@ -178,10 +183,7 @@ class _DashboardPageState extends State<DashboardPage> {
             title: 'Sales\nRs.${salesAmount.toStringAsFixed(0)}',
             radius: 80,
             titleStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+                fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           PieChartSectionData(
             value: purchaseAmount,
@@ -189,10 +191,7 @@ class _DashboardPageState extends State<DashboardPage> {
             title: 'Purchases\nRs.${purchaseAmount.toStringAsFixed(0)}',
             radius: 80,
             titleStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+                fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ],
         sectionsSpace: 2,

@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
-import 'package:vgsync_frontend/app/modules/auth/auth_binding.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_binding.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
+import 'package:vgsync_frontend/app/modules/dashboard/dashboard_binding.dart';
 import 'package:vgsync_frontend/app/modules/followups/followup_binding.dart';
 import 'app_routes.dart';
 
@@ -21,8 +21,7 @@ class AppPages {
       name: AppRoutes.login,
       page: () => LoginPage(),
       transition: Transition.fadeIn,
-      transitionDuration: const Duration(milliseconds: 1200),
-      binding: AuthBinding(),
+      transitionDuration: const Duration(milliseconds: 800),
     ),
 
     // ---------- DASHBOARD ----------
@@ -31,7 +30,7 @@ class AppPages {
       page: () => DashboardPage(),
       transition: Transition.zoom,
       transitionDuration: const Duration(milliseconds: 800),
-      binding: AuthBinding(),
+      binding: DashboardBinding(),
     ),
 
     // ---------- CUSTOMERS ----------

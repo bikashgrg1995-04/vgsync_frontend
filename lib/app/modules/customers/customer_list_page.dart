@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/modules/customers/customer_detail_page.dart';
 import '../../data/models/customer_model.dart';
 import '../../modules/customers/customer_controller.dart';
-import '../../wigdets/common_detail_page.dart';
 import '../../wigdets/custom_form_dialog.dart';
 
 class CustomerListPage extends StatelessWidget {
@@ -22,7 +22,7 @@ class CustomerListPage extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: TextField(
               controller: searchController,
-              onChanged: (_) {}, // reactive handled in Obx
+              onChanged: (_) => controller.customers.refresh(),
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
                 hintText: 'Search customers...',
@@ -85,7 +85,7 @@ class CustomerListPage extends StatelessWidget {
                             leading: CircleAvatar(
                               backgroundColor: Colors.blue.shade100,
                               child: Text(
-                                '${index + 1}', // numbering
+                                '${index + 1}',
                                 style: const TextStyle(color: Colors.blue),
                               ),
                             ),
@@ -120,17 +120,14 @@ class CustomerListPage extends StatelessWidget {
       content: Column(
         children: [
           TextField(
-            controller: controller.nameController,
-            decoration: const InputDecoration(labelText: 'Name'),
-          ),
+              controller: controller.nameController,
+              decoration: const InputDecoration(labelText: 'Name')),
           TextField(
-            controller: controller.contactController,
-            decoration: const InputDecoration(labelText: 'Contact'),
-          ),
+              controller: controller.contactController,
+              decoration: const InputDecoration(labelText: 'Contact')),
           TextField(
-            controller: controller.emailController,
-            decoration: const InputDecoration(labelText: 'Email'),
-          ),
+              controller: controller.emailController,
+              decoration: const InputDecoration(labelText: 'Email')),
         ],
       ),
       onSave: () => controller.addCustomer(),
@@ -145,17 +142,14 @@ class CustomerListPage extends StatelessWidget {
       content: Column(
         children: [
           TextField(
-            controller: controller.nameController,
-            decoration: const InputDecoration(labelText: 'Name'),
-          ),
+              controller: controller.nameController,
+              decoration: const InputDecoration(labelText: 'Name')),
           TextField(
-            controller: controller.contactController,
-            decoration: const InputDecoration(labelText: 'Contact'),
-          ),
+              controller: controller.contactController,
+              decoration: const InputDecoration(labelText: 'Contact')),
           TextField(
-            controller: controller.emailController,
-            decoration: const InputDecoration(labelText: 'Email'),
-          ),
+              controller: controller.emailController,
+              decoration: const InputDecoration(labelText: 'Email')),
         ],
       ),
       onSave: () => controller.updateCustomer(customer),
@@ -164,35 +158,6 @@ class CustomerListPage extends StatelessWidget {
   }
 
   void openCustomerDetail(CustomerModel customer) {
-    Get.to(() => CommonDetailPage<CustomerModel>(
-          title: 'Customer Details',
-          data: customer,
-          showProfileImage: true,
-          profileImageUrl: customer.image,
-          fields: [
-            FieldData(label: 'Name', getter: (c) => c.name),
-            FieldData(label: 'Contact', getter: (c) => c.contact),
-            FieldData(label: 'Email', getter: (c) => c.email ?? 'N/A'),
-          ],
-          formFields: [
-            FieldData(
-              label: 'Name',
-              getter: (c) => c.name,
-              updateData: (c, v) => c.name = v,
-            ),
-            FieldData(
-              label: 'Contact',
-              getter: (c) => c.contact,
-              updateData: (c, v) => c.contact = v,
-            ),
-            FieldData(
-              label: 'Email',
-              getter: (c) => c.email ?? '',
-              updateData: (c, v) => c.email = v,
-            ),
-          ],
-          onUpdate: (c) => controller.updateCustomer(c),
-          onDelete: (c) => controller.deleteCustomer(c.id),
-        ));
+    Get.to(() => CustomerDetailPage(customerId: customer.id));
   }
 }

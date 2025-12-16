@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import '../../data/models/customer_model.dart';
 import '../../data/repositories/customer_repository.dart';
 
 class CustomerController extends GetxController {
   final CustomerRepository customerRepository;
+  final GlobalController globalController = Get.find<GlobalController>();
 
   CustomerController({required this.customerRepository});
 
-  var customers = <CustomerModel>[].obs;
-  var isLoading = false.obs;
-  var isSaving = false.obs;
+  final customers = <CustomerModel>[].obs;
+  final isLoading = false.obs;
+  final isSaving = false.obs;
 
   final nameController = TextEditingController();
   final contactController = TextEditingController();
@@ -23,6 +25,9 @@ class CustomerController extends GetxController {
     fetchCustomers();
   }
 
+  // ----------------------------
+  // READ (NO DASHBOARD REFRESH)
+  // ----------------------------
   Future<void> fetchCustomers() async {
     try {
       isLoading.value = true;
@@ -33,26 +38,30 @@ class CustomerController extends GetxController {
     }
   }
 
+  // ----------------------------
+  // CREATE
+  // ----------------------------
   Future<void> addCustomer() async {
-    final name = nameController.text.trim();
-    final contact = contactController.text.trim();
-    final email = emailController.text.trim();
-
-    if (name.isEmpty || contact.isEmpty) return;
+    if (nameController.text.trim().isEmpty ||
+        contactController.text.trim().isEmpty) return;
 
     try {
       isSaving.value = true;
 
-      final newCustomer = CustomerModel(
-        id: customers.isEmpty ? 1 : customers.last.id + 1, // temp id
-        name: name,
-        contact: contact,
-        email: email.isEmpty ? null : email,
+      final customer = CustomerModel(
+        id: 0, // backend generates
+        name: nameController.text.trim(),
+        contact: contactController.text.trim(),
+        email: emailController.text.trim().isEmpty
+            ? null
+            : emailController.text.trim(),
         image: imageController.text.isEmpty ? null : imageController.text,
       );
 
-      final added = await customerRepository.addCustomer(newCustomer);
-      customers.add(added);
+      await customerRepository.addCustomer(customer);
+      await fetchCustomers();
+
+      globalController.triggerRefresh(); // ✅ WRITE event
 
       clearForm();
       Get.back();
@@ -61,41 +70,49 @@ class CustomerController extends GetxController {
     }
   }
 
+  // ----------------------------
+  // UPDATE
+  // ----------------------------
   Future<void> updateCustomer(CustomerModel customer) async {
-    final name = nameController.text.trim();
-    final contact = contactController.text.trim();
-    final email = emailController.text.trim();
-
-    if (name.isEmpty || contact.isEmpty) return;
+    if (nameController.text.trim().isEmpty ||
+        contactController.text.trim().isEmpty) return;
 
     try {
       isSaving.value = true;
 
-      final updated = CustomerModel(
-        id: customer.id,
-        name: name,
-        contact: contact,
-        email: email.isEmpty ? null : email,
+      final updated = customer.copyWith(
+        name: nameController.text.trim(),
+        contact: contactController.text.trim(),
+        email: emailController.text.trim().isEmpty
+            ? null
+            : emailController.text.trim(),
         image: imageController.text.isEmpty ? null : imageController.text,
       );
 
-      final res = await customerRepository.updateCustomer(updated);
+      await customerRepository.updateCustomer(updated);
+      await fetchCustomers();
 
-      final index = customers.indexWhere((c) => c.id == res.id);
-      if (index != -1) customers[index] = res;
+      globalController.triggerRefresh(); // ✅ WRITE event
 
       clearForm();
-      Get.back();
     } finally {
       isSaving.value = false;
     }
   }
 
+  // ----------------------------
+  // DELETE
+  // ----------------------------
   Future<void> deleteCustomer(int id) async {
     await customerRepository.deleteCustomer(id);
-    customers.removeWhere((c) => c.id == id);
+    await fetchCustomers();
+
+    globalController.triggerRefresh(); // ✅ WRITE event
   }
 
+  // ----------------------------
+  // FORM HELPERS
+  // ----------------------------
   void fillForm(CustomerModel customer) {
     nameController.text = customer.name;
     contactController.text = customer.contact;

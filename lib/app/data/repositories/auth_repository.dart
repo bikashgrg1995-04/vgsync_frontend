@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/routes/app_routes.dart';
 import 'package:vgsync_frontend/utils/storage.dart';
 
 import '../services/auth_service.dart';
@@ -16,5 +18,6 @@ class AuthRepository {
 
   Future<void> logout() async {
     await Storage.clear();
+    Get.offAllNamed(AppRoutes.login);
   }
 }

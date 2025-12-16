@@ -5,8 +5,9 @@ import '../../data/repositories/customer_repository.dart';
 class CustomerBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<CustomerController>(() => CustomerController(
-          customerRepository: Get.find<CustomerRepository>(),
-        ));
+    final repo = Get.find<CustomerRepository>();
+
+    // Use permanent: true so the controller stays alive across navigations
+    Get.put(CustomerController(customerRepository: repo), permanent: true);
   }
 }

@@ -28,4 +28,21 @@ class CustomerModel {
         'email': email,
         'image': image,
       };
+
+  // ✅ ADD THIS
+  CustomerModel copyWith({
+    int? id,
+    String? name,
+    String? contact,
+    String? email,
+    String? image,
+  }) {
+    return CustomerModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      contact: contact ?? this.contact,
+      email: email ?? this.email,
+      image: image ?? this.image,
+    );
+  }
 }

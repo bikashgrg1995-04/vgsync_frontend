@@ -22,4 +22,13 @@ class AuthService {
 
     return Map<String, dynamic>.from(response.data);
   }
+
+  Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
+    final response = await _dio.post(
+      '/token/refresh/',
+      data: {'refresh': refreshToken},
+    );
+
+    return response.data;
+  }
 }

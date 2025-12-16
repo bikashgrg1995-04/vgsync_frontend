@@ -3,7 +3,6 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
 import '../../data/models/followup_model.dart';
 import '../../modules/followups/followup_controller.dart';
-import '../../wigdets/common_detail_page.dart';
 
 class FollowupListPage extends StatelessWidget {
   FollowupListPage({super.key});
@@ -104,42 +103,5 @@ class FollowupListPage extends StatelessWidget {
     );
   }
 
-  void openFollowupDetail(FollowUpModel f) {
-    Get.to(() => CommonDetailPage<FollowUpModel>(
-          title: 'Follow-Up #${f.id}',
-          data: f,
-          fields: [
-            FieldData(label: 'Sale ID', getter: (f) => f.sale.toString()),
-            FieldData(label: 'Service Date', getter: (f) => f.serviceDate),
-            FieldData(label: 'Follow-Up Date', getter: (f) => f.followUpDate),
-            FieldData(
-                label: 'Completed', getter: (f) => f.completed ? 'Yes' : 'No'),
-            FieldData(label: 'Remarks', getter: (f) => f.remarks),
-          ],
-          formFields: [
-            FieldData(
-                label: 'Sale ID',
-                getter: (f) => f.sale.toString(),
-                updateData: (f, v) => f.sale = int.parse(v)),
-            FieldData(
-                label: 'Service Date',
-                getter: (f) => f.serviceDate,
-                updateData: (f, v) => f.serviceDate = v),
-            FieldData(
-                label: 'Follow-Up Date',
-                getter: (f) => f.followUpDate,
-                updateData: (f, v) => f.followUpDate = v),
-            FieldData(
-                label: 'Completed',
-                getter: (f) => f.completed ? 'Yes' : 'No',
-                updateData: (f, v) => f.completed = v.toLowerCase() == 'yes'),
-            FieldData(
-                label: 'Remarks',
-                getter: (f) => f.remarks,
-                updateData: (f, v) => f.remarks = v),
-          ],
-          onUpdate: (f) => controller.updateFollowUp(f),
-          onDelete: (f) => controller.delete(f.id),
-        ));
-  }
+  void openFollowupDetail(FollowUpModel f) {}
 }

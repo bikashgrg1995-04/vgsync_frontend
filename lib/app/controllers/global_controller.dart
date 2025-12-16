@@ -1,6 +1,12 @@
 import 'package:get/get.dart';
 
 class GlobalController extends GetxController {
+  /// increases whenever any data changes
+  final RxInt refreshTick = 0.obs;
+  void triggerRefresh() {
+    refreshTick.value++;
+  }
+
   // ----------------------------
   // Theme
   // ----------------------------
