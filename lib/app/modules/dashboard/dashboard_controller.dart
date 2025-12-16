@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/data/repositories/category_repository.dart';
 import '../../data/repositories/customer_repository.dart';
 import '../../data/repositories/supplier_repository.dart';
 import '../../data/repositories/item_repository.dart';
-import '../../data/repositories/category_repository.dart';
 import '../../data/repositories/sale_repository.dart';
 import '../../data/repositories/purchase_repository.dart';
 import '../../data/repositories/followup_repository.dart';
@@ -10,34 +10,26 @@ import '../../data/models/dashboard_model.dart';
 
 class DashboardController extends GetxController {
   final CustomerRepository customerRepository;
+  final CategoryRepository categoryRepository;
   final SupplierRepository supplierRepository;
   final ItemRepository itemRepository;
-  final CategoryRepository categoryRepository;
   final SaleRepository saleRepository;
   final PurchaseRepository purchaseRepository;
   final FollowUpRepository followupRepository;
 
-  RxBool isPressed = false.obs;
-
   DashboardController({
     required this.customerRepository,
+    required this.categoryRepository,
     required this.supplierRepository,
     required this.itemRepository,
-    required this.categoryRepository,
     required this.saleRepository,
     required this.purchaseRepository,
     required this.followupRepository,
   });
 
-  @override
-  void onInit() {
-    super.onInit();
-    loadDashboardData();
-  }
+  RxBool isLoading = false.obs;
 
-  // ----------------------------
-  // Dashboard summary data
-  // ----------------------------
+  // Summary data
   var summary = DashboardSummary(
     customers: 0,
     suppliers: 0,
@@ -49,89 +41,70 @@ class DashboardController extends GetxController {
 
   var lowStockItems = <LowStockItem>[].obs;
   var upcomingFollowups = <FollowupItem>[].obs;
-  var isLoading = false.obs;
 
-  // Chart data (for plotting in dashboard)
-  var salesChart = <ChartData>[].obs;
-  var purchaseChart = <ChartData>[].obs;
+  // Count values for cards
+  RxInt customerCount = 0.obs;
+  RxInt categoryCount = 0.obs;
+  RxInt supplierCount = 0.obs;
+  RxInt itemCount = 0.obs;
+  RxInt salesCount = 0.obs;
+  RxInt purchaseCount = 0.obs;
 
-  // ----------------------------
-  // Load dashboard data (demo)
-  // ----------------------------
   Future<void> loadDashboardData() async {
     try {
       isLoading.value = true;
 
-      await Future.delayed(const Duration(seconds: 1)); // simulate loading
+      // Fetch all data
+      final summaryData = await Future.wait([
+        customerRepository.getCount(),
+        categoryRepository.getCount(),
+        supplierRepository.getCount(),
+        itemRepository.getCount(),
+        saleRepository.getCount(),
+        purchaseRepository.getCount(),
+        followupRepository.getAllFollowUps(),
+      ]);
 
-      // ----------------------------
-      // Demo summary
-      // ----------------------------
+      customerCount.value = summaryData[0] as int;
+      categoryCount.value = summaryData[1] as int;
+      supplierCount.value = summaryData[2] as int;
+      itemCount.value = summaryData[3] as int;
+      salesCount.value = summaryData[4] as int;
+      purchaseCount.value = summaryData[5] as int;
+      upcomingFollowups.value = (summaryData[6] as List)
+          .map((f) => FollowupItem(
+                customerName: f.customerName,
+                date: f.date,
+                priority: f.priority,
+              ))
+          .toList();
+
+      // You can assign lowStockItems and summary if API returns more details
+      lowStockItems.clear();
       summary.value = DashboardSummary(
-        customers: 15,
-        suppliers: 8,
-        items: 25,
+        customers: customerCount.value,
+        suppliers: supplierCount.value,
+        items: itemCount.value,
         sales: SalesSummary(
-          count: 20,
-          amount: 12500,
-          todayAmount: 750,
-          monthlyAmount: 10250,
-        ),
+            count: salesCount.value,
+            amount: 0,
+            todayAmount: 0,
+            monthlyAmount: 0),
         purchases: SalesSummary(
-          count: 10,
-          amount: 8200,
-          todayAmount: 500,
-          monthlyAmount: 7000,
-        ),
+            count: purchaseCount.value,
+            amount: 0,
+            todayAmount: 0,
+            monthlyAmount: 0),
       );
-
-      // ----------------------------
-      // Demo low stock items
-      // ----------------------------
-      lowStockItems.value = [
-        LowStockItem(name: 'Item A', stock: 2),
-        LowStockItem(name: 'Item B', stock: 4),
-      ];
-
-      // ----------------------------
-      // Demo upcoming follow-ups
-      // ----------------------------
-      upcomingFollowups.value = [
-        FollowupItem(
-            customerName: 'Customer 1', date: '2025-10-27', priority: 'High'),
-        FollowupItem(
-            customerName: 'Customer 2', date: '2025-10-28', priority: 'Medium'),
-      ];
-
-      // ----------------------------
-      // Demo chart data
-      // ----------------------------
-      salesChart.value = [
-        ChartData(label: 'Mon', value: 1200),
-        ChartData(label: 'Tue', value: 1500),
-        ChartData(label: 'Wed', value: 900),
-        ChartData(label: 'Thu', value: 2000),
-        ChartData(label: 'Fri', value: 1800),
-      ];
-
-      purchaseChart.value = [
-        ChartData(label: 'Mon', value: 800),
-        ChartData(label: 'Tue', value: 700),
-        ChartData(label: 'Wed', value: 950),
-        ChartData(label: 'Thu', value: 1100),
-        ChartData(label: 'Fri', value: 1000),
-      ];
     } catch (e) {
-      print('Error loading demo dashboard: $e');
+      print("Dashboard load error: $e");
     } finally {
       isLoading.value = false;
     }
   }
 }
 
-// ----------------------------
 // Helper classes
-// ----------------------------
 class LowStockItem {
   final String name;
   final int stock;
@@ -142,15 +115,6 @@ class FollowupItem {
   final String customerName;
   final String date;
   final String priority;
-  FollowupItem({
-    required this.customerName,
-    required this.date,
-    required this.priority,
-  });
-}
-
-class ChartData {
-  final String label;
-  final double value;
-  ChartData({required this.label, required this.value});
+  FollowupItem(
+      {required this.customerName, required this.date, required this.priority});
 }

@@ -25,4 +25,9 @@ class CustomerRepository {
   Future<void> deleteCustomer(int id) async {
     await customerService.deleteCustomer(id);
   }
+
+  Future<int> getCount() async {
+    final customers = await getAllCustomers();
+    return customers.length;
+  }
 }

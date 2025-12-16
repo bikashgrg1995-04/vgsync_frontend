@@ -21,58 +21,69 @@ import 'package:vgsync_frontend/app/data/services/purchase_service.dart';
 import 'package:vgsync_frontend/app/data/services/sale_service.dart';
 import 'package:vgsync_frontend/app/data/services/supplier_service.dart';
 import 'package:vgsync_frontend/app/data/services/user_service.dart';
+import 'package:vgsync_frontend/app/modules/customers/customer_controller.dart';
 import 'package:vgsync_frontend/app/modules/dashboard/dashboard_controller.dart';
 
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
     // -----------------------------
-    // Services
+    // Services (singleton)
     // -----------------------------
     Get.put(ApiService(), permanent: true);
     Get.put(AuthService(), permanent: true);
     Get.put(UserService(), permanent: true);
-
-    Get.lazyPut(() => ApiService());
-    Get.lazyPut(() => DashboardService());
-    Get.lazyPut(() => CustomerService());
-    Get.lazyPut(() => SupplierService());
-    Get.lazyPut(() => ItemService());
-    Get.lazyPut(() => CategoryService());
-    Get.lazyPut(() => SaleService());
-    Get.lazyPut(() => PurchaseService());
-    Get.lazyPut(() => FollowUpService());
+    Get.put(DashboardService(), permanent: true);
+    Get.put(CustomerService(), permanent: true);
+    Get.put(SupplierService(), permanent: true);
+    Get.put(ItemService(), permanent: true);
+    Get.put(CategoryService(), permanent: true);
+    Get.put(SaleService(), permanent: true);
+    Get.put(PurchaseService(), permanent: true);
+    Get.put(FollowUpService(), permanent: true);
 
     // -----------------------------
-    // Repositories
+    // Repositories (singleton)
     // -----------------------------
     Get.put(AuthRepository(authService: Get.find()), permanent: true);
     Get.put(UserRepository(userService: Get.find()), permanent: true);
-
-    Get.lazyPut(() => CustomerRepository(customerService: Get.find()));
-    Get.lazyPut(() => SupplierRepository(supplierService: Get.find()));
-    Get.lazyPut(() => ItemRepository(itemService: Get.find()));
-    Get.lazyPut(() => CategoryRepository(categoryService: Get.find()));
-    Get.lazyPut(() => SaleRepository(saleService: Get.find()));
-    Get.lazyPut(() => PurchaseRepository(purchaseService: Get.find()));
-    Get.lazyPut(() => FollowUpRepository(followUpService: Get.find()));
+    Get.put(CustomerRepository(customerService: Get.find()), permanent: true);
+    Get.put(SupplierRepository(supplierService: Get.find()), permanent: true);
+    Get.put(ItemRepository(itemService: Get.find()), permanent: true);
+    Get.put(CategoryRepository(categoryService: Get.find()), permanent: true);
+    Get.put(SaleRepository(saleService: Get.find()), permanent: true);
+    Get.put(PurchaseRepository(purchaseService: Get.find()), permanent: true);
+    Get.put(FollowUpRepository(followUpService: Get.find()), permanent: true);
 
     // -----------------------------
     // Controllers
     // -----------------------------
     Get.put(GlobalController(), permanent: true);
-    Get.put(
-        AuthController(authRepository: Get.find(), userRepository: Get.find()),
-        permanent: true);
 
-    Get.put(DashboardController(
-      customerRepository: Get.find(),
-      supplierRepository: Get.find(),
-      itemRepository: Get.find(),
-      categoryRepository: Get.find(),
-      saleRepository: Get.find(),
-      purchaseRepository: Get.find(),
-      followupRepository: Get.find(),
-    ));
+    // AuthController depends on AuthRepository & UserRepository
+    Get.put(
+      AuthController(
+        authRepository: Get.find(),
+        userRepository: Get.find(),
+      ),
+      permanent: true,
+    );
+
+    // DashboardController depends on multiple repositories
+    Get.put(
+      DashboardController(
+        customerRepository: Get.find(),
+        supplierRepository: Get.find(),
+        itemRepository: Get.find(),
+        categoryRepository: Get.find(),
+        saleRepository: Get.find(),
+        purchaseRepository: Get.find(),
+        followupRepository: Get.find(),
+      ),
+      permanent: true,
+    );
+
+    // CustomerController can be lazy-loaded (only when needed)
+    Get.lazyPut(() => CustomerController(customerRepository: Get.find()));
   }
 }

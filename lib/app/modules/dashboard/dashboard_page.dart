@@ -7,7 +7,6 @@ import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/routes/app_routes.dart';
 import '../../wigdets/app_card.dart';
 import 'dashboard_controller.dart';
-import '../../modules/customers/customer_controller.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -20,18 +19,15 @@ class _DashboardPageState extends State<DashboardPage> {
   final DashboardController controller = Get.find();
   final AuthController authController = Get.find();
   final GlobalController globalController = Get.find();
-  final CustomerController customerController = Get.find();
 
   final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
 
   @override
   void initState() {
     super.initState();
-
-    // Fetch initial dashboard summary
     controller.loadDashboardData();
 
-    // 🔥 LISTEN FOR GLOBAL CHANGES
+    // Listen for global refresh
     ever(globalController.refreshTick, (_) {
       controller.loadDashboardData();
     });
@@ -57,8 +53,6 @@ class _DashboardPageState extends State<DashboardPage> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final summary = controller.summary.value;
-
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -69,56 +63,71 @@ class _DashboardPageState extends State<DashboardPage> {
                 spacing: 16,
                 runSpacing: 16,
                 children: [
-                  Obx(() {
-                    return _buildMenuCard(
-                        'Customers',
-                        customerController.customers.length,
-                        Icons.people,
-                        Colors.blue);
-                  }),
-                  _buildMenuCard('Suppliers', summary.suppliers,
-                      Icons.local_shipping, Colors.orange),
-                  _buildMenuCard(
-                      'Items', summary.items, Icons.inventory, Colors.green),
-                  _buildMenuCard(
-                      'Sales', summary.sales.count, Icons.sell, Colors.red),
-                  _buildMenuCard('Purchases', summary.purchases.count,
-                      Icons.shopping_cart, Colors.teal),
-                  _buildMenuCard(
+                  Obx(() => _buildMenuCard(
+                      'Customers',
+                      controller.customerCount.value,
+                      Icons.people,
+                      Colors.blue)),
+                  Obx(() => _buildMenuCard(
+                      'Categories',
+                      controller.categoryCount.value,
+                      Icons.category,
+                      Colors.purple)),
+                  Obx(() => _buildMenuCard(
+                      'Suppliers',
+                      controller.supplierCount.value,
+                      Icons.local_shipping,
+                      Colors.orange)),
+                  Obx(() => _buildMenuCard('Items', controller.itemCount.value,
+                      Icons.inventory, Colors.green)),
+                  Obx(() => _buildMenuCard('Sales', controller.salesCount.value,
+                      Icons.sell, Colors.red)),
+                  Obx(() => _buildMenuCard(
+                      'Purchases',
+                      controller.purchaseCount.value,
+                      Icons.shopping_cart,
+                      Colors.teal)),
+                  Obx(() => _buildMenuCard(
                       'Follow-ups',
                       controller.upcomingFollowups.length,
                       Icons.alarm,
-                      Colors.brown),
+                      Colors.brown)),
                 ],
               ),
               const SizedBox(height: 24),
 
               // ---------------- Charts ----------------
-              const Text('Sales & Purchases Chart',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Sales & Purchases Chart',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               SizedBox(
                 height: 200,
-                child: _buildChart(summary.sales.amount.toDouble(),
-                    summary.purchases.amount.toDouble()),
+                child: _buildChart(
+                  controller.summary.value.sales.amount.toDouble(),
+                  controller.summary.value.purchases.amount.toDouble(),
+                ),
               ),
-
               const SizedBox(height: 24),
 
               // ---------------- Low Stock Table ----------------
-              const Text('Low Stock Items',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Low Stock Items',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: _buildLowStockTable(),
               ),
-
               const SizedBox(height: 24),
 
               // ---------------- Upcoming Follow-ups ----------------
-              const Text('Upcoming Follow-ups',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Upcoming Follow-ups',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -134,9 +143,9 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildMenuCard(String title, int count, IconData icon, Color color) {
     final Map<String, String> routeMap = {
       'Customers': AppRoutes.customers,
+      'Categories': AppRoutes.categories,
       'Suppliers': AppRoutes.suppliers,
       'Items': AppRoutes.items,
-      'Categories': AppRoutes.categories,
       'Sales': AppRoutes.sales,
       'Purchases': AppRoutes.purchases,
       'Follow-ups': AppRoutes.followups,
@@ -145,9 +154,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return InkWell(
       onTap: () {
         final route = routeMap[title];
-        if (route != null) {
-          Get.toNamed(route);
-        }
+        if (route != null) Get.toNamed(route);
       },
       borderRadius: BorderRadius.circular(16),
       splashColor: color.withOpacity(0.2),

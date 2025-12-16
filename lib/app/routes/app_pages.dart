@@ -1,8 +1,9 @@
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_binding.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
-import 'package:vgsync_frontend/app/modules/dashboard/dashboard_binding.dart';
 import 'package:vgsync_frontend/app/modules/followups/followup_binding.dart';
+import 'package:vgsync_frontend/app/modules/suppliers/supplier_binding.dart';
+import 'package:vgsync_frontend/app/modules/suppliers/supplier_list_page.dart';
 import 'app_routes.dart';
 
 // Import pages
@@ -21,7 +22,7 @@ class AppPages {
       name: AppRoutes.login,
       page: () => LoginPage(),
       transition: Transition.fadeIn,
-      transitionDuration: const Duration(milliseconds: 800),
+      transitionDuration: const Duration(milliseconds: 400),
     ),
 
     // ---------- DASHBOARD ----------
@@ -29,8 +30,7 @@ class AppPages {
       name: AppRoutes.dashboard,
       page: () => DashboardPage(),
       transition: Transition.zoom,
-      transitionDuration: const Duration(milliseconds: 800),
-      binding: DashboardBinding(),
+      transitionDuration: const Duration(milliseconds: 300),
     ),
 
     // ---------- CUSTOMERS ----------
@@ -39,17 +39,17 @@ class AppPages {
       page: () => CustomerListPage(),
       binding: CustomerBinding(),
       transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 300),
     ),
 
     // ---------- SUPPLIERS ----------
-    // GetPage(
-    //   name: AppRoutes.suppliers,
-    //   page: () => SupplierListPage(),
-    //   binding: SupplierBinding(),
-    //   transition: Transition.rightToLeftWithFade,
-    //   transitionDuration: const Duration(milliseconds: 400),
-    // ),
+    GetPage(
+      name: AppRoutes.suppliers,
+      page: () => SupplierListPage(),
+      binding: SupplierBinding(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 400),
+    ),
 
     // ---------- ITEMS ----------
     // GetPage(
@@ -65,7 +65,7 @@ class AppPages {
       page: () => CategoryListPage(),
       binding: CategoryBinding(),
       transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 300),
     ),
 
     // ---------- SALES ----------
@@ -92,7 +92,7 @@ class AppPages {
       page: () => FollowupListPage(),
       binding: FollowupBinding(),
       transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 300),
     ),
   ];
 }
