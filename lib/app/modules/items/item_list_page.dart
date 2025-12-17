@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/models/item_model.dart';
-import 'package:vgsync_frontend/app/modules/customers/customer_detail_page.dart';
 import 'package:vgsync_frontend/app/modules/items/item_controller.dart';
 import 'package:vgsync_frontend/app/modules/items/item_detail_page.dart';
-import '../../data/models/customer_model.dart';
-import '../../modules/customers/customer_controller.dart';
 import '../../wigdets/custom_form_dialog.dart';
 
 class ItemListPage extends StatelessWidget {

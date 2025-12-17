@@ -48,7 +48,13 @@ class ItemController extends GetxController {
     super.onClose();
   }
 
-  void fetchItems() async {
+  /// increases whenever any data changes
+  final RxInt refreshTick = 0.obs;
+  void triggerRefresh() {
+    refreshTick.value++;
+  }
+
+  Future<void> fetchItems() async {
     try {
       isLoading.value = true;
       items.value = await itemRepository.fetchItems();

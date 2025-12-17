@@ -4,6 +4,8 @@ import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
 import 'package:vgsync_frontend/app/modules/followups/followup_binding.dart';
 import 'package:vgsync_frontend/app/modules/items/item_binding.dart';
 import 'package:vgsync_frontend/app/modules/items/item_list_page.dart';
+import 'package:vgsync_frontend/app/modules/purchases/purchase_binding.dart';
+import 'package:vgsync_frontend/app/modules/purchases/purchase_list_page.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_binding.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_list_page.dart';
 import 'app_routes.dart';
@@ -24,7 +26,7 @@ class AppPages {
       name: AppRoutes.login,
       page: () => LoginPage(),
       transition: Transition.fadeIn,
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 300),
     ),
 
     // ---------- DASHBOARD ----------
@@ -50,7 +52,7 @@ class AppPages {
       page: () => SupplierListPage(),
       binding: SupplierBinding(),
       transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 300),
     ),
 
     // ---------- ITEMS ----------
@@ -59,7 +61,7 @@ class AppPages {
       page: () => ItemListPage(),
       binding: ItemBinding(),
       transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 300),
     ),
 
     // ---------- CATEGORIES ----------
@@ -81,13 +83,13 @@ class AppPages {
     // ),
 
     // ---------- PURCHASES ----------
-    // GetPage(
-    //   name: AppRoutes.purchases,
-    //   page: () => PurchaseListPage(),
-    //   binding: PurchaseBinding(),
-    //   transition: Transition.rightToLeftWithFade,
-    //   transitionDuration: const Duration(milliseconds: 400),
-    // ),
+    GetPage(
+      name: AppRoutes.purchases,
+      page: () => PurchaseListPage(),
+      binding: PurchaseBinding(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 300),
+    ),
 
     // ---------- FOLLOWUPS ----------
     GetPage(

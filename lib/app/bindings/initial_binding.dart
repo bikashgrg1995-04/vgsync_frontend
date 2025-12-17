@@ -27,6 +27,7 @@ import 'package:vgsync_frontend/app/modules/customers/customer_controller.dart';
 import 'package:vgsync_frontend/app/modules/dashboard/dashboard_controller.dart';
 import 'package:vgsync_frontend/app/modules/followups/followup_controller.dart';
 import 'package:vgsync_frontend/app/modules/items/item_controller.dart';
+import 'package:vgsync_frontend/app/modules/purchases/purchase_controller.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_controller.dart';
 
 class InitialBinding extends Bindings {
@@ -89,7 +90,7 @@ class InitialBinding extends Bindings {
     Get.lazyPut(() => ItemController(itemRepository: Get.find()));
     Get.lazyPut(() => CategoryController(categoryRepository: Get.find()));
     // Get.lazyPut(() => SaleController(saleRepository: Get.find()));
-    // Get.lazyPut(() => PurchaseController(purchaseRepository: Get.find()));
+    Get.lazyPut(() => PurchaseController(purchaseRepository: Get.find()));
     Get.lazyPut(() => FollowUpController(followUpRepository: Get.find()));
   }
 }
