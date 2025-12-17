@@ -25,6 +25,12 @@ class FollowUpController extends GetxController {
     fetchFollowUps();
   }
 
+  /// increases whenever any data changes
+  final RxInt refreshTick = 0.obs;
+  void triggerRefresh() {
+    refreshTick.value++;
+  }
+
   void fillForm(FollowUpModel followUp) {
     saleController.text = followUp.sale.toString();
     serviceDateController.text = followUp.serviceDate;

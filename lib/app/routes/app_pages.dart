@@ -6,6 +6,8 @@ import 'package:vgsync_frontend/app/modules/items/item_binding.dart';
 import 'package:vgsync_frontend/app/modules/items/item_list_page.dart';
 import 'package:vgsync_frontend/app/modules/purchases/purchase_binding.dart';
 import 'package:vgsync_frontend/app/modules/purchases/purchase_list_page.dart';
+import 'package:vgsync_frontend/app/modules/sales/sale_binding.dart';
+import 'package:vgsync_frontend/app/modules/sales/sale_list_page.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_binding.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_list_page.dart';
 import 'app_routes.dart';
@@ -74,13 +76,13 @@ class AppPages {
     ),
 
     // ---------- SALES ----------
-    // GetPage(
-    //   name: AppRoutes.sales,
-    //   page: () => SaleListPage(),
-    //   binding: SaleBinding(),
-    //   transition: Transition.rightToLeftWithFade,
-    //   transitionDuration: const Duration(milliseconds: 400),
-    // ),
+    GetPage(
+      name: AppRoutes.sales,
+      page: () => SaleListPage(),
+      binding: SaleBinding(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 400),
+    ),
 
     // ---------- PURCHASES ----------
     GetPage(
