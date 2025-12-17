@@ -23,11 +23,6 @@ class FollowUpRepository {
     await followUpService.deleteFollowUp(id);
   }
 
-  Future<int> getCount() async {
-    final followups = await getAllFollowUps();
-    return followups.length;
-  }
-
   // ------------------------
   // Dashboard helper
   // ------------------------

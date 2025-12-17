@@ -29,7 +29,8 @@ class CustomerModel {
         'image': image,
       };
 
-  // ✅ ADD THIS
+  // Method to create a copy of the current instance with modified fields
+  // This is useful for immutability and updating specific fields
   CustomerModel copyWith({
     int? id,
     String? name,

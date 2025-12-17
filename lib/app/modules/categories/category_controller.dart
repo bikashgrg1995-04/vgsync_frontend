@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import '../../data/models/category_model.dart';
 import '../../data/repositories/category_repository.dart';
 
 class CategoryController extends GetxController {
   final CategoryRepository categoryRepository;
+  final GlobalController globalController = Get.find<GlobalController>();
 
   CategoryController({required this.categoryRepository});
 
@@ -43,6 +45,8 @@ class CategoryController extends GetxController {
 
       final added = await categoryRepository.addCategory(newCategory);
       categories.add(added); // reactive update
+      fetchCategories();
+      globalController.triggerRefresh(); // ✅ WRITE event
       clearForm();
       Get.back();
     } finally {
@@ -62,6 +66,9 @@ class CategoryController extends GetxController {
       final index = categories.indexWhere((c) => c.id == res.id);
       if (index != -1) categories[index] = res; // reactive update
 
+      fetchCategories();
+      globalController.triggerRefresh(); // ✅ WRITE event
+
       clearForm();
       Get.back();
     } finally {
@@ -72,6 +79,8 @@ class CategoryController extends GetxController {
   Future<void> delete(int id) async {
     await categoryRepository.deleteCategory(id);
     categories.removeWhere((c) => c.id == id); // reactive update
+    fetchCategories();
+    globalController.triggerRefresh(); // ✅ WRITE event
   }
 
   void fillForm(CategoryModel category) {

@@ -11,11 +11,6 @@ class SaleRepository {
     return saleService.getAllSales();
   }
 
-  Future<int> getCount() async {
-    final sales = await getAllSales();
-    return sales.length;
-  }
-
   // New method to compute SalesSummary
   Future<SalesSummary> getSummary() async {
     final sales = await getAllSales();

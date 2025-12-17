@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_binding.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
 import 'package:vgsync_frontend/app/modules/followups/followup_binding.dart';
+import 'package:vgsync_frontend/app/modules/items/item_binding.dart';
+import 'package:vgsync_frontend/app/modules/items/item_list_page.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_binding.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_list_page.dart';
 import 'app_routes.dart';
@@ -52,13 +54,14 @@ class AppPages {
     ),
 
     // ---------- ITEMS ----------
-    // GetPage(
-    //   name: AppRoutes.items,
-    //   page: () => ItemListPage(),
-    //   binding: ItemBinding(),
-    //   transition: Transition.rightToLeftWithFade,
-    //   transitionDuration: const Duration(milliseconds: 400),
-    // ),
+    GetPage(
+      name: AppRoutes.items,
+      page: () => ItemListPage(),
+      binding: ItemBinding(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 400),
+    ),
+
     // ---------- CATEGORIES ----------
     GetPage(
       name: AppRoutes.categories,

@@ -43,7 +43,9 @@ class CustomerController extends GetxController {
   // ----------------------------
   Future<void> addCustomer() async {
     if (nameController.text.trim().isEmpty ||
-        contactController.text.trim().isEmpty) return;
+        contactController.text.trim().isEmpty) {
+      return;
+    }
 
     try {
       isSaving.value = true;

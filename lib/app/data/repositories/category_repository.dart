@@ -16,9 +16,4 @@ class CategoryRepository {
       categoryService.updateCategory(category);
 
   Future<void> deleteCategory(int id) => categoryService.deleteCategory(id);
-
-  Future<int> getCount() async {
-    final categories = await getAllCategories();
-    return categories.length;
-  }
 }

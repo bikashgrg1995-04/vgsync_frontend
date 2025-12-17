@@ -25,9 +25,4 @@ class SupplierRepository {
   Future<void> deleteSupplier(int id) async {
     await supplierService.deleteSupplier(id);
   }
-
-  Future<int> getCount() async {
-    final suppliers = await getAllSuppliers();
-    return suppliers.length;
-  }
 }

@@ -30,4 +30,20 @@ class SupplierModel {
         'email': email,
         'image': image,
       };
+
+  SupplierModel copyWith({
+    int? id,
+    String? name,
+    String? contact,
+    String? email,
+    String? image,
+  }) {
+    return SupplierModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      contact: contact ?? this.contact,
+      email: email ?? this.email,
+      image: image ?? this.image,
+    );
+  }
 }

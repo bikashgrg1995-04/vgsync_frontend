@@ -10,11 +10,6 @@ class PurchaseRepository {
     return purchaseService.getAllPurchases();
   }
 
-  Future<int> getCount() async {
-    final purchases = await getAllPurchases();
-    return purchases.length;
-  }
-
   // New method to compute purchase summary
   Future<SalesSummary> getSummary() async {
     final purchases = await getAllPurchases();
