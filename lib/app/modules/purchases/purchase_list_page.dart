@@ -14,14 +14,12 @@ class PurchaseListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Purchases')),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
               controller: searchController,
-              onChanged: (_) => controller.purchases.refresh(),
               decoration: InputDecoration(
                 hintText: 'Search purchase...',
                 prefixIcon: const Icon(Icons.search),

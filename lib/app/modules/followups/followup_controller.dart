@@ -20,8 +20,8 @@ class FollowUpController extends GetxController {
   var completed = false.obs;
 
   @override
-  void onInit() {
-    super.onInit();
+  void onReady() {
+    super.onReady();
     fetchFollowUps();
   }
 

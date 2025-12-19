@@ -12,8 +12,7 @@ class SaleController extends GetxController {
   final GlobalController globalController = Get.find<GlobalController>();
   final ItemController itemControllerInstance =
       Get.find<ItemController>(); // guaranteed to exist
-  final FollowUpController followUpControllerInstance =
-      Get.find<FollowUpController>(); // guaranteed to exist
+  final FollowUpController followUpController = Get.find<FollowUpController>();
 
   SaleController({required this.saleRepository});
 
@@ -29,8 +28,8 @@ class SaleController extends GetxController {
   final priceController = TextEditingController();
 
   @override
-  void onInit() {
-    super.onInit();
+  void onReady() {
+    super.onReady();
     fetchSales();
   }
 
@@ -45,13 +44,11 @@ class SaleController extends GetxController {
     super.onClose();
   }
 
-  // -----------------------------
-  // API Calls
-  // -----------------------------
   Future<void> fetchSales() async {
     try {
       isLoading.value = true;
-      sales.value = await saleRepository.fetchSales();
+      final result = await saleRepository.fetchSales();
+      sales.assignAll(result); // ✅ better than sales.value =
     } finally {
       isLoading.value = false;
     }
@@ -138,11 +135,11 @@ class SaleController extends GetxController {
   Future<void> refreshAll() async {
     await fetchSales();
     await itemControllerInstance.fetchItems();
-    await followUpControllerInstance.fetchFollowUps();
+    await followUpController.fetchFollowUps();
 
     globalController.triggerRefresh();
     itemControllerInstance.triggerRefresh();
-    followUpControllerInstance.triggerRefresh();
+    followUpController.triggerRefresh();
   }
 
   // -----------------------------

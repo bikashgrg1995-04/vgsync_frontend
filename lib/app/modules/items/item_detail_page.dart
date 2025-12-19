@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/wigdets/category_dropdown.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_form_dialog.dart';
 import '../../data/models/item_model.dart';
 import 'item_controller.dart';
 
@@ -8,13 +10,13 @@ class ItemDetailPage extends StatelessWidget {
 
   ItemDetailPage({super.key, required this.itemId});
 
-  final ItemController controller = Get.find();
+  final ItemController itemController = Get.find();
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final ItemModel? item =
-          controller.items.firstWhereOrNull((i) => i.id == itemId);
+          itemController.items.firstWhereOrNull((i) => i.id == itemId);
 
       if (item == null) {
         return const Scaffold(
@@ -28,12 +30,12 @@ class ItemDetailPage extends StatelessWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.edit),
-              onPressed: () => _openEditDialog(item),
+              onPressed: () => openEditDialog(item),
             ),
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () async {
-                await controller.deleteItem(item.id ?? 0);
+                await itemController.deleteItem(item.id ?? 0);
                 Get.back();
               },
             ),
@@ -70,62 +72,40 @@ class ItemDetailPage extends StatelessWidget {
     );
   }
 
-  void _openEditDialog(ItemModel item) {
-    controller.fillForm(item);
-
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Edit Item'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller.nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              TextField(
-                controller: controller.groupController,
-                decoration: const InputDecoration(labelText: 'Group'),
-              ),
-              TextField(
-                controller: controller.modelController,
-                decoration: const InputDecoration(labelText: 'Model'),
-              ),
-              TextField(
-                controller: controller.stockController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Stock'),
-              ),
-              TextField(
-                controller: controller.purchasePriceController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Purchase Price'),
-              ),
-              TextField(
-                controller: controller.salePriceController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Sale Price'),
-              ),
-              TextField(
-                controller: controller.categoryController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Category ID'),
-              ),
-            ],
+  void openEditDialog(ItemModel item) {
+    itemController.fillForm(item);
+    Get.dialog(CustomFormDialog(
+      title: "Edit Item",
+      isEditMode: true,
+      content: Column(
+        children: [
+          TextField(
+              controller: itemController.nameController,
+              decoration: const InputDecoration(labelText: 'Name')),
+          TextField(
+              controller: itemController.categoryController,
+              enabled: false,
+              decoration: const InputDecoration(labelText: 'Category')),
+          CategoryDropdown(
+            groupController: itemController.groupController,
+            categoryIdController: itemController.categoryController,
           ),
-        ),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              await controller.updateItem(item);
-              Get.back();
-            },
-            child: const Text('Save'),
-          ),
+          TextField(
+              controller: itemController.modelController,
+              decoration: const InputDecoration(labelText: 'Model')),
+          TextField(
+              controller: itemController.stockController,
+              decoration: const InputDecoration(labelText: 'Stock')),
+          TextField(
+              controller: itemController.purchasePriceController,
+              decoration: const InputDecoration(labelText: 'Purchase Price')),
+          TextField(
+              controller: itemController.salePriceController,
+              decoration: const InputDecoration(labelText: 'Sale Price')),
         ],
       ),
-    );
+      onSave: () => itemController.updateItem(item),
+      onDelete: () => itemController.deleteItem(item.id ?? 0),
+    ));
   }
 }

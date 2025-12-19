@@ -23,10 +23,8 @@ class ItemController extends GetxController {
   late TextEditingController categoryController;
 
   @override
-  void onInit() {
-    super.onInit();
-    fetchItems();
-
+  void onReady() async {
+    super.onReady();
     nameController = TextEditingController();
     groupController = TextEditingController();
     modelController = TextEditingController();
@@ -34,6 +32,7 @@ class ItemController extends GetxController {
     purchasePriceController = TextEditingController();
     salePriceController = TextEditingController();
     categoryController = TextEditingController();
+    await fetchItems();
   }
 
   @override

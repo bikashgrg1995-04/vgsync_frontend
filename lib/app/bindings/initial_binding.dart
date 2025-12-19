@@ -85,13 +85,18 @@ class InitialBinding extends Bindings {
       permanent: true,
     );
 
-    // can be lazy-loaded (only when needed)
-    Get.lazyPut(() => CustomerController(customerRepository: Get.find()));
-    Get.lazyPut(() => SupplierController(supplierRepository: Get.find()));
-    Get.lazyPut(() => ItemController(itemRepository: Get.find()));
-    Get.lazyPut(() => CategoryController(categoryRepository: Get.find()));
-    Get.lazyPut(() => SaleController(saleRepository: Get.find()));
-    Get.lazyPut(() => PurchaseController(purchaseRepository: Get.find()));
-    Get.lazyPut(() => FollowUpController(followUpRepository: Get.find()));
+    Get.put(CustomerController(customerRepository: Get.find()),
+        permanent: true);
+    Get.put(SupplierController(supplierRepository: Get.find()),
+        permanent: true);
+    Get.put(CategoryController(categoryRepository: Get.find()),
+        permanent: true);
+    Get.put(ItemController(itemRepository: Get.find()), permanent: true);
+
+    Get.put(FollowUpController(followUpRepository: Get.find()),
+        permanent: true);
+    Get.put(SaleController(saleRepository: Get.find()), permanent: true);
+    Get.put(PurchaseController(purchaseRepository: Get.find()),
+        permanent: true);
   }
 }

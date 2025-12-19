@@ -12,16 +12,6 @@ void main() async {
   // Initialize Hive for offline storage
   await Hive.initFlutter();
 
-  // TODO: Register adapters for models (Customer, Supplier, Item, etc.)
-  // Register adapters BEFORE opening boxes
-  // Hive.registerAdapter(CustomerModelAdapter());
-  // Hive.registerAdapter(SupplierModelAdapter());
-  // Hive.registerAdapter(ItemModelAdapter());
-  // Hive.registerAdapter(CategoryModelAdapter());
-  // Hive.registerAdapter(SaleModelAdapter());
-  // Hive.registerAdapter(PurchaseModelAdapter());
-  // Hive.registerAdapter(FollowUpModelAdapter());
-
   // Open Hive boxes
   await Hive.openBox('customers');
   await Hive.openBox('suppliers');
@@ -30,6 +20,8 @@ void main() async {
   await Hive.openBox('sales');
   await Hive.openBox('purchases');
   await Hive.openBox('followups');
+
+  InitialBinding().dependencies(); // Register all controllers
 
   runApp(const MyApp());
 }

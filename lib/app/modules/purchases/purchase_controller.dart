@@ -24,15 +24,16 @@ class PurchaseController extends GetxController {
   final priceController = TextEditingController();
 
   @override
-  void onInit() {
-    super.onInit();
+  void onReady() {
+    super.onReady();
     fetchPurchases();
   }
 
   Future<void> fetchPurchases() async {
     try {
       isLoading.value = true;
-      purchases.value = await purchaseRepository.fetchPurchases();
+      final result = await purchaseRepository.fetchPurchases();
+      purchases.assignAll(result); // ✅ better than purchases.value =
     } finally {
       isLoading.value = false;
     }

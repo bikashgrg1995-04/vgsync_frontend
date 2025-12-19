@@ -6,8 +6,9 @@ class DashboardService {
   final ApiService apiService = Get.find();
 
   Future<Map<String, dynamic>> fetchDashboard() async {
-    final Dio _dio = ApiService.dio;
-    final response = await _dio.get('/dashboard/');
+    final Dio dio = ApiService.dio;
+    final response = await dio.get('/dashboard/');
+    print('DashboardService response: ${response.data}');
     return response.data; // RAW JSON
   }
 }

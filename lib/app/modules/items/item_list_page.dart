@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/models/item_model.dart';
 import 'package:vgsync_frontend/app/modules/items/item_controller.dart';
 import 'package:vgsync_frontend/app/modules/items/item_detail_page.dart';
+import 'package:vgsync_frontend/app/wigdets/category_dropdown.dart';
 import '../../wigdets/custom_form_dialog.dart';
 
 class ItemListPage extends StatelessWidget {
@@ -15,14 +16,12 @@ class ItemListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Items')),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
               controller: searchController,
-              onChanged: (_) => itemController.items.refresh(),
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
                 hintText: 'Search items...',
@@ -124,8 +123,13 @@ class ItemListPage extends StatelessWidget {
               controller: itemController.nameController,
               decoration: const InputDecoration(labelText: 'Name')),
           TextField(
-              controller: itemController.groupController,
-              decoration: const InputDecoration(labelText: 'Group')),
+              controller: itemController.categoryController,
+              enabled: false,
+              decoration: const InputDecoration(labelText: 'Category')),
+          CategoryDropdown(
+            groupController: itemController.groupController,
+            categoryIdController: itemController.categoryController,
+          ),
           TextField(
               controller: itemController.modelController,
               decoration: const InputDecoration(labelText: 'Model')),
@@ -138,9 +142,6 @@ class ItemListPage extends StatelessWidget {
           TextField(
               controller: itemController.salePriceController,
               decoration: const InputDecoration(labelText: 'Sale Price')),
-          TextField(
-              controller: itemController.categoryController,
-              decoration: const InputDecoration(labelText: 'Category')),
         ],
       ),
       onSave: () => itemController.addItem(),
@@ -158,8 +159,13 @@ class ItemListPage extends StatelessWidget {
               controller: itemController.nameController,
               decoration: const InputDecoration(labelText: 'Name')),
           TextField(
-              controller: itemController.groupController,
-              decoration: const InputDecoration(labelText: 'Group')),
+              controller: itemController.categoryController,
+              enabled: false,
+              decoration: const InputDecoration(labelText: 'Category')),
+          CategoryDropdown(
+            groupController: itemController.groupController,
+            categoryIdController: itemController.categoryController,
+          ),
           TextField(
               controller: itemController.modelController,
               decoration: const InputDecoration(labelText: 'Model')),
@@ -172,9 +178,6 @@ class ItemListPage extends StatelessWidget {
           TextField(
               controller: itemController.salePriceController,
               decoration: const InputDecoration(labelText: 'Sale Price')),
-          TextField(
-              controller: itemController.categoryController,
-              decoration: const InputDecoration(labelText: 'Category')),
         ],
       ),
       onSave: () => itemController.updateItem(item),

@@ -17,16 +17,16 @@ class CategoryController extends GetxController {
   final nameController = TextEditingController();
 
   @override
-  void onInit() {
-    super.onInit();
+  void onReady() {
+    super.onReady();
     fetchCategories();
   }
 
   Future<void> fetchCategories() async {
     try {
       isLoading.value = true;
-      final list = await categoryRepository.getAllCategories();
-      categories.assignAll(list);
+      final result = await categoryRepository.getAllCategories();
+      categories.assignAll(result); // ✅ better than categories.value =
     } finally {
       isLoading.value = false;
     }

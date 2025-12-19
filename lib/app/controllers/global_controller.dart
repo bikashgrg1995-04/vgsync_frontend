@@ -7,6 +7,13 @@ class GlobalController extends GetxController {
     refreshTick.value++;
   }
 
+  // Observable for currently selected menu
+  var selectedMenu = 'Dashboard'.obs;
+
+  void changeMenu(String menu) {
+    selectedMenu.value = menu;
+  }
+
   // ----------------------------
   // Theme
   // ----------------------------

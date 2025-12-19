@@ -1,9 +1,11 @@
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import '../../data/models/dashboard_model.dart';
 import '../../data/repositories/dashboard_repository.dart';
 
 class DashboardController extends GetxController {
   final DashboardRepository dashboardRepository;
+  final GlobalController globalController = Get.find<GlobalController>();
 
   DashboardController({required this.dashboardRepository});
 
@@ -19,7 +21,14 @@ class DashboardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
+    // Load initial data
     loadDashboardData();
+
+    // 🔥 LISTEN TO GLOBAL REFRESH
+    ever(globalController.refreshTick, (_) {
+      loadDashboardData();
+    });
   }
 
   // -------------------------
@@ -30,6 +39,8 @@ class DashboardController extends GetxController {
       isLoading.value = true;
 
       final data = await dashboardRepository.getDashboard();
+
+      print('Dashboard data loaded: $data');
 
       // Update reactive fields
       summary.value = data.summary;

@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import '../../data/models/supplier_model.dart';
@@ -12,37 +13,49 @@ class SupplierController extends GetxController {
   var suppliers = <SupplierModel>[].obs;
   var isLoading = false.obs;
 
+  final nameController = TextEditingController();
+  final contactController = TextEditingController();
+  final emailController = TextEditingController();
+
   @override
-  void onInit() {
-    super.onInit();
+  void onReady() {
+    super.onReady();
     fetchSuppliers();
   }
 
   Future<void> fetchSuppliers() async {
     try {
       isLoading.value = true;
-      final list = await supplierRepository.getAllSuppliers();
-      suppliers.value = list;
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to load suppliers');
+      final result = await supplierRepository.getAllSuppliers();
+      suppliers.assignAll(result); // ✅ better than suppliers.value =
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> addSupplier(SupplierModel supplier) async {
+  Future<void> addSupplier() async {
+    final name = nameController.text.trim();
+    final contact = contactController.text.trim();
+    final email = emailController.text.trim();
+
+    if (name.isEmpty || contact.isEmpty || email.isEmpty) return;
+
     try {
       isLoading.value = true;
-      final newSupplier = await supplierRepository.addSupplier(supplier);
-      suppliers.add(newSupplier);
+      final newSupplier = SupplierModel(
+        id: suppliers.isEmpty ? 1 : suppliers.last.id + 1, // temporary id
+        name: name,
+        contact: contact,
+        email: email,
+      );
 
+      await supplierRepository.addSupplier(newSupplier);
+      //suppliers.add(added); // reactive update
       fetchSuppliers();
       globalController.triggerRefresh(); // ✅ WRITE event
-
-      Get.back(); // Close dialog/page
-      Get.snackbar('Success', 'Supplier added successfully');
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to add supplier');
+      clearForm();
+      Get.back();
+      Get.back();
     } finally {
       isLoading.value = false;
     }
@@ -82,5 +95,18 @@ class SupplierController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void clearForm() {
+    // Clear any form controllers if needed
+    nameController.clear();
+    contactController.clear();
+    emailController.clear();
+  }
+
+  void fillForm(SupplierModel supplier) {
+    nameController.text = supplier.name;
+    contactController.text = supplier.contact;
+    emailController.text = supplier.email;
   }
 }

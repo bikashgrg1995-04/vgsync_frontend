@@ -1,14 +1,8 @@
 import 'package:get/get.dart';
-import 'package:vgsync_frontend/app/modules/categories/category_binding.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
-import 'package:vgsync_frontend/app/modules/followups/followup_binding.dart';
-import 'package:vgsync_frontend/app/modules/items/item_binding.dart';
 import 'package:vgsync_frontend/app/modules/items/item_list_page.dart';
-import 'package:vgsync_frontend/app/modules/purchases/purchase_binding.dart';
 import 'package:vgsync_frontend/app/modules/purchases/purchase_list_page.dart';
-import 'package:vgsync_frontend/app/modules/sales/sale_binding.dart';
 import 'package:vgsync_frontend/app/modules/sales/sale_list_page.dart';
-import 'package:vgsync_frontend/app/modules/suppliers/supplier_binding.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_list_page.dart';
 import 'app_routes.dart';
 
@@ -16,7 +10,6 @@ import 'app_routes.dart';
 import '../modules/auth/login_page.dart';
 import '../modules/dashboard/dashboard_page.dart';
 import '../modules/customers/customer_list_page.dart';
-import '../modules/customers/customer_binding.dart';
 import '../modules/followups/followup_list_page.dart';
 
 class AppPages {
@@ -43,7 +36,6 @@ class AppPages {
     GetPage(
       name: AppRoutes.customers,
       page: () => CustomerListPage(),
-      binding: CustomerBinding(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 300),
     ),
@@ -52,7 +44,6 @@ class AppPages {
     GetPage(
       name: AppRoutes.suppliers,
       page: () => SupplierListPage(),
-      binding: SupplierBinding(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 300),
     ),
@@ -61,7 +52,6 @@ class AppPages {
     GetPage(
       name: AppRoutes.items,
       page: () => ItemListPage(),
-      binding: ItemBinding(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 300),
     ),
@@ -70,7 +60,6 @@ class AppPages {
     GetPage(
       name: AppRoutes.categories,
       page: () => CategoryListPage(),
-      binding: CategoryBinding(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 300),
     ),
@@ -79,7 +68,6 @@ class AppPages {
     GetPage(
       name: AppRoutes.sales,
       page: () => SaleListPage(),
-      binding: SaleBinding(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 400),
     ),
@@ -88,7 +76,6 @@ class AppPages {
     GetPage(
       name: AppRoutes.purchases,
       page: () => PurchaseListPage(),
-      binding: PurchaseBinding(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 300),
     ),
@@ -97,7 +84,6 @@ class AppPages {
     GetPage(
       name: AppRoutes.followups,
       page: () => FollowupListPage(),
-      binding: FollowupBinding(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 300),
     ),

@@ -20,8 +20,8 @@ class CustomerController extends GetxController {
   final imageController = TextEditingController();
 
   @override
-  void onInit() {
-    super.onInit();
+  void onReady() {
+    super.onReady();
     fetchCustomers();
   }
 
@@ -31,8 +31,8 @@ class CustomerController extends GetxController {
   Future<void> fetchCustomers() async {
     try {
       isLoading.value = true;
-      final list = await customerRepository.getAllCustomers();
-      customers.assignAll(list);
+      final result = await customerRepository.getAllCustomers();
+      customers.assignAll(result); // ✅ better than customers.value =
     } finally {
       isLoading.value = false;
     }

@@ -1,12 +1,17 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:vgsync_frontend/app/controllers/auth_controller.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
-import 'package:vgsync_frontend/app/routes/app_routes.dart';
-import '../../wigdets/app_card.dart';
-import 'dashboard_controller.dart';
-import '../../data/models/dashboard_model.dart';
+import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
+import 'package:vgsync_frontend/app/modules/customers/customer_list_page.dart';
+import 'package:vgsync_frontend/app/modules/dashboard/dashboard_controller.dart';
+import 'package:vgsync_frontend/app/modules/followups/followup_list_page.dart';
+import 'package:vgsync_frontend/app/modules/items/item_list_page.dart';
+import 'package:vgsync_frontend/app/modules/purchases/purchase_list_page.dart';
+import 'package:vgsync_frontend/app/modules/sales/sale_list_page.dart';
+import 'package:vgsync_frontend/app/modules/suppliers/supplier_list_page.dart';
+import 'package:vgsync_frontend/app/wigdets/app_card.dart';
+import 'package:vgsync_frontend/app/wigdets/sidebar.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -17,216 +22,242 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   final DashboardController controller = Get.find();
-  final AuthController authController = Get.find();
   final GlobalController globalController = Get.find();
 
   @override
   void initState() {
     super.initState();
-
-    // Load dashboard data on start
     controller.loadDashboardData();
-
-    // Listen for global refresh
-    ever(globalController.refreshTick, (_) {
-      controller.loadDashboardData();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await authController.logout();
-              Get.offAllNamed(AppRoutes.login);
-            },
-          )
+      body: Row(
+        children: [
+          Sidebar(),
+
+          /// -------- MAIN CONTENT ----------
+          Expanded(
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              // Switch content based on selected menu
+              switch (globalController.selectedMenu.value) {
+                case 'Sales':
+                  return SaleListPage();
+                case 'Purchases':
+                  return PurchaseListPage();
+                case 'Customers':
+                  return CustomerListPage();
+                case 'Follow-ups':
+                  return FollowupListPage();
+                case 'Suppliers':
+                  return SupplierListPage();
+                case 'Items':
+                  return ItemListPage();
+                case 'Categories':
+                  return CategoryListPage();
+                default:
+                  return _dashboardOverview();
+              }
+            }),
+          ),
         ],
       ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final summary = controller.summary.value;
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ---------------- Menu Cards ----------------
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: [
-                  _buildMenuCard('Customers', summary.customers, Icons.people,
-                      Colors.blue),
-                  _buildMenuCard('Categories', summary.categories,
-                      Icons.category, Colors.purple),
-                  _buildMenuCard('Suppliers', summary.suppliers,
-                      Icons.local_shipping, Colors.orange),
-                  _buildMenuCard(
-                      'Items', summary.items, Icons.inventory, Colors.green),
-                  _buildMenuCard(
-                      'Sales', summary.sales.count, Icons.sell, Colors.red),
-                  _buildMenuCard('Purchases', summary.purchases.count,
-                      Icons.shopping_cart, Colors.teal),
-                  _buildMenuCard(
-                      'Follow-ups',
-                      controller.upcomingFollowups.length,
-                      Icons.alarm,
-                      Colors.brown),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // ---------------- Chart ----------------
-              const Text(
-                'Sales & Purchases',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 200,
-                child: _buildChart(
-                  summary.sales.amount,
-                  summary.purchases.amount,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ---------------- Low Stock ----------------
-              const Text(
-                'Low Stock Items',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _buildLowStockTable(controller.lowStockItems),
-
-              const SizedBox(height: 24),
-
-              // ---------------- Follow-ups ----------------
-              const Text(
-                'Upcoming Follow-ups',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _buildFollowupTable(controller.upcomingFollowups),
-            ],
-          ),
-        );
-      }),
     );
   }
 
-  Widget _buildMenuCard(String title, int count, IconData icon, Color color) {
-    final Map<String, String> routeMap = {
-      'Customers': AppRoutes.customers,
-      'Categories': AppRoutes.categories,
-      'Suppliers': AppRoutes.suppliers,
-      'Items': AppRoutes.items,
-      'Sales': AppRoutes.sales,
-      'Purchases': AppRoutes.purchases,
-      'Follow-ups': AppRoutes.followups,
-    };
+  Widget _dashboardOverview() {
+    final summary = controller.summary.value;
+    final lowStockItems = controller.lowStockItems; // List<ItemModel>
+    final upcomingFollowups =
+        controller.upcomingFollowups; // List<FollowUpModel>
 
-    return InkWell(
-      onTap: () {
-        final route = routeMap[title];
-        if (route != null) Get.toNamed(route);
-      },
-      borderRadius: BorderRadius.circular(16),
-      splashColor: color.withOpacity(0.2),
-      child: AppCard(
-        width: 150,
-        height: 150,
-        color: color.withOpacity(0.1),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 36, color: color),
-            const SizedBox(height: 8),
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('$count',
-                style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Search Bar
+          Row(
+            children: [
+              SizedBox(
+                width: 600,
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          /// SUMMARY CARDS
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _statCard('Customers', summary.customers),
+              _statCard('Suppliers', summary.suppliers),
+              _statCard('Categories', summary.categories),
+              _statCard('Items', summary.items),
+              _statCard('Sales', summary.sales.count),
+              _statCard('Purchases', summary.purchases.count),
+              _statCard('Follow-ups', upcomingFollowups.length),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          /// SALES VS PURCHASES CHART
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sales vs Purchases',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 220,
+                  child: _buildChart(
+                    summary.sales.amount,
+                    summary.purchases.amount,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          /// LOW STOCK ITEMS
+          if (lowStockItems.isNotEmpty) ...[
+            const Text(
+              'Low Stock Items',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            const SizedBox(height: 12),
+            AppCard(
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('Item')),
+                  DataColumn(label: Text('Stock')),
+                  DataColumn(label: Text('Alert')),
+                ],
+                rows: lowStockItems.map((item) {
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(item.name)),
+                      DataCell(Text(item.stock.toString())),
+                      DataCell(
+                        item.stock <= 5 // Threshold
+                            ? const Text(
+                                'Low',
+                                style: TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold),
+                              )
+                            : const Text(''),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 32),
           ],
-        ),
+
+          /// UPCOMING FOLLOW-UPS
+          if (upcomingFollowups.isNotEmpty) ...[
+            const Text(
+              'Upcoming Follow-ups (Next 7 Days)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            const SizedBox(height: 12),
+            AppCard(
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('Customer')),
+                  DataColumn(label: Text('Date')),
+                  DataColumn(label: Text('Status')),
+                ],
+                rows: upcomingFollowups.map((fup) {
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(fup.customerName)),
+                      DataCell(Text(fup.date)),
+                      DataCell(
+                        fup.priority.toString() == 'High'
+                            ? const Text(
+                                'Due Soon',
+                                style: TextStyle(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold),
+                              )
+                            : const Text(''),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildChart(double salesAmount, double purchaseAmount) {
+  /// -------- STAT CARD ----------
+  Widget _statCard(String title, int value) {
+    return AppCard(
+      width: 120,
+      child: Column(
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(
+            value.toString(),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// -------- CHART ----------
+  Widget _buildChart(double sales, double purchases) {
     return PieChart(
       PieChartData(
         sections: [
           PieChartSectionData(
-            value: salesAmount,
-            color: Colors.blue,
-            title: 'Sales\nRs.${salesAmount.toStringAsFixed(0)}',
+            value: sales,
+            title: 'Sales\nRs.${sales.toStringAsFixed(0)}',
+            color: Colors.purple,
             radius: 80,
             titleStyle: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                color: Colors.white, fontWeight: FontWeight.bold),
           ),
           PieChartSectionData(
-            value: purchaseAmount,
+            value: purchases,
+            title: 'Purchase\nRs.${purchases.toStringAsFixed(0)}',
             color: Colors.green,
-            title: 'Purchases\nRs.${purchaseAmount.toStringAsFixed(0)}',
             radius: 80,
             titleStyle: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ],
-        sectionsSpace: 2,
-        centerSpaceRadius: 0,
       ),
-    );
-  }
-
-  Widget _buildLowStockTable(List<LowStockItem> items) {
-    if (items.isEmpty) return const Text('No low stock items');
-
-    return DataTable(
-      columns: const [
-        DataColumn(label: Text('Item')),
-        DataColumn(label: Text('Stock')),
-      ],
-      rows: items
-          .map((item) => DataRow(cells: [
-                DataCell(Text(item.name)),
-                DataCell(Text(item.stock.toString())),
-              ]))
-          .toList(),
-    );
-  }
-
-  Widget _buildFollowupTable(List<DashboardFollowupItem> followups) {
-    if (followups.isEmpty) return const Text('No upcoming follow-ups');
-
-    return DataTable(
-      columns: const [
-        DataColumn(label: Text('Customer')),
-        DataColumn(label: Text('Date')),
-        DataColumn(label: Text('Priority')),
-      ],
-      rows: followups
-          .map((f) => DataRow(cells: [
-                DataCell(Text(f.customerName)),
-                DataCell(Text(f.date)),
-                DataCell(Text(f.priority)),
-              ]))
-          .toList(),
     );
   }
 }
