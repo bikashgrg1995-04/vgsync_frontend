@@ -8,6 +8,7 @@ class ExpenseService {
   Future<List<ExpenseModel>> getExpenses() async {
     final res = await _dio.get("/expenses/");
     final data = res.data;
+    print(data);
     if (data != null && data['results'] != null && data['results'] is List) {
       return (data['results'] as List)
           .map((e) => ExpenseModel.fromJson(e))
@@ -22,12 +23,22 @@ class ExpenseService {
   }
 
   Future<ExpenseModel> updateExpense(ExpenseModel expense) async {
-    final res =
-        await _dio.put("/expenses/${expense.id}/", data: expense.toJson());
+    if (expense.isSalaryExpense) {
+      throw Exception("Salary expense cannot be edited");
+    }
+
+    final res = await _dio.put(
+      "/expenses/${expense.id}/",
+      data: expense.toJson(),
+    );
     return ExpenseModel.fromJson(res.data);
   }
 
-  Future<void> deleteExpense(int id) async {
-    await _dio.delete("/expenses/$id/");
+  Future<void> deleteExpense(ExpenseModel expense) async {
+    if (expense.isSalaryExpense) {
+      throw Exception("Salary expense cannot be deleted");
+    }
+
+    await _dio.delete("/expenses/${expense.id}/");
   }
 }
