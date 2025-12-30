@@ -40,7 +40,7 @@ class AuthController extends GetxController {
       user.value = profile;
       isLoggedIn.value = true;
 
-      Get.offAllNamed(AppRoutes.dashboard);
+      Get.offAllNamed(AppRoutes.navigation);
     } catch (e) {
       Get.snackbar("Login Failed", e.toString());
     } finally {

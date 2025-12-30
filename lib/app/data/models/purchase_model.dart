@@ -1,65 +1,85 @@
-import 'purchase_item_model.dart';
-
 class PurchaseModel {
-  int? id;
-  int supplier;
-  String date;
-  List<PurchaseItemModel> items;
-  double? totalAmount;
+  final int id;
+  final int supplier;
+  final DateTime date;
+  final List<PurchaseItemModel> items;
+  final double discountPercentage;
+  final double vatPercentage;
 
   PurchaseModel({
-    this.id,
+    required this.id,
     required this.supplier,
     required this.date,
     required this.items,
-    this.totalAmount,
+    required this.discountPercentage,
+    required this.vatPercentage,
   });
 
   factory PurchaseModel.fromJson(Map<String, dynamic> json) {
     return PurchaseModel(
       id: json['id'],
-
-      /// 🔥 FIX HERE
-      supplier: json['supplier'] is int
-          ? json['supplier']
-          : json['supplier'] is Map
-              ? json['supplier']['id']
-              : json['supplier'] is List
-                  ? json['supplier'].first
-                  : 0,
-
-      date: json['date'],
-
-      items: (json['items'] as List<dynamic>)
+      supplier: json['supplier'],
+      date: DateTime.parse(json['date']),
+      items: (json['items'] as List)
           .map((e) => PurchaseItemModel.fromJson(e))
           .toList(),
-
-      totalAmount: (json['total_amount'] ?? 0).toDouble(),
+      discountPercentage: (json['discount_percentage'] as num).toDouble(),
+      vatPercentage: (json['vat_percentage'] as num).toDouble(),
     );
   }
 
-  /// ⚠️ Used ONLY for POST / PATCH
   Map<String, dynamic> toJson() {
     return {
-      "supplier": supplier,
-      "date": date,
-      "items": items.map((e) => e.toJson()).toList(),
+      'id': id,
+      'supplier': supplier,
+      'date': date.toIso8601String(),
+      'items': items.map((e) => e.toJson()).toList(),
+      'discount_percentage': discountPercentage,
+      'vat_percentage': vatPercentage,
     };
   }
+}
 
-  PurchaseModel copyWith({
-    int? id,
-    int? supplier,
-    String? date,
-    List<PurchaseItemModel>? items,
-    double? totalAmount,
-  }) {
-    return PurchaseModel(
-      id: id ?? this.id,
-      supplier: supplier ?? this.supplier,
-      date: date ?? this.date,
-      items: items ?? this.items,
-      totalAmount: totalAmount ?? this.totalAmount,
+class PurchaseItemModel {
+  final int item;
+  final String itemName;
+  final int quantity;
+  final double purchasePrice;
+  final double salePrice;
+  final double vat;
+  final double totalPrice;
+
+  PurchaseItemModel({
+    required this.item,
+    required this.itemName,
+    required this.quantity,
+    required this.purchasePrice,
+    required this.salePrice,
+    required this.vat,
+    required this.totalPrice,
+  });
+
+  factory PurchaseItemModel.fromJson(Map<String, dynamic> json) {
+    return PurchaseItemModel(
+      item: json['item'],
+      itemName: json['item_name'],
+      quantity: json['quantity'],
+      purchasePrice: (json['purchase_price'] as num).toDouble(),
+      salePrice: (json['sale_price'] as num).toDouble(),
+      vat: (json['vat'] as num).toDouble(),
+      totalPrice: (json['total_price'] as num).toDouble(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'item': item,
+      'item_name': itemName,
+      'quantity': quantity,
+      'purchase_price': purchasePrice,
+      'sale_price': salePrice,
+      'vat': vat,
+      'total_price': totalPrice,
+    };
   }
 }

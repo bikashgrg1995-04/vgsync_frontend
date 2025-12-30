@@ -1,27 +1,58 @@
 import 'package:dio/dio.dart';
-import 'package:vgsync_frontend/app/data/models/sale_model.dart';
 import 'package:vgsync_frontend/app/data/services/api_service.dart';
+import '../models/sale_model.dart';
 
 class SaleService {
   final Dio _dio = ApiService.dio;
 
+  // ---------------- FETCH ----------------
   Future<List<SaleModel>> fetchSales() async {
-    final res = await _dio.get('/sales/');
-    final List data = res.data['results'];
-    return data.map((e) => SaleModel.fromJson(e)).toList();
+    try {
+      final response = await _dio.get('/sales/');
+
+      final data = response.data;
+      return (data['results'] as List)
+          .map((e) => SaleModel.fromJson(e))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to load sales: $e');
+    }
   }
 
+  // ---------------- CREATE ----------------
   Future<SaleModel> createSale(SaleModel sale) async {
-    final res = await _dio.post('/sales/', data: sale.toJson());
-    return SaleModel.fromJson(res.data);
+    try {
+      final response = await _dio.post(
+        '/sales/',
+        data: sale.toJson(),
+      );
+
+      return SaleModel.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to create sale: $e');
+    }
   }
 
-  Future<SaleModel> updateSale(int id, Map<String, dynamic> data) async {
-    final res = await _dio.patch('/sales/$id/', data: data);
-    return SaleModel.fromJson(res.data);
+  // ---------------- UPDATE ----------------
+  Future<SaleModel> updateSale(SaleModel sale) async {
+    try {
+      final response = await _dio.put(
+        '/sales/${sale.id}/',
+        data: sale.toJson(),
+      );
+
+      return SaleModel.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to update sale: $e');
+    }
   }
 
+  // ---------------- DELETE ----------------
   Future<void> deleteSale(int id) async {
-    await _dio.delete('/sales/$id/');
+    try {
+      await _dio.delete('/sales/$id/');
+    } catch (e) {
+      throw Exception('Failed to delete sale: $e');
+    }
   }
 }

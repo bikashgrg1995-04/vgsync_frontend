@@ -1,223 +1,142 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:vgsync_frontend/app/controllers/global_controller.dart';
-import 'package:vgsync_frontend/app/modules/items/item_controller.dart';
-import '../../data/models/purchase_item_model.dart';
+import 'package:flutter/material.dart';
 import '../../data/models/purchase_model.dart';
 import '../../data/repositories/purchase_repository.dart';
 
 class PurchaseController extends GetxController {
   final PurchaseRepository purchaseRepository;
-  final GlobalController globalController = Get.find<GlobalController>();
-  final ItemController _itemController = Get.find<ItemController>();
 
   PurchaseController({required this.purchaseRepository});
 
   var purchases = <PurchaseModel>[].obs;
   var isLoading = false.obs;
 
-  // Form controllers
-  final supplierController = TextEditingController();
-  final dateController = TextEditingController();
-  final itemController = TextEditingController();
-  final quantityController = TextEditingController();
-  final priceController = TextEditingController();
+  // ---------------- Text Controllers ----------------
+  var startDateController = TextEditingController();
+  var endDateController = TextEditingController();
+  var searchController = TextEditingController();
+
+  // Add/Edit form controllers
+  var supplierController = TextEditingController();
+  var dateController = TextEditingController();
+  var discountController = TextEditingController();
+  var vatController = TextEditingController();
 
   @override
-  void onReady() {
-    super.onReady();
+  void onInit() {
+    super.onInit();
     fetchPurchases();
   }
 
+  // ---------------- Fetch ----------------
   Future<void> fetchPurchases() async {
     try {
       isLoading.value = true;
-      final result = await purchaseRepository.fetchPurchases();
-      purchases.assignAll(result); // ✅ better than purchases.value =
+      final result = await purchaseRepository.getPurchases();
+      purchases.assignAll(result);
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to fetch purchases: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
+  // ---------------- Add ----------------
   Future<void> addPurchase() async {
-    final purchase = PurchaseModel(
-      supplier: int.parse(supplierController.text),
-      date: dateController.text,
-      items: [
-        PurchaseItemModel(
-          item: int.parse(itemController.text),
-          quantity: int.parse(quantityController.text),
-          price: double.parse(priceController.text),
-        ),
-      ],
-    );
-    print(purchase.toJson());
+    try {
+      isLoading.value = true;
 
-    await purchaseRepository.addPurchase(purchase);
+      final newPurchase = PurchaseModel(
+        id: 0, // backend assigns
+        supplier: int.tryParse(supplierController.text) ?? 0,
+        date: DateTime.tryParse(dateController.text) ?? DateTime.now(),
+        items: [], // Add logic later for items list
+        discountPercentage: double.tryParse(discountController.text) ?? 0,
+        vatPercentage: double.tryParse(vatController.text) ?? 0,
+      );
 
-    print(purchase.toJson());
-
-    await fetchPurchases();
-    await _itemController.fetchItems();
-    globalController.triggerRefresh();
-    _itemController.triggerRefresh();
-
-    Get.back();
-  }
-
-  Future<void> updatePurchase(PurchaseModel purchase) async {
-    final payload = {
-      "supplier": int.parse(supplierController.text),
-      "date": dateController.text,
-      "items": [
-        {
-          "item": int.parse(itemController.text),
-          "quantity": int.parse(quantityController.text),
-          "price": double.parse(priceController.text),
-        }
-      ]
-    };
-
-    await purchaseRepository.editPurchase(
-      purchase.id!,
-      payload,
-    );
-
-    await fetchPurchases();
-    await _itemController.fetchItems();
-    globalController.triggerRefresh();
-    _itemController.triggerRefresh();
-    Get.back();
-    Get.back();
-  }
-
-  Future<void> deletePurchase(int id) async {
-    await purchaseRepository.removePurchase(id);
-    purchases.removeWhere((p) => p.id == id);
-
-    await fetchPurchases();
-    await _itemController.fetchItems();
-    globalController.triggerRefresh();
-    _itemController.triggerRefresh();
-  }
-
-  void fillForm(PurchaseModel purchase) {
-    supplierController.text = purchase.supplier.toString();
-    dateController.text = purchase.date;
-
-    if (purchase.items.isNotEmpty) {
-      itemController.text = purchase.items.first.item.toString();
-      quantityController.text = purchase.items.first.quantity.toString();
-      priceController.text = purchase.items.first.price.toString();
+      final created = await purchaseRepository.create(newPurchase);
+      purchases.add(created);
+      clearForm();
+      Get.back();
+      Get.snackbar('Success', 'Purchase added successfully');
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to add purchase: $e');
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  // -----------------------------
-// Dialog helpers (same pattern as Customer & Item)
-// -----------------------------
+  // ---------------- Update ----------------
+  Future<void> updatePurchase(PurchaseModel purchase) async {
+    try {
+      isLoading.value = true;
 
-  void openAddPurchaseDialog() {
-    clearForm();
+      final updatedPurchase = PurchaseModel(
+        id: purchase.id,
+        supplier: int.tryParse(supplierController.text) ?? purchase.supplier,
+        date: DateTime.tryParse(dateController.text) ?? purchase.date,
+        items: purchase.items, // Keep existing items, update later if needed
+        discountPercentage: double.tryParse(discountController.text) ??
+            purchase.discountPercentage,
+        vatPercentage:
+            double.tryParse(vatController.text) ?? purchase.vatPercentage,
+      );
 
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Add Purchase'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: supplierController,
-                decoration: const InputDecoration(labelText: 'Supplier ID'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: dateController,
-                decoration:
-                    const InputDecoration(labelText: 'Date (YYYY-MM-DD)'),
-              ),
-              TextField(
-                controller: itemController,
-                decoration: const InputDecoration(labelText: 'Item ID'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: quantityController,
-                decoration: const InputDecoration(labelText: 'Quantity'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: priceController,
-                decoration: const InputDecoration(labelText: 'Price'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: addPurchase,
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
+      final updated = await purchaseRepository.update(updatedPurchase);
+      final index = purchases.indexWhere((p) => p.id == updated.id);
+      if (index != -1) purchases[index] = updated;
+      clearForm();
+      Get.back();
+      Get.snackbar('Success', 'Purchase updated successfully');
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to update purchase: $e');
+    } finally {
+      isLoading.value = false;
+    }
   }
 
-  void openEditPurchaseDialog(PurchaseModel purchase) {
-    fillForm(purchase);
-
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Edit Purchase'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: supplierController,
-                decoration: const InputDecoration(labelText: 'Supplier ID'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: dateController,
-                decoration: const InputDecoration(labelText: 'Date'),
-              ),
-              TextField(
-                controller: itemController,
-                decoration: const InputDecoration(labelText: 'Item ID'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: quantityController,
-                decoration: const InputDecoration(labelText: 'Quantity'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: priceController,
-                decoration: const InputDecoration(labelText: 'Price'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => updatePurchase(purchase),
-            child: const Text('Update'),
-          ),
-        ],
-      ),
-    );
+  // ---------------- Delete ----------------
+  Future<void> deletePurchase(int id) async {
+    try {
+      isLoading.value = true;
+      await purchaseRepository.delete(id);
+      purchases.removeWhere((p) => p.id == id);
+      Get.snackbar('Success', 'Purchase deleted successfully');
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to delete purchase: $e');
+    } finally {
+      isLoading.value = false;
+    }
   }
 
+  // ---------------- Filter ----------------
+  List<PurchaseModel> filterPurchases(
+      {String? query, DateTime? start, DateTime? end}) {
+    return purchases.where((p) {
+      final matchesQuery = query == null || query.isEmpty
+          ? true
+          : p.items.any((item) =>
+              item.itemName.toLowerCase().contains(query.toLowerCase()));
+      final matchesStart = start == null || !p.date.isBefore(start);
+      final matchesEnd = end == null || !p.date.isAfter(end);
+      return matchesQuery && matchesStart && matchesEnd;
+    }).toList();
+  }
+
+  // ---------------- Form Helper ----------------
   void clearForm() {
     supplierController.clear();
     dateController.clear();
-    itemController.clear();
-    quantityController.clear();
-    priceController.clear();
+    discountController.clear();
+    vatController.clear();
+  }
+
+  // ---------------- Populate Form for Edit ----------------
+  void populateForm(PurchaseModel purchase) {
+    supplierController.text = purchase.supplier.toString();
+    dateController.text = purchase.date.toIso8601String().split('T')[0];
+    discountController.text = purchase.discountPercentage.toString();
+    vatController.text = purchase.vatPercentage.toString();
   }
 }

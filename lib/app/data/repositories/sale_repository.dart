@@ -6,9 +6,11 @@ class SaleRepository {
 
   SaleRepository({required this.saleService});
 
-  Future<List<SaleModel>> fetchSales() => saleService.fetchSales();
-  Future<SaleModel> addSale(SaleModel sale) => saleService.createSale(sale);
-  Future<SaleModel> editSale(int id, Map<String, dynamic> data) =>
-      saleService.updateSale(id, data);
-  Future<void> removeSale(int id) => saleService.deleteSale(id);
+  Future<List<SaleModel>> getSales() => saleService.fetchSales();
+
+  Future<SaleModel> create(SaleModel sale) => saleService.createSale(sale);
+
+  Future<SaleModel> update(SaleModel sale) => saleService.updateSale(sale);
+
+  Future<void> delete(int id) => saleService.deleteSale(id);
 }

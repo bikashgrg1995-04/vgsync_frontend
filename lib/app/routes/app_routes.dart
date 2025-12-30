@@ -1,16 +1,18 @@
 abstract class AppRoutes {
-  static const initial = '/';
+  static const splash = '/';
   static const login = '/login';
-  static const dashboard = '/dashboard';
 
-  // Customers
-  static const customers = '/customers';
+  //Navigation
+  static const navigation = "/navigation";
+
+  //Dashboard
+  static const dashboard = '/dashboard';
 
   // Suppliers
   static const suppliers = '/suppliers';
 
   // Items
-  static const items = '/items';
+  static const stock = '/stock';
 
   // Categories
   static const categories = '/categories';
@@ -23,4 +25,13 @@ abstract class AppRoutes {
 
   // Followups
   static const followups = '/followups';
+
+  //Orders
+  static const orders = '/orders';
+
+  //expense
+  static const expenses = '/expenses';
+
+  //staffs
+  static const staffs = '/staffs';
 }

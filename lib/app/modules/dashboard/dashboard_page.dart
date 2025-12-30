@@ -1,263 +1,284 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:vgsync_frontend/app/controllers/global_controller.dart';
-import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
-import 'package:vgsync_frontend/app/modules/customers/customer_list_page.dart';
-import 'package:vgsync_frontend/app/modules/dashboard/dashboard_controller.dart';
-import 'package:vgsync_frontend/app/modules/followups/followup_list_page.dart';
-import 'package:vgsync_frontend/app/modules/items/item_list_page.dart';
-import 'package:vgsync_frontend/app/modules/purchases/purchase_list_page.dart';
-import 'package:vgsync_frontend/app/modules/sales/sale_list_page.dart';
-import 'package:vgsync_frontend/app/modules/suppliers/supplier_list_page.dart';
-import 'package:vgsync_frontend/app/wigdets/app_card.dart';
-import 'package:vgsync_frontend/app/wigdets/sidebar.dart';
+import 'package:vgsync_frontend/utils/size_config.dart';
+import 'dashboard_controller.dart';
+import 'package:fl_chart/fl_chart.dart';
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
-  final DashboardController controller = Get.find();
-  final GlobalController globalController = Get.find();
-
-  @override
-  void initState() {
-    super.initState();
-    controller.loadDashboardData();
-  }
+class DashboardPage extends StatelessWidget {
+  DashboardPage({super.key});
+  final DashboardController controller = Get.find<DashboardController>();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          Sidebar(),
+    SizeConfig.init(context);
 
-          /// -------- MAIN CONTENT ----------
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
 
-              // Switch content based on selected menu
-              switch (globalController.selectedMenu.value) {
-                case 'Sales':
-                  return SaleListPage();
-                case 'Purchases':
-                  return PurchaseListPage();
-                case 'Customers':
-                  return CustomerListPage();
-                case 'Follow-ups':
-                  return FollowupListPage();
-                case 'Suppliers':
-                  return SupplierListPage();
-                case 'Items':
-                  return ItemListPage();
-                case 'Categories':
-                  return CategoryListPage();
-                default:
-                  return _dashboardOverview();
-              }
-            }),
-          ),
-        ],
-      ),
-    );
-  }
+      final summary = controller.summary;
 
-  Widget _dashboardOverview() {
-    final summary = controller.summary.value;
-    final lowStockItems = controller.lowStockItems; // List<ItemModel>
-    final upcomingFollowups =
-        controller.upcomingFollowups; // List<FollowUpModel>
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Search Bar
-          Row(
-            children: [
-              SizedBox(
-                width: 600,
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search...',
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          /// SUMMARY CARDS
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              _statCard('Customers', summary.customers),
-              _statCard('Suppliers', summary.suppliers),
-              _statCard('Categories', summary.categories),
-              _statCard('Items', summary.items),
-              _statCard('Sales', summary.sales.count),
-              _statCard('Purchases', summary.purchases.count),
-              _statCard('Follow-ups', upcomingFollowups.length),
-            ],
-          ),
-          const SizedBox(height: 32),
-
-          /// SALES VS PURCHASES CHART
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      return SingleChildScrollView(
+        padding: EdgeInsets.all(SizeConfig.sw(0.02)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ---------------- Summary Cards ----------------
+            Row(
               children: [
-                const Text(
-                  'Sales vs Purchases',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 220,
-                  child: _buildChart(
-                    summary.sales.amount,
-                    summary.purchases.amount,
-                  ),
-                ),
+                _summaryCard(
+                    "Items", summary.totalItems.toString(), Colors.green),
+                _summaryCard("Low Stock", summary.lowStockCount.toString(),
+                    Colors.orange),
+                _summaryCard(
+                    "Sales",
+                    controller.dashboardData.value.sales.monthlyAmount
+                        .toString(),
+                    Colors.teal),
+                _summaryCard(
+                    "Purchases",
+                    controller.dashboardData.value.purchases.monthlyAmount
+                        .toString(),
+                    Colors.red),
+                _summaryCard(
+                    "Staffs",
+                    controller.dashboardData.value.staffSalary.totalStaff
+                        .toString(),
+                    Colors.blueAccent)
               ],
             ),
-          ),
-          const SizedBox(height: 32),
+            SizedBox(height: SizeConfig.sh(0.03)),
 
-          /// LOW STOCK ITEMS
-          if (lowStockItems.isNotEmpty) ...[
-            const Text(
-              'Low Stock Items',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 12),
-            AppCard(
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Item')),
-                  DataColumn(label: Text('Stock')),
-                  DataColumn(label: Text('Alert')),
-                ],
-                rows: lowStockItems.map((item) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(item.name)),
-                      DataCell(Text(item.stock.toString())),
-                      DataCell(
-                        item.stock <= 5 // Threshold
-                            ? const Text(
-                                'Low',
-                                style: TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold),
-                              )
-                            : const Text(''),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 32),
-          ],
+            // ---------------- Low Stock Items ----------------
+            Text("Low Stock Items",
+                style: TextStyle(
+                    fontSize: SizeConfig.res(4.5),
+                    fontWeight: FontWeight.bold)),
+            SizedBox(height: SizeConfig.sh(0.01)),
+            _lowStockList(),
 
-          /// UPCOMING FOLLOW-UPS
-          if (upcomingFollowups.isNotEmpty) ...[
-            const Text(
-              'Upcoming Follow-ups (Next 7 Days)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 12),
-            AppCard(
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Customer')),
-                  DataColumn(label: Text('Date')),
-                  DataColumn(label: Text('Status')),
-                ],
-                rows: upcomingFollowups.map((fup) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(fup.customerName)),
-                      DataCell(Text(fup.date)),
-                      DataCell(
-                        fup.priority.toString() == 'High'
-                            ? const Text(
-                                'Due Soon',
-                                style: TextStyle(
-                                    color: Colors.orange,
-                                    fontWeight: FontWeight.bold),
-                              )
-                            : const Text(''),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
+            SizedBox(height: SizeConfig.sh(0.03)),
+
+            // ---------------- Upcoming Follow-ups ----------------
+            Text("Upcoming Follow-ups",
+                style: TextStyle(
+                    fontSize: SizeConfig.res(4.5),
+                    fontWeight: FontWeight.bold)),
+            SizedBox(height: SizeConfig.sh(0.01)),
+            _followupList(),
+
+            SizedBox(height: SizeConfig.sh(0.03)),
+
+            // ---------------- Charts ----------------
+            Text("Profit / Loss Chart",
+                style: TextStyle(
+                    fontSize: SizeConfig.res(4.5),
+                    fontWeight: FontWeight.bold)),
+            SizedBox(height: 12),
+            _chartSelector(),
+            SizedBox(height: 12),
+            SizedBox(height: SizeConfig.sh(0.3), child: _lineChart()),
           ],
-        ],
-      ),
-    );
+        ),
+      );
+    });
   }
 
-  /// -------- STAT CARD ----------
-  Widget _statCard(String title, int value) {
-    return AppCard(
-      width: 120,
+  // ---------------- Creative Small Summary Card ----------------
+  Widget _summaryCard(String title, String value, Color color) {
+    return Container(
+      margin: EdgeInsets.all(5),
+      width: SizeConfig.sw(0.1),
+      height: SizeConfig.sh(0.1),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: color.withOpacity(0.5),
+              blurRadius: 8,
+              offset: Offset(2, 4))
+        ],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(
-            value.toString(),
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
+          Text(title,
+              style: TextStyle(
+                  color: Colors.white70, fontSize: SizeConfig.res(3.5))),
+          SizedBox(height: 6),
+          Text(value,
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: SizeConfig.res(4.5),
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
-  /// -------- CHART ----------
-  Widget _buildChart(double sales, double purchases) {
-    return PieChart(
-      PieChartData(
-        sections: [
-          PieChartSectionData(
-            value: sales,
-            title: 'Sales\nRs.${sales.toStringAsFixed(0)}',
-            color: Colors.purple,
-            radius: 80,
-            titleStyle: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold),
+  Widget _lowStockList() {
+    if (controller.lowStockItems.isEmpty) {
+      return const Text("All items are well stocked");
+    }
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: controller.lowStockItems.length,
+      separatorBuilder: (_, __) => SizedBox(height: SizeConfig.sh(0.01)),
+      itemBuilder: (_, index) {
+        final item = controller.lowStockItems[index];
+        return Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          elevation: 2,
+          child: ListTile(
+            title: Text(item.name),
+            subtitle:
+                Text("Model: ${item.model} | Category: ${item.categoryName}"),
+            trailing: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                  color: item.stock < 5 ? Colors.red : Colors.green,
+                  borderRadius: BorderRadius.circular(6)),
+              child: Text("Stock: ${item.stock}",
+                  style: const TextStyle(color: Colors.white)),
+            ),
           ),
-          PieChartSectionData(
-            value: purchases,
-            title: 'Purchase\nRs.${purchases.toStringAsFixed(0)}',
-            color: Colors.green,
-            radius: 80,
-            titleStyle: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  Widget _followupList() {
+    if (controller.upcomingFollowups.isEmpty) {
+      return const Text("No upcoming follow-ups");
+    }
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: controller.upcomingFollowups.length,
+      separatorBuilder: (_, __) => SizedBox(height: SizeConfig.sh(0.01)),
+      itemBuilder: (_, index) {
+        final f = controller.upcomingFollowups[index];
+        return Card(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          elevation: 2,
+          child: ListTile(
+            title: Text(f.customerName),
+            subtitle:
+                Text("Follow-up: ${f.followUpDate}\nRemarks: ${f.remarks}"),
+            leading: Icon(Icons.follow_the_signs, color: Colors.blueAccent),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _chartSelector() {
+    return Obx(() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: ChartPeriod.values.map((period) {
+          final isSelected = controller.selectedChartPeriod.value == period;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: isSelected ? Colors.blue : Colors.grey[300],
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+              onPressed: () => controller.changeChartPeriod(period),
+              child: Text(period.name.toUpperCase(),
+                  style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black)),
+            ),
+          );
+        }).toList(),
+      );
+    });
+  }
+
+  Widget _lineChart() {
+    return Obx(() {
+      final chartData = controller.chartData;
+
+      if (chartData.income.isEmpty && chartData.expense.isEmpty) {
+        return const Center(child: Text("No chart data available"));
+      }
+
+      List<FlSpot> incomeSpots = [];
+      List<FlSpot> expenseSpots = [];
+      List<String> bottomLabels = [];
+
+      double maxY = 0;
+
+      // Prepare income spots and bottom labels
+      for (int i = 0; i < chartData.income.length; i++) {
+        final item = chartData.income[i];
+        incomeSpots.add(FlSpot(i.toDouble(), item.amount));
+        bottomLabels.add(
+            item.month != null ? "M${item.month}" : ""); // label like M1, M2
+        if (item.amount > maxY) maxY = item.amount;
+      }
+
+      // Prepare expense spots
+      for (int i = 0; i < chartData.expense.length; i++) {
+        final item = chartData.expense[i];
+        expenseSpots.add(FlSpot(i.toDouble(), item.amount));
+        if (item.amount > maxY) maxY = item.amount;
+      }
+
+      return LineChart(
+        LineChartData(
+          minX: 0,
+          maxX: (incomeSpots.length > expenseSpots.length
+                  ? incomeSpots.length - 1
+                  : expenseSpots.length - 1)
+              .toDouble(),
+          minY: 0,
+          maxY: maxY * 1.2, // add top padding
+          gridData: FlGridData(show: true, drawVerticalLine: true),
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 1,
+                getTitlesWidget: (value, meta) {
+                  int index = value.toInt();
+                  if (index >= 0 && index < bottomLabels.length) {
+                    return Text(bottomLabels[index],
+                        style: const TextStyle(fontSize: 10));
+                  }
+                  return const Text('');
+                },
+              ),
+            ),
+          ),
+          lineBarsData: [
+            LineChartBarData(
+              spots: incomeSpots,
+              isCurved: true,
+              color: Colors.green,
+              barWidth: 3,
+              dotData: FlDotData(show: true),
+            ),
+            LineChartBarData(
+              spots: expenseSpots,
+              isCurved: true,
+              color: Colors.red,
+              barWidth: 3,
+              dotData: FlDotData(show: true),
+            ),
+          ],
+        ),
+      );
+    });
   }
 }

@@ -1,93 +1,105 @@
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import '../../data/models/sale_model.dart';
-import 'sale_controller.dart';
+// import 'package:flutter/material.dart';
+// import 'package:get/get.dart';
+// import 'package:vgsync_frontend/app/data/models/sale_model.dart';
+// import 'package:vgsync_frontend/app/modules/sales/sale_controller.dart';
+// import '../controllers/sales_controller.dart';
+// import '../models/sale_model.dart';
 
-class SaleDetailPage extends StatelessWidget {
-  final int saleId;
-  SaleDetailPage({super.key, required this.saleId});
+// class SaleDetailPage extends StatelessWidget {
+//   const SaleDetailPage({super.key});
 
-  final SaleController controller = Get.find();
+//   @override
+//   Widget build(BuildContext context) {
+//     final controller = Get.find<SalesController>();
+//     final int saleId = Get.arguments;
 
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final SaleModel? sale =
-          controller.sales.firstWhereOrNull((s) => s.id == saleId);
+//     final SaleModel sale = controller.getSaleById(saleId);
 
-      if (sale == null) {
-        return const Scaffold(
-          body: Center(child: Text('Sale not found')),
-        );
-      }
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text('Sale Details'),
+//       ),
+//       body: SingleChildScrollView(
+//         padding: const EdgeInsets.all(16),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             _sectionTitle('Customer Info'),
+//             _infoRow('Name', sale.customerName),
+//             _infoRow('Contact', sale.contactNo ?? '-'),
+//             _infoRow('Bill No', sale.billNo ?? '-'),
+//             const SizedBox(height: 12),
+//             _sectionTitle('Payment'),
+//             _infoRow('Total', 'Rs ${sale.totalAmount}'),
+//             _infoRow('Paid', 'Rs ${sale.paidAmount}'),
+//             _infoRow('Remaining', 'Rs ${sale.remainingAmount}'),
+//             _infoRow('Status', sale.isPaid),
+//             _infoRow('Paid From', sale.paidFrom),
+//             const SizedBox(height: 12),
+//             _sectionTitle('Vehicle / Service'),
+//             _infoRow('Servicing', sale.isServicing ? 'Yes' : 'No'),
+//             _infoRow('Bike No', sale.bikeRegistrationNo ?? '-'),
+//             _infoRow('KM Driven', sale.kmDriven?.toString() ?? '-'),
+//             _infoRow('Vehicle Color', sale.vehicleColor ?? '-'),
+//             _infoRow('Labour Charge', 'Rs ${sale.labourCharge}'),
+//             const SizedBox(height: 12),
+//             _sectionTitle('Purchased Items'),
+//             const SizedBox(height: 8),
+//             ListView.builder(
+//               shrinkWrap: true,
+//               physics: const NeverScrollableScrollPhysics(),
+//               itemCount: sale.items.length,
+//               itemBuilder: (context, index) {
+//                 final item = sale.items[index];
 
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Sale Details'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => controller.openEditSaleDialog(sale),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () async {
-                await controller.deleteSale(sale.id!);
-                Get.back();
-              },
-            ),
-          ],
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ListView(
-            children: [
-              _row('Customer ID', sale.customer.toString()),
-              _row('Date', sale.saleDate),
-              _row('Type', sale.isServicing ? 'Servicing' : 'Sale'),
-              _row('Total Amount', 'Rs. ${sale.totalAmount ?? 0}'),
-              const SizedBox(height: 20),
-              const Text(
-                'Items',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const Divider(),
-              ...sale.items.map(
-                (item) => Card(
-                  child: ListTile(
-                    title: Text('Item ID: ${item.item}'),
-                    subtitle: Text(
-                      'Qty: ${item.quantity}  |  Price: Rs. ${item.price}',
-                    ),
-                    trailing: Text(
-                      'Rs. ${item.totalPrice ?? item.quantity * item.price}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
+//                 return Card(
+//                   child: ListTile(
+//                     title: Text(item.itemName),
+//                     subtitle: Text(
+//                       'Qty: ${item.quantity}',
+//                     ),
+//                     trailing: Text(
+//                       'Rs ${item.price.toStringAsFixed(2)}',
+//                       style: const TextStyle(fontWeight: FontWeight.bold),
+//                     ),
+//                   ),
+//                 );
+//               },
+//             ),
+//             const SizedBox(height: 16),
+//             _sectionTitle('Remarks'),
+//             Text(sale.remarks ?? '-'),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
 
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(child: Text(value)),
-        ],
-      ),
-    );
-  }
-}
+//   Widget _sectionTitle(String title) {
+//     return Text(
+//       title,
+//       style: const TextStyle(
+//         fontSize: 16,
+//         fontWeight: FontWeight.bold,
+//       ),
+//     );
+//   }
+
+//   Widget _infoRow(String label, String value) {
+//     return Padding(
+//       padding: const EdgeInsets.symmetric(vertical: 2),
+//       child: Row(
+//         children: [
+//           SizedBox(
+//             width: 130,
+//             child: Text(
+//               label,
+//               style: const TextStyle(fontWeight: FontWeight.w600),
+//             ),
+//           ),
+//           Expanded(child: Text(value)),
+//         ],
+//       ),
+//     );
+//   }
+// }

@@ -107,6 +107,8 @@ class CategoryListPage extends StatelessWidget {
     Get.dialog(CustomFormDialog(
       title: "Add Category",
       isEditMode: false,
+      width: 0.2,
+      height: 0.25,
       content: TextField(
         controller: controller.nameController,
         decoration: const InputDecoration(labelText: 'Name'),
@@ -118,6 +120,8 @@ class CategoryListPage extends StatelessWidget {
   void openEditDialog(CategoryModel category) {
     controller.fillForm(category);
     Get.dialog(CustomFormDialog(
+      width: 0.25,
+      height: 0.25,
       title: "Edit Category",
       isEditMode: true,
       content: TextField(

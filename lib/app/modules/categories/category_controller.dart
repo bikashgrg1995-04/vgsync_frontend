@@ -46,7 +46,7 @@ class CategoryController extends GetxController {
       final added = await categoryRepository.addCategory(newCategory);
       categories.add(added); // reactive update
       fetchCategories();
-      globalController.triggerRefresh(); // ✅ WRITE event
+      // globalController.triggerRefresh(); // ✅ WRITE event
       clearForm();
       Get.back();
     } finally {
@@ -67,7 +67,7 @@ class CategoryController extends GetxController {
       if (index != -1) categories[index] = res; // reactive update
 
       fetchCategories();
-      globalController.triggerRefresh(); // ✅ WRITE event
+      // globalController.triggerRefresh(); // ✅ WRITE event
 
       clearForm();
       Get.back();
@@ -80,7 +80,7 @@ class CategoryController extends GetxController {
     await categoryRepository.deleteCategory(id);
     categories.removeWhere((c) => c.id == id); // reactive update
     fetchCategories();
-    globalController.triggerRefresh(); // ✅ WRITE event
+    // globalController.triggerRefresh(); // ✅ WRITE event
   }
 
   void fillForm(CategoryModel category) {

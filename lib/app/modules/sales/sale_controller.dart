@@ -1,247 +1,273 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../controllers/global_controller.dart';
 import '../../data/models/sale_model.dart';
-import '../../data/models/sale_item_model.dart';
 import '../../data/repositories/sale_repository.dart';
-import '../followups/followup_controller.dart';
-import '../items/item_controller.dart';
 
-class SaleController extends GetxController {
+class SalesController extends GetxController {
   final SaleRepository saleRepository;
-  final GlobalController globalController = Get.find<GlobalController>();
-  final ItemController itemControllerInstance =
-      Get.find<ItemController>(); // guaranteed to exist
-  final FollowUpController followUpController = Get.find<FollowUpController>();
 
-  SaleController({required this.saleRepository});
+  SalesController({required this.saleRepository});
 
-  var sales = <SaleModel>[].obs;
-  var isLoading = false.obs;
+  // ================= STATE =================
+  final RxList<SaleModel> sales = <SaleModel>[].obs;
+  final RxBool isLoading = false.obs;
+  final RxString error = ''.obs;
 
-  // Form controllers
-  final customerController = TextEditingController();
-  final dateController = TextEditingController();
-  final isServicingController = TextEditingController();
-  final itemController = TextEditingController();
-  final quantityController = TextEditingController();
-  final priceController = TextEditingController();
+  // ================= TEXT CONTROLLERS =================
+  final customerNameController = TextEditingController();
+  final contactNoController = TextEditingController();
+  final billNoController = TextEditingController();
+  final remarksController = TextEditingController();
+  final totalAmountController = TextEditingController();
+  final paidAmountController = TextEditingController();
+  final remainingAmountController = TextEditingController();
+  final labourChargeController = TextEditingController();
+  final bikeRegistrationController = TextEditingController();
+  final vehicleColorController = TextEditingController();
+  final kmDrivenController = TextEditingController();
+  final jobCardController = TextEditingController();
+  final jobDoneController = TextEditingController();
+
+  // ================= DATE FILTER =================
+  final startDateController = TextEditingController();
+  final endDateController = TextEditingController();
+
+  // ================= DROPDOWN / SWITCH =================
+  final RxString paidStatus = 'paid'.obs; // paid | partial | unpaid
+  final RxString paidFrom = 'cash'.obs; // cash | online
+  final RxBool isServicing = false.obs;
+  final RxBool isFreeServicing = false.obs;
+  final RxBool isRepairJob = false.obs;
+  final RxBool isAccident = false.obs;
+  final RxBool isWarrantyJob = false.obs;
 
   @override
-  void onReady() {
-    super.onReady();
+  void onInit() {
+    super.onInit();
     fetchSales();
   }
 
-  @override
-  void onClose() {
-    customerController.dispose();
-    dateController.dispose();
-    isServicingController.dispose();
-    itemController.dispose();
-    quantityController.dispose();
-    priceController.dispose();
-    super.onClose();
-  }
-
+  // ================= FETCH =================
   Future<void> fetchSales() async {
     try {
       isLoading.value = true;
-      final result = await saleRepository.fetchSales();
-      sales.assignAll(result); // ✅ better than sales.value =
+      error.value = '';
+      final result = await saleRepository.getSales();
+      sales.assignAll(result);
+    } catch (e) {
+      error.value = e.toString();
+      Get.snackbar('Error', error.value);
     } finally {
       isLoading.value = false;
     }
   }
 
+  // ================= ADD =================
   Future<void> addSale() async {
-    final sale = SaleModel(
-      customer: int.parse(customerController.text),
-      saleDate: dateController.text,
-      isServicing: isServicingController.text.toLowerCase() == 'true',
-      items: [
-        SaleItemModel(
-          item: int.parse(itemController.text),
-          quantity: int.parse(quantityController.text),
-          price: double.parse(priceController.text),
-        ),
-      ],
-    );
+    try {
+      isLoading.value = true;
 
-    final created = await saleRepository.addSale(sale);
-    sales.add(created);
+      final sale = SaleModel(
+        id: 0,
+        saleDate: DateTime.now(),
+        customerName: customerNameController.text.trim(),
+        contactNo: contactNoController.text.trim().isEmpty
+            ? null
+            : contactNoController.text.trim(),
+        billNo: billNoController.text.trim().isEmpty
+            ? null
+            : billNoController.text.trim(),
+        remarks: remarksController.text.trim().isEmpty
+            ? null
+            : remarksController.text.trim(),
+        totalAmount: double.tryParse(totalAmountController.text) ?? 0,
+        paidAmount: double.tryParse(paidAmountController.text) ?? 0,
+        remainingAmount: double.tryParse(remainingAmountController.text) ?? 0,
+        labourCharge: double.tryParse(labourChargeController.text) ?? 0,
+        isPaid: paidStatus.value,
+        paidFrom: paidFrom.value,
+        isServicing: isServicing.value,
+        isFreeServicing: isFreeServicing.value,
+        isRepairJob: isRepairJob.value,
+        isAccident: isAccident.value,
+        isWarrantyJob: isWarrantyJob.value,
+        bikeRegistrationNo: bikeRegistrationController.text.trim().isEmpty
+            ? null
+            : bikeRegistrationController.text.trim(),
+        vehicleColor: vehicleColorController.text.trim().isEmpty
+            ? null
+            : vehicleColorController.text.trim(),
+        kmDriven: int.tryParse(kmDrivenController.text),
+        jobCardNo: jobCardController.text.trim().isEmpty
+            ? null
+            : jobCardController.text.trim(),
+        jobDoneOnVehicle: jobDoneController.text.trim().isEmpty
+            ? null
+            : jobDoneController.text.trim(),
+        items: const [],
+      );
 
-    await refreshAll();
-    Get.back();
-  }
+      final created = await saleRepository.create(sale);
+      sales.insert(0, created);
 
-  Future<void> updateSale(SaleModel oldSale) async {
-    final updatedSale = SaleModel(
-      id: oldSale.id,
-      customer: int.parse(customerController.text),
-      saleDate: dateController.text,
-      isServicing: isServicingController.text.toLowerCase() == 'true',
-      items: [
-        SaleItemModel(
-          item: int.parse(itemController.text),
-          quantity: int.parse(quantityController.text),
-          price: double.parse(priceController.text),
-        ),
-      ],
-    );
-
-    final updated =
-        await saleRepository.editSale(oldSale.id!, updatedSale.toJson());
-
-    final index = sales.indexWhere((s) => s.id == updated.id);
-    if (index != -1) sales[index] = updated;
-
-    await refreshAll();
-    Get.back();
-    Get.back();
-  }
-
-  Future<void> deleteSale(int id) async {
-    await saleRepository.removeSale(id);
-    sales.removeWhere((s) => s.id == id);
-
-    await refreshAll();
-  }
-
-  // -----------------------------
-  // Helpers
-  // -----------------------------
-  void fillForm(SaleModel sale) {
-    customerController.text = sale.customer.toString();
-    dateController.text = sale.saleDate;
-    isServicingController.text = sale.isServicing.toString();
-
-    if (sale.items.isNotEmpty) {
-      itemController.text = sale.items.first.item.toString();
-      quantityController.text = sale.items.first.quantity.toString();
-      priceController.text = sale.items.first.price.toString();
+      clearForm();
+      Get.back();
+      Get.snackbar('Success', 'Sale added successfully');
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    } finally {
+      isLoading.value = false;
     }
   }
 
+  // ================= EDIT =================
+  Future<void> updateSale(int saleId) async {
+    try {
+      isLoading.value = true;
+
+      final sale = SaleModel(
+        id: saleId,
+        saleDate: DateTime.now(),
+        customerName: customerNameController.text.trim(),
+        contactNo: contactNoController.text.trim().isEmpty
+            ? null
+            : contactNoController.text.trim(),
+        billNo: billNoController.text.trim().isEmpty
+            ? null
+            : billNoController.text.trim(),
+        remarks: remarksController.text.trim().isEmpty
+            ? null
+            : remarksController.text.trim(),
+        totalAmount: double.tryParse(totalAmountController.text) ?? 0,
+        paidAmount: double.tryParse(paidAmountController.text) ?? 0,
+        remainingAmount: double.tryParse(remainingAmountController.text) ?? 0,
+        labourCharge: double.tryParse(labourChargeController.text) ?? 0,
+        isPaid: paidStatus.value,
+        paidFrom: paidFrom.value,
+        isServicing: isServicing.value,
+        isFreeServicing: isFreeServicing.value,
+        isRepairJob: isRepairJob.value,
+        isAccident: isAccident.value,
+        isWarrantyJob: isWarrantyJob.value,
+        bikeRegistrationNo: bikeRegistrationController.text.trim().isEmpty
+            ? null
+            : bikeRegistrationController.text.trim(),
+        vehicleColor: vehicleColorController.text.trim().isEmpty
+            ? null
+            : vehicleColorController.text.trim(),
+        kmDriven: int.tryParse(kmDrivenController.text),
+        jobCardNo: jobCardController.text.trim().isEmpty
+            ? null
+            : jobCardController.text.trim(),
+        jobDoneOnVehicle: jobDoneController.text.trim().isEmpty
+            ? null
+            : jobDoneController.text.trim(),
+        items: const [],
+      );
+
+      final updated = await saleRepository.update(sale);
+      final index = sales.indexWhere((e) => e.id == saleId);
+      if (index != -1) sales[index] = updated;
+
+      clearForm();
+      Get.back();
+      Get.snackbar('Success', 'Sale updated successfully');
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // ================= PREFILL EDIT =================
+  void fillForEdit(SaleModel sale) {
+    customerNameController.text = sale.customerName;
+    contactNoController.text = sale.contactNo ?? '';
+    billNoController.text = sale.billNo ?? '';
+    remarksController.text = sale.remarks ?? '';
+    totalAmountController.text = sale.totalAmount.toString();
+    paidAmountController.text = sale.paidAmount.toString();
+    remainingAmountController.text = sale.remainingAmount.toString();
+    labourChargeController.text = sale.labourCharge.toString();
+    bikeRegistrationController.text = sale.bikeRegistrationNo ?? '';
+    vehicleColorController.text = sale.vehicleColor ?? '';
+    kmDrivenController.text = sale.kmDriven?.toString() ?? '';
+    jobCardController.text = sale.jobCardNo ?? '';
+    jobDoneController.text = sale.jobDoneOnVehicle ?? '';
+
+    paidStatus.value = sale.isPaid;
+    paidFrom.value = sale.paidFrom;
+    isServicing.value = sale.isServicing;
+    isFreeServicing.value = sale.isFreeServicing;
+    isRepairJob.value = sale.isRepairJob;
+    isAccident.value = sale.isAccident;
+    isWarrantyJob.value = sale.isWarrantyJob;
+  }
+
+  // ================= CLEAR =================
   void clearForm() {
-    customerController.clear();
-    dateController.clear();
-    isServicingController.clear();
-    itemController.clear();
-    quantityController.clear();
-    priceController.clear();
+    customerNameController.clear();
+    contactNoController.clear();
+    billNoController.clear();
+    remarksController.clear();
+    totalAmountController.clear();
+    paidAmountController.clear();
+    remainingAmountController.clear();
+    labourChargeController.clear();
+    bikeRegistrationController.clear();
+    vehicleColorController.clear();
+    kmDrivenController.clear();
+    jobCardController.clear();
+    jobDoneController.clear();
+
+    paidStatus.value = 'paid';
+    paidFrom.value = 'cash';
+    isServicing.value = false;
+    isFreeServicing.value = false;
+    isRepairJob.value = false;
+    isAccident.value = false;
+    isWarrantyJob.value = false;
+    startDateController.clear();
+    endDateController.clear();
   }
 
-  Future<void> refreshAll() async {
-    await fetchSales();
-    await itemControllerInstance.fetchItems();
-    await followUpController.fetchFollowUps();
+  // ================= FILTER SALES =================
+  List<SaleModel> filteredSales() {
+    DateTime? start;
+    DateTime? end;
 
-    globalController.triggerRefresh();
-    itemControllerInstance.triggerRefresh();
-    followUpController.triggerRefresh();
+    if (startDateController.text.isNotEmpty) {
+      start = DateTime.parse(startDateController.text);
+    }
+    if (endDateController.text.isNotEmpty) {
+      end = DateTime.parse(endDateController.text);
+    }
+
+    return sales.where((sale) {
+      final saleDate = sale.saleDate;
+      final afterStart = start == null || !saleDate.isBefore(start);
+      final beforeEnd = end == null || !saleDate.isAfter(end);
+      return afterStart && beforeEnd;
+    }).toList();
   }
 
-  // -----------------------------
-  // Dialogs
-  // -----------------------------
-  void openAddSaleDialog() {
-    clearForm();
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Add Sale'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: customerController,
-                decoration: const InputDecoration(labelText: 'Customer ID'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: dateController,
-                decoration:
-                    const InputDecoration(labelText: 'Sale Date (YYYY-MM-DD)'),
-              ),
-              TextField(
-                controller: isServicingController,
-                decoration: const InputDecoration(
-                    labelText: 'Is Servicing (true/false)'),
-              ),
-              TextField(
-                controller: itemController,
-                decoration: const InputDecoration(labelText: 'Item ID'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: quantityController,
-                decoration: const InputDecoration(labelText: 'Quantity'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: priceController,
-                decoration: const InputDecoration(labelText: 'Price'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text('Cancel')),
-          ElevatedButton(onPressed: addSale, child: const Text('Save')),
-        ],
-      ),
-    );
-  }
-
-  void openEditSaleDialog(SaleModel sale) {
-    fillForm(sale);
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Edit Sale'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: customerController,
-                decoration: const InputDecoration(labelText: 'Customer ID'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: dateController,
-                decoration: const InputDecoration(labelText: 'Sale Date'),
-              ),
-              TextField(
-                controller: isServicingController,
-                decoration: const InputDecoration(
-                    labelText: 'Is Servicing (true/false)'),
-              ),
-              TextField(
-                controller: itemController,
-                decoration: const InputDecoration(labelText: 'Item ID'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: quantityController,
-                decoration: const InputDecoration(labelText: 'Quantity'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: priceController,
-                decoration: const InputDecoration(labelText: 'Price'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text('Cancel')),
-          ElevatedButton(
-              onPressed: () => updateSale(sale), child: const Text('Update')),
-        ],
-      ),
-    );
+  @override
+  void onClose() {
+    customerNameController.dispose();
+    contactNoController.dispose();
+    billNoController.dispose();
+    remarksController.dispose();
+    totalAmountController.dispose();
+    paidAmountController.dispose();
+    remainingAmountController.dispose();
+    labourChargeController.dispose();
+    bikeRegistrationController.dispose();
+    vehicleColorController.dispose();
+    kmDrivenController.dispose();
+    jobCardController.dispose();
+    jobDoneController.dispose();
+    startDateController.dispose();
+    endDateController.dispose();
+    super.onClose();
   }
 }

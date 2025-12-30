@@ -1,21 +1,39 @@
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
-import 'package:vgsync_frontend/app/modules/items/item_list_page.dart';
+import 'package:vgsync_frontend/app/modules/dashboard/dashboard_binding.dart';
+import 'package:vgsync_frontend/app/modules/expenses/expense_binding.dart';
+import 'package:vgsync_frontend/app/modules/expenses/expense_list_page.dart';
+import 'package:vgsync_frontend/app/modules/followups/followup_binding.dart';
+import 'package:vgsync_frontend/app/modules/orders/order_binding.dart';
+import 'package:vgsync_frontend/app/modules/orders/order_list_page.dart';
+import 'package:vgsync_frontend/app/modules/purchases/purchase_binding.dart';
+import 'package:vgsync_frontend/app/modules/sales/sale_binding.dart';
+import 'package:vgsync_frontend/app/modules/staffs/staff_binding.dart';
+import 'package:vgsync_frontend/app/modules/staffs/staff_list_page.dart';
+import 'package:vgsync_frontend/app/modules/stock/stock_binding.dart';
+import 'package:vgsync_frontend/app/modules/stock/stock_list_page.dart';
+import 'package:vgsync_frontend/app/modules/navigation/navigation_page.dart';
 import 'package:vgsync_frontend/app/modules/purchases/purchase_list_page.dart';
 import 'package:vgsync_frontend/app/modules/sales/sale_list_page.dart';
+import 'package:vgsync_frontend/app/modules/suppliers/supplier_binding.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_list_page.dart';
+import 'package:vgsync_frontend/app/modules/spalsh/splash_page.dart';
 import 'app_routes.dart';
 
 // Import pages
 import '../modules/auth/login_page.dart';
 import '../modules/dashboard/dashboard_page.dart';
-import '../modules/customers/customer_list_page.dart';
 import '../modules/followups/followup_list_page.dart';
 
 class AppPages {
-  static const initial = AppRoutes.login;
-
   static final pages = [
+    // ---------- SPLASH ----------
+    GetPage(
+      name: AppRoutes.splash,
+      page: () => const SplashPage(),
+      transition: Transition.fadeIn,
+    ),
+
     // ---------- AUTH ----------
     GetPage(
       name: AppRoutes.login,
@@ -24,37 +42,37 @@ class AppPages {
       transitionDuration: const Duration(milliseconds: 300),
     ),
 
-    // ---------- DASHBOARD ----------
+    // ---------- AUTH ----------
     GetPage(
-      name: AppRoutes.dashboard,
-      page: () => DashboardPage(),
-      transition: Transition.zoom,
+      name: AppRoutes.navigation,
+      page: () => NavigationPage(),
+      transition: Transition.fadeIn,
       transitionDuration: const Duration(milliseconds: 300),
     ),
 
-    // ---------- CUSTOMERS ----------
+    // ---------- DASHBOARD ----------
     GetPage(
-      name: AppRoutes.customers,
-      page: () => CustomerListPage(),
-      transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 300),
-    ),
+        name: AppRoutes.dashboard,
+        page: () => DashboardPage(),
+        transition: Transition.zoom,
+        transitionDuration: const Duration(milliseconds: 300),
+        binding: DashboardBinding()),
 
     // ---------- SUPPLIERS ----------
     GetPage(
-      name: AppRoutes.suppliers,
-      page: () => SupplierListPage(),
-      transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 300),
-    ),
+        name: AppRoutes.suppliers,
+        page: () => SupplierListPage(),
+        transition: Transition.rightToLeftWithFade,
+        transitionDuration: const Duration(milliseconds: 300),
+        binding: SupplierBinding()),
 
     // ---------- ITEMS ----------
     GetPage(
-      name: AppRoutes.items,
-      page: () => ItemListPage(),
-      transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 300),
-    ),
+        name: AppRoutes.stock,
+        page: () => StockListPage(),
+        transition: Transition.rightToLeftWithFade,
+        transitionDuration: const Duration(milliseconds: 300),
+        binding: StockBinding()),
 
     // ---------- CATEGORIES ----------
     GetPage(
@@ -70,6 +88,7 @@ class AppPages {
       page: () => SaleListPage(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 400),
+      binding: SaleBinding(),
     ),
 
     // ---------- PURCHASES ----------
@@ -78,14 +97,43 @@ class AppPages {
       page: () => PurchaseListPage(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 300),
+      binding: PurchaseBinding(),
     ),
 
     // ---------- FOLLOWUPS ----------
     GetPage(
       name: AppRoutes.followups,
-      page: () => FollowupListPage(),
+      page: () => FollowUpListPage(),
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 300),
+      binding: FollowUpBinding(),
+    ),
+
+    // ---------- ORDERS ----------
+    GetPage(
+      name: AppRoutes.orders,
+      page: () => OrderListPage(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 300),
+      binding: OrderBinding(),
+    ),
+
+    // ---------- EXPENSES ----------
+    GetPage(
+      name: AppRoutes.expenses,
+      page: () => ExpenseListPage(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 300),
+      binding: ExpenseBinding(),
+    ),
+
+    // ---------- STAFFS ----------
+    GetPage(
+      name: AppRoutes.staffs,
+      page: () => StaffListPage(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 300),
+      binding: StaffBinding(),
     ),
   ];
 }

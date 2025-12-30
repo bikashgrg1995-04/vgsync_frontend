@@ -1,21 +1,32 @@
 import 'package:dio/dio.dart';
+import '../models/followup_model.dart';
 import 'api_service.dart';
 
 class FollowUpService {
   final Dio _dio = ApiService.dio;
 
-  Future<List> getAllFollowUps() async {
-    final res = await _dio.get('/followups/');
-    return res.data['results']; // <--- use results array
+  // ================= FETCH =================
+  Future<List<FollowUpModel>> fetchFollowUps() async {
+    final response = await _dio.get('/followups/');
+    if (response.statusCode == 200) {
+      final data = response.data;
+      return (data['results'] as List)
+          .map((e) => FollowUpModel.fromJson(e))
+          .toList();
+    } else {
+      throw Exception('Failed to load follow-ups');
+    }
   }
 
-  Future<Map<String, dynamic>> updateFollowUp(
-      int id, Map<String, dynamic> data) async {
-    final res = await _dio.put('/followups/$id/', data: data);
-    return res.data['results']; // <--- use results object
-  }
-
-  Future<void> deleteFollowUp(int id) async {
-    await _dio.delete('/followups/$id/');
+  /// Terminate follow-up by ID
+  Future<void> terminateFollowUp(int id) async {
+    try {
+      final response = await _dio.post('/followups/$id/terminate/');
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to terminate follow-up');
+      }
+    } catch (e) {
+      throw Exception('Terminate request failed: $e');
+    }
   }
 }

@@ -6,14 +6,10 @@ class PurchaseRepository {
 
   PurchaseRepository({required this.purchaseService});
 
-  Future<List<PurchaseModel>> fetchPurchases() =>
-      purchaseService.getPurchases();
-  Future<PurchaseModel> addPurchase(PurchaseModel purchase) =>
+  Future<List<PurchaseModel>> getPurchases() => purchaseService.getPurchases();
+  Future<PurchaseModel> create(PurchaseModel purchase) =>
       purchaseService.createPurchase(purchase);
-
-  Future<PurchaseModel> editPurchase(int id, Map<String, dynamic> data) async {
-    return await purchaseService.updatePurchase(id, data);
-  }
-
-  Future<void> removePurchase(int id) => purchaseService.deletePurchase(id);
+  Future<PurchaseModel> update(PurchaseModel purchase) =>
+      purchaseService.updatePurchase(purchase);
+  Future<void> delete(int id) => purchaseService.deletePurchase(id);
 }
