@@ -14,6 +14,9 @@ class DashboardController extends GetxController {
   RxBool isLoading = false.obs;
   var dashboardData = DashboardResponse.empty().obs;
 
+  // Reactive low stock list
+  var lowStockItems = <LowStockItem>[].obs;
+
   // Selected Chart
   Rx<ChartPeriod> selectedChartPeriod = ChartPeriod.monthly.obs;
 
@@ -28,8 +31,6 @@ class DashboardController extends GetxController {
 
   // ---------------- Dashboard getters ----------------
   StockSummary get summary => dashboardData.value.stock;
-  List<LowStockItem> get lowStockItems =>
-      dashboardData.value.stock.lowStockItems;
   List<FollowupItem> get upcomingFollowups =>
       dashboardData.value.followups.records;
 
@@ -40,23 +41,9 @@ class DashboardController extends GetxController {
     loadDashboardData();
 
     ever<List<DashboardRefreshType>>(globalController.refreshTriggers, (_) {
-      if (_.contains(DashboardRefreshType.stock)) {
-        _partialRefresh(DashboardRefreshType.stock);
-        globalController.removeTrigger(DashboardRefreshType.stock);
-      }
-      if (_.contains(DashboardRefreshType.staff)) {
-        _partialRefresh(DashboardRefreshType.staff);
-        globalController.removeTrigger(DashboardRefreshType.staff);
-      }
-
-      if (_.contains(DashboardRefreshType.charts)) {
-        _partialRefresh(DashboardRefreshType.charts);
-        globalController.removeTrigger(DashboardRefreshType.charts);
-      }
-
-      if (_.contains(DashboardRefreshType.followup)) {
-        _partialRefresh(DashboardRefreshType.followup);
-        globalController.removeTrigger(DashboardRefreshType.followup);
+      for (var type in _) {
+        _partialRefresh(type);
+        globalController.removeTrigger(type);
       }
     });
   }
@@ -67,6 +54,7 @@ class DashboardController extends GetxController {
       isLoading.value = true;
       final data = await dashboardRepository.getDashboard();
       dashboardData.value = data;
+      lowStockItems.assignAll(data.stock.lowStockItems); // reactive
     } catch (e) {
       print('Dashboard load error: $e');
     } finally {
@@ -78,7 +66,6 @@ class DashboardController extends GetxController {
   void _partialRefresh(DashboardRefreshType type) async {
     try {
       isLoading.value = true;
-
       final data = await dashboardRepository.getDashboard();
 
       dashboardData.update((val) {
@@ -87,34 +74,30 @@ class DashboardController extends GetxController {
         switch (type) {
           case DashboardRefreshType.stock:
             val.stock = data.stock;
+            lowStockItems
+                .assignAll(data.stock.lowStockItems); // update reactive list
             break;
-
           case DashboardRefreshType.purchase:
             val.purchases = data.purchases;
             break;
-
           case DashboardRefreshType.sale:
             val.sales = data.sales;
             break;
-
           case DashboardRefreshType.order:
             val.orders = data.orders;
             break;
-
           case DashboardRefreshType.staff:
             val.staffSalary = data.staffSalary;
             break;
-
           case DashboardRefreshType.followup:
             val.followups = data.followups;
             break;
-
           case DashboardRefreshType.charts:
             val.charts = data.charts;
             break;
-
           case DashboardRefreshType.all:
             dashboardData.value = data;
+            lowStockItems.assignAll(data.stock.lowStockItems);
             break;
         }
       });
