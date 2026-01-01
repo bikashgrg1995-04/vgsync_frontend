@@ -10,32 +10,34 @@ class PurchaseItemController {
   final PurchaseItemModel item;
 
   final quantity = 1.obs; // user-editable quantity
-  final double price; // fixed from stock
+  final price = 0.0.obs; // user-editable price
 
   late TextEditingController quantityController;
   late TextEditingController priceController;
 
-  PurchaseItemController({required this.item})
-      : price = item.salePrice.toDouble() {
-    quantityController = TextEditingController(text: item.quantity.toString());
-    priceController = TextEditingController(text: item.salePrice.toString());
+  PurchaseItemController({required this.item}) {
+    // Initialize with existing values
+    quantity.value = item.quantity;
+    price.value = item.purchasePrice.toDouble();
 
-    // Update quantity from TextField
+    quantityController = TextEditingController(text: quantity.value.toString());
+    priceController = TextEditingController(text: price.value.toString());
+
+    // Listen for user changes
     quantityController.addListener(() {
       final val = int.tryParse(quantityController.text) ?? 0;
       quantity.value = val;
     });
 
-    // If you want price editable
-    // priceController.addListener(() {
-    //   final val = double.tryParse(priceController.text) ?? price;
-    //   // price cannot be final, so consider removing final if editable
-    // });
+    priceController.addListener(() {
+      final val = double.tryParse(priceController.text) ?? 0.0;
+      price.value = val;
+    });
   }
 
   String get itemName => item.itemName ?? "";
 
-  double get totalPrice => quantity.value * price; // always dynamic
+  double get totalPrice => quantity.value * price.value;
 }
 
 class PurchaseController extends GetxController {
@@ -184,15 +186,15 @@ class PurchaseController extends GetxController {
   PurchaseModel _getCurrentPurchase({required int id}) {
     final itemModels = items.map((i) {
       final qty = i.quantity.value;
-      final price = i.price; // always use stock sale price
+      final price = i.price.value; // <-- use user-editable price
       return PurchaseItemModel(
-        item: i.item.item,
+        item: i.item.item, // original stock item id
         itemName: i.item.itemName,
         quantity: qty,
-        purchasePrice: price,
+        purchasePrice: price, // use edited price
         salePrice: i.item.salePrice,
         vat: i.item.vat,
-        totalPrice: qty * price,
+        totalPrice: qty * price, // recalc total using user price
       );
     }).toList();
 

@@ -63,6 +63,9 @@ class Result {
     this.image,
   });
 
+  // GETTER to show category as string (for UI)
+  String get categoryName => category.toString(); // or map int->name
+
   factory Result.fromJson(Map<String, dynamic> json) => Result(
         id: json["id"] is int
             ? json["id"]
