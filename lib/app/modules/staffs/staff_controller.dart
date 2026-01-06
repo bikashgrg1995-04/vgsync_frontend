@@ -67,9 +67,12 @@ class StaffController extends GetxController {
       final newStaff = StaffModel(
         name: nameController.text,
         designation: designationController.text,
+        designationDisplay:
+            designationController.text, // same as designation by default
         salaryMode: salaryModeController.text,
+        salaryModeDisplay:
+            salaryModeController.text, // same as salary mode by default
         phone: phoneController.text,
-        address: addressController.text,
         email: emailController.text,
         isActive: isActiveController.value,
         joinedDate: DateTime.now(),
@@ -77,19 +80,16 @@ class StaffController extends GetxController {
 
       final added = await staffRepository.create(newStaff);
       staffs.add(added);
-      //  Get.snackbar('Success', 'Staff added successfully');
 
       clearControllers(); // Reset controllers after save
       return added;
     } catch (e) {
-      //  Get.snackbar('Error', 'Failed to add staff: $e');
       rethrow;
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ---------------- Update Staff ----------------
   Future<void> updateStaff(StaffModel staff) async {
     if (!_validateStaffInputs()) return;
 
@@ -99,9 +99,10 @@ class StaffController extends GetxController {
         id: staff.id,
         name: nameController.text,
         designation: designationController.text,
+        designationDisplay: designationController.text, // updated
         salaryMode: salaryModeController.text,
+        salaryModeDisplay: salaryModeController.text, // updated
         phone: phoneController.text,
-        address: addressController.text,
         email: emailController.text,
         isActive: isActiveController.value,
         joinedDate: staff.joinedDate,
@@ -110,10 +111,10 @@ class StaffController extends GetxController {
       final updated = await staffRepository.update(updatedStaff);
       final index = staffs.indexWhere((s) => s.id == updated.id);
       if (index != -1) staffs[index] = updated;
-      //  Get.snackbar('Success', 'Staff updated successfully');
-      clearControllers(); // Reset controllers after update
+
+      clearControllers();
     } catch (e) {
-      //Get.snackbar('Error', 'Failed to update staff: $e');
+      print('Failed to update staff: $e');
     } finally {
       isLoading.value = false;
     }
@@ -270,7 +271,9 @@ class StaffController extends GetxController {
       filtered = filtered.where((s) {
         return s.name.toLowerCase().contains(q) ||
             s.designation.toLowerCase().contains(q) ||
+            s.designationDisplay.toLowerCase().contains(q) || // new
             s.salaryMode.toLowerCase().contains(q) ||
+            s.salaryModeDisplay.toLowerCase().contains(q) || // new
             s.email.toLowerCase().contains(q);
       }).toList();
     }

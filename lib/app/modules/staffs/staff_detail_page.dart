@@ -104,7 +104,6 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
                         SizedBox(height: SizeConfig.sh(0.01)),
                         Text("Email: ${widget.staff.email}"),
                         Text("Phone: ${widget.staff.phone}"),
-                        Text("Address: ${widget.staff.address}"),
                       ],
                     ),
                   ),
@@ -348,7 +347,7 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
         await controller.fetchTransactions(staffId);
 
         // Trigger dashboard chart refresh
-        globalController.triggerRefresh(DashboardRefreshType.charts);
+        globalController.triggerRefresh(DashboardRefreshType.all);
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Get.snackbar(
@@ -425,7 +424,7 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
         // 3️⃣ Refresh transactions & charts
         await controller.fetchTransactions(staffId);
         // await expenseController.fetchExpenses();
-        globalController.triggerRefresh(DashboardRefreshType.charts);
+        globalController.triggerRefresh(DashboardRefreshType.all);
 
         // 4️⃣ Success message
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -465,7 +464,7 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
       await controller.deleteSalaryTransaction(txId, widget.staff.id!);
 
       // Trigger dashboard chart refresh
-      globalController.triggerRefresh(DashboardRefreshType.charts);
+      globalController.triggerRefresh(DashboardRefreshType.all);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Get.snackbar(

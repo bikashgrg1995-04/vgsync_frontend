@@ -1,28 +1,28 @@
-// ------------------ DASHBOARD RESPONSE ------------------
+// ================== DASHBOARD RESPONSE ==================
 class DashboardResponse {
   String period;
   int year;
   int month;
 
   StockSummary stock;
-  SalesSummaryFull sales;
-  PurchasesSummaryFull purchases;
+  IncomeSummary income; // sale = income
+  ExpenseSummary expense;
+  ProfitLossSummary profitLoss;
   OrdersSummary orders;
   FollowupSummary followups;
   StaffSalarySummary staffSalary;
-  ChartsSummary charts;
 
   DashboardResponse({
     required this.period,
     required this.year,
     required this.month,
     required this.stock,
-    required this.sales,
-    required this.purchases,
+    required this.income,
+    required this.expense,
+    required this.profitLoss,
     required this.orders,
     required this.followups,
     required this.staffSalary,
-    required this.charts,
   });
 
   factory DashboardResponse.fromJson(Map<String, dynamic> json) {
@@ -31,12 +31,12 @@ class DashboardResponse {
       year: json['year'] ?? 0,
       month: json['month'] ?? 0,
       stock: StockSummary.fromJson(json['stock'] ?? {}),
-      sales: SalesSummaryFull.fromJson(json['sales'] ?? {}),
-      purchases: PurchasesSummaryFull.fromJson(json['purchases'] ?? {}),
+      income: IncomeSummary.fromJson(json['sale'] ?? {}),
+      expense: ExpenseSummary.fromJson(json['expense'] ?? {}),
+      profitLoss: ProfitLossSummary.fromJson(json['profit_loss'] ?? {}),
       orders: OrdersSummary.fromJson(json['orders'] ?? {}),
       followups: FollowupSummary.fromJson(json['followups'] ?? {}),
       staffSalary: StaffSalarySummary.fromJson(json['staff_salary'] ?? {}),
-      charts: ChartsSummary.fromJson(json['charts'] ?? {}),
     );
   }
 
@@ -46,17 +46,17 @@ class DashboardResponse {
       year: 0,
       month: 0,
       stock: StockSummary.empty(),
-      sales: SalesSummaryFull.empty(),
-      purchases: PurchasesSummaryFull.empty(),
+      income: IncomeSummary.empty(),
+      expense: ExpenseSummary.empty(),
+      profitLoss: ProfitLossSummary.empty(),
       orders: OrdersSummary.empty(),
       followups: FollowupSummary.empty(),
       staffSalary: StaffSalarySummary.empty(),
-      charts: ChartsSummary.empty(),
     );
   }
 }
 
-// ------------------ STOCK ------------------
+// ================== STOCK ==================
 class StockSummary {
   int totalItems;
   int totalStock;
@@ -147,112 +147,196 @@ class SaleStockItem {
   }
 }
 
-// ------------------ SALES ------------------
-class SalesSummaryFull {
+// ================== INCOME (SALES) ==================
+class IncomeSummary {
   int count;
-  double totalAmount;
-  double todayAmount;
-  double monthlyAmount;
-  double yearlyAmount;
-  List<SaleStockItem> topSales;
-  List<SaleStockItem> lowSales;
+  double total;
+  double today;
+  double monthly;
+  double yearly;
 
-  SalesSummaryFull({
+  IncomeSummary({
     required this.count,
-    required this.totalAmount,
-    required this.todayAmount,
-    required this.monthlyAmount,
-    required this.yearlyAmount,
-    required this.topSales,
-    required this.lowSales,
+    required this.total,
+    required this.today,
+    required this.monthly,
+    required this.yearly,
   });
 
-  factory SalesSummaryFull.fromJson(Map<String, dynamic> json) {
-    return SalesSummaryFull(
+  factory IncomeSummary.fromJson(Map<String, dynamic> json) {
+    return IncomeSummary(
       count: json['count'] ?? 0,
-      totalAmount: (json['total_amount'] ?? 0).toDouble(),
-      todayAmount: (json['today_amount'] ?? 0).toDouble(),
-      monthlyAmount: (json['monthly_amount'] ?? 0).toDouble(),
-      yearlyAmount: (json['yearly_amount'] ?? 0).toDouble(),
-      topSales: (json['top_sales'] as List? ?? [])
-          .map((e) => SaleStockItem.fromJson(e))
-          .toList(),
-      lowSales: (json['low_sales'] as List? ?? [])
-          .map((e) => SaleStockItem.fromJson(e))
+      total: (json['total_amount'] ?? 0).toDouble(),
+      today: (json['today_amount'] ?? 0).toDouble(),
+      monthly: (json['monthly_amount'] ?? 0).toDouble(),
+      yearly: (json['yearly_amount'] ?? 0).toDouble(),
+    );
+  }
+
+  factory IncomeSummary.empty() {
+    return IncomeSummary(count: 0, total: 0, today: 0, monthly: 0, yearly: 0);
+  }
+}
+
+// ================== EXPENSE ==================
+class ExpenseSummary {
+  double today;
+  double monthly;
+  double yearly;
+  List<ExpenseCategory> categories;
+
+  ExpenseSummary({
+    required this.today,
+    required this.monthly,
+    required this.yearly,
+    required this.categories,
+  });
+
+  factory ExpenseSummary.fromJson(Map<String, dynamic> json) {
+    return ExpenseSummary(
+      today: (json['today_amount'] ?? 0).toDouble(),
+      monthly: (json['monthly_amount'] ?? 0).toDouble(),
+      yearly: (json['yearly_amount'] ?? 0).toDouble(),
+      categories: (json['categories'] as List? ?? [])
+          .map((e) => ExpenseCategory.fromJson(e))
           .toList(),
     );
   }
 
-  factory SalesSummaryFull.empty() {
-    return SalesSummaryFull(
-      count: 0,
-      totalAmount: 0,
-      todayAmount: 0,
-      monthlyAmount: 0,
-      yearlyAmount: 0,
-      topSales: [],
-      lowSales: [],
+  factory ExpenseSummary.empty() {
+    return ExpenseSummary(today: 0, monthly: 0, yearly: 0, categories: []);
+  }
+}
+
+class ExpenseCategory {
+  String category;
+  double amount;
+
+  ExpenseCategory({required this.category, required this.amount});
+
+  factory ExpenseCategory.fromJson(Map<String, dynamic> json) {
+    return ExpenseCategory(
+      category: json['category'] ?? '',
+      amount: (json['amount'] ?? 0).toDouble(),
     );
   }
 }
 
-// ------------------ PURCHASES ------------------
-class PurchasesSummaryFull {
-  int count;
-  double totalAmount;
-  double todayAmount;
-  double monthlyAmount;
-  double yearlyAmount;
+// ================== PROFIT & LOSS ==================
+class ProfitLossSummary {
+  double income;
+  double expense;
+  double profit;
+  double loss;
 
-  PurchasesSummaryFull({
-    required this.count,
-    required this.totalAmount,
-    required this.todayAmount,
-    required this.monthlyAmount,
-    required this.yearlyAmount,
+  ProfitLossSummary({
+    required this.income,
+    required this.expense,
+    required this.profit,
+    required this.loss,
   });
 
-  factory PurchasesSummaryFull.fromJson(Map<String, dynamic> json) {
-    return PurchasesSummaryFull(
-      count: json['count'] ?? 0,
-      totalAmount: (json['total_amount'] ?? 0).toDouble(),
-      todayAmount: (json['today_amount'] ?? 0).toDouble(),
-      monthlyAmount: (json['monthly_amount'] ?? 0).toDouble(),
-      yearlyAmount: (json['yearly_amount'] ?? 0).toDouble(),
+  factory ProfitLossSummary.fromJson(Map<String, dynamic> json) {
+    return ProfitLossSummary(
+      income: (json['income'] ?? 0).toDouble(),
+      expense: (json['expense'] ?? 0).toDouble(),
+      profit: (json['profit'] ?? 0).toDouble(),
+      loss: (json['loss'] ?? 0).toDouble(),
     );
   }
 
-  factory PurchasesSummaryFull.empty() {
-    return PurchasesSummaryFull(
-      count: 0,
-      totalAmount: 0,
-      todayAmount: 0,
-      monthlyAmount: 0,
-      yearlyAmount: 0,
-    );
+  factory ProfitLossSummary.empty() {
+    return ProfitLossSummary(income: 0, expense: 0, profit: 0, loss: 0);
   }
 }
 
-// ------------------ ORDERS ------------------
+class ProfitLoss {
+  double income;
+  double expense;
+  double profit;
+  double loss;
+
+  ProfitLoss({
+    required this.income,
+    required this.expense,
+    required this.profit,
+    required this.loss,
+  });
+
+  factory ProfitLoss.fromJson(Map<String, dynamic> json) {
+    return ProfitLoss(
+      income: (json['income'] ?? 0).toDouble(),
+      expense: (json['expense'] ?? 0).toDouble(),
+      profit: (json['profit'] ?? 0).toDouble(),
+      loss: (json['loss'] ?? 0).toDouble(),
+    );
+  }
+
+  factory ProfitLoss.empty() {
+    return ProfitLoss(income: 0, expense: 0, profit: 0, loss: 0);
+  }
+}
+
+// ================== ORDERS ==================
 class OrdersSummary {
   int totalOrders;
   double pendingAmount;
+  List<OrderItem> records;
 
-  OrdersSummary({required this.totalOrders, required this.pendingAmount});
+  OrdersSummary({
+    required this.totalOrders,
+    required this.pendingAmount,
+    required this.records,
+  });
 
   factory OrdersSummary.fromJson(Map<String, dynamic> json) {
     return OrdersSummary(
       totalOrders: json['total_orders'] ?? 0,
       pendingAmount: (json['pending_amount'] ?? 0).toDouble(),
+      records: (json['records'] as List? ?? [])
+          .map((e) => OrderItem.fromJson(e))
+          .toList(),
     );
   }
 
   factory OrdersSummary.empty() {
-    return OrdersSummary(totalOrders: 0, pendingAmount: 0);
+    return OrdersSummary(totalOrders: 0, pendingAmount: 0, records: []);
   }
 }
 
-// ------------------ FOLLOWUPS ------------------
+class OrderItem {
+  int id;
+  String customerName;
+  String vehicleModel;
+  String date;
+  double totalAmount;
+  double advance;
+  double pendingAmount;
+
+  OrderItem({
+    required this.id,
+    required this.customerName,
+    required this.vehicleModel,
+    required this.date,
+    required this.totalAmount,
+    required this.advance,
+    required this.pendingAmount,
+  });
+
+  factory OrderItem.fromJson(Map<String, dynamic> json) {
+    return OrderItem(
+      id: json['id'] ?? 0,
+      customerName: json['customer_name'] ?? '',
+      vehicleModel: json['vehicle_model'] ?? '',
+      date: json['date'] ?? '',
+      totalAmount: (json['total_amount'] ?? 0).toDouble(),
+      advance: (json['advance'] ?? 0).toDouble(),
+      pendingAmount: (json['pending_amount'] ?? 0).toDouble(),
+    );
+  }
+}
+
+// ================== FOLLOWUPS ==================
 class FollowupSummary {
   int pendingCount;
   List<FollowupItem> records;
@@ -279,6 +363,9 @@ class FollowupItem {
   String vehicle;
   String followUpDate;
   String remarks;
+  String status;
+  String statusColor;
+  bool isNearest;
 
   FollowupItem({
     required this.id,
@@ -286,6 +373,9 @@ class FollowupItem {
     required this.vehicle,
     required this.followUpDate,
     required this.remarks,
+    required this.status,
+    required this.statusColor,
+    required this.isNearest,
   });
 
   factory FollowupItem.fromJson(Map<String, dynamic> json) {
@@ -295,11 +385,14 @@ class FollowupItem {
       vehicle: json['vehicle'] ?? '',
       followUpDate: json['follow_up_date'] ?? '',
       remarks: json['remarks'] ?? '',
+      status: json['status'] ?? '',
+      statusColor: json['status_color'] ?? 'orange',
+      isNearest: json['is_nearest'] ?? false,
     );
   }
 }
 
-// ------------------ STAFF SALARY ------------------
+// ================== STAFF SALARY ==================
 class StaffSalarySummary {
   int totalStaff;
   double paid;
@@ -334,14 +427,14 @@ class StaffSalaryItem {
   String staffName;
   double paid;
   double pending;
-  List<SalaryTrackerItem> trackers;
+  String paymentStatus;
 
   StaffSalaryItem({
     required this.staffId,
     required this.staffName,
     required this.paid,
     required this.pending,
-    required this.trackers,
+    required this.paymentStatus,
   });
 
   factory StaffSalaryItem.fromJson(Map<String, dynamic> json) {
@@ -350,148 +443,7 @@ class StaffSalaryItem {
       staffName: json['staff_name'] ?? '',
       paid: (json['paid'] ?? 0).toDouble(),
       pending: (json['pending'] ?? 0).toDouble(),
-      trackers: (json['trackers'] as List? ?? [])
-          .map((e) => SalaryTrackerItem.fromJson(e))
-          .toList(),
-    );
-  }
-}
-
-class SalaryTrackerItem {
-  String date;
-  double totalSalary;
-  double paidAmount;
-  double? remainingAmount;
-  String status;
-  String? paymentMode;
-  String note;
-
-  SalaryTrackerItem({
-    required this.date,
-    required this.totalSalary,
-    required this.paidAmount,
-    this.remainingAmount,
-    required this.status,
-    this.paymentMode,
-    required this.note,
-  });
-
-  factory SalaryTrackerItem.fromJson(Map<String, dynamic> json) {
-    return SalaryTrackerItem(
-      date: json['date'] ?? '',
-      totalSalary: (json['total_salary'] ?? 0).toDouble(),
-      paidAmount: (json['paid_amount'] ?? 0).toDouble(),
-      remainingAmount: json['remaining_amount'] != null
-          ? (json['remaining_amount'] as num).toDouble()
-          : null,
-      status: json['status'] ?? '',
-      paymentMode: json['payment_mode'],
-      note: json['note'] ?? '',
-    );
-  }
-}
-
-// ------------------ CHARTS ------------------
-class ChartsSummary {
-  ProfitLossChart profitLoss;
-
-  ChartsSummary({required this.profitLoss});
-
-  factory ChartsSummary.fromJson(Map<String, dynamic> json) {
-    return ChartsSummary(
-      profitLoss: ProfitLossChart.fromJson(json['profit_loss'] ?? {}),
-    );
-  }
-
-  factory ChartsSummary.empty() {
-    return ChartsSummary(profitLoss: ProfitLossChart.empty());
-  }
-}
-
-class ProfitLossChart {
-  ChartData daily;
-  ChartData monthly;
-  ChartData yearly;
-
-  ProfitLossChart({
-    required this.daily,
-    required this.monthly,
-    required this.yearly,
-  });
-
-  factory ProfitLossChart.fromJson(Map<String, dynamic> json) {
-    return ProfitLossChart(
-      daily: ChartData.fromJson(json['daily'] ?? {}),
-      monthly: ChartData.fromJson(json['monthly'] ?? {}),
-      yearly: ChartData.fromJson(json['yearly'] ?? {}),
-    );
-  }
-
-  factory ProfitLossChart.empty() {
-    return ProfitLossChart(
-      daily: ChartData.empty(),
-      monthly: ChartData.empty(),
-      yearly: ChartData.empty(),
-    );
-  }
-}
-
-class ChartData {
-  List<ChartItem> income;
-  List<ChartItem> expense;
-  double totalIncome;
-  double totalExpense;
-  double profit;
-  double loss;
-
-  ChartData({
-    required this.income,
-    required this.expense,
-    required this.totalIncome,
-    required this.totalExpense,
-    required this.profit,
-    required this.loss,
-  });
-
-  factory ChartData.fromJson(Map<String, dynamic> json) {
-    return ChartData(
-      income: (json['income'] as List? ?? [])
-          .map((e) => ChartItem.fromJson(e))
-          .toList(),
-      expense: (json['expense'] as List? ?? [])
-          .map((e) => ChartItem.fromJson(e))
-          .toList(),
-      totalIncome: (json['total_income'] ?? 0).toDouble(),
-      totalExpense: (json['total_expense'] ?? 0).toDouble(),
-      profit: (json['profit'] ?? 0).toDouble(),
-      loss: (json['loss'] ?? 0).toDouble(),
-    );
-  }
-
-  factory ChartData.empty() {
-    return ChartData(
-      income: [],
-      expense: [],
-      totalIncome: 0,
-      totalExpense: 0,
-      profit: 0,
-      loss: 0,
-    );
-  }
-}
-
-class ChartItem {
-  int? month;
-  int? year;
-  double amount;
-
-  ChartItem({this.month, this.year, required this.amount});
-
-  factory ChartItem.fromJson(Map<String, dynamic> json) {
-    return ChartItem(
-      month: json['month'],
-      year: json['year'],
-      amount: (json['amount'] ?? 0).toDouble(),
+      paymentStatus: json['payment_status'] ?? 'Pending',
     );
   }
 }

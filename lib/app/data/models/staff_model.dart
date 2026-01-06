@@ -2,48 +2,52 @@
 class StaffModel {
   final int? id;
   final String name;
-  final String designation;
-  final String salaryMode;
   final String phone;
-  final String address;
   final String email;
-  final bool isActive;
+  final String designation;
+  final String designationDisplay;
+  final String salaryMode;
+  final String salaryModeDisplay;
   final DateTime joinedDate;
+  final bool isActive;
 
   StaffModel({
     this.id,
     required this.name,
-    required this.designation,
-    required this.salaryMode,
     required this.phone,
-    required this.address,
     required this.email,
-    required this.isActive,
+    required this.designation,
+    required this.designationDisplay,
+    required this.salaryMode,
+    required this.salaryModeDisplay,
     required this.joinedDate,
+    required this.isActive,
   });
 
   factory StaffModel.fromJson(Map<String, dynamic> json) => StaffModel(
         id: json['id'],
         name: json['name'],
-        designation: json['designation'],
-        salaryMode: json['salary_mode'],
         phone: json['phone'],
-        address: json['address'],
         email: json['email'],
-        isActive: json['is_active'],
+        designation: json['designation'],
+        designationDisplay: json['designation_display'],
+        salaryMode: json['salary_mode'],
+        salaryModeDisplay: json['salary_mode_display'],
         joinedDate: DateTime.parse(json['joined_date']),
+        isActive: json['is_active'],
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'designation': designation,
-        'salary_mode': salaryMode,
         'phone': phone,
-        'address': address,
         'email': email,
-        'is_active': isActive,
+        'designation': designation,
+        'designation_display': designationDisplay,
+        'salary_mode': salaryMode,
+        'salary_mode_display': salaryModeDisplay,
         'joined_date': joinedDate.toIso8601String().split('T')[0],
+        'is_active': isActive,
       };
 }
 

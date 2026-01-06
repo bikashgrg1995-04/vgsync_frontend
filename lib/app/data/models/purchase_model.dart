@@ -1,159 +1,157 @@
 /// ===============================
-/// Purchase Models
+/// Purchase Model (API MATCHED)
 /// ===============================
 class PurchaseModel {
-  final int? id; // optional for creation
+  final int? id;
   final int supplier;
   final DateTime date;
   final List<PurchaseItemModel> items;
-  final double discountPercentage;
-  final double vatPercentage;
+
+  final double discountAmount;
+  final double vatAmount;
+  final double netTotal;
+  final double grandTotal;
+
+  final double paidAmount;
+  final double remainingAmount;
+  final String status;
+  final bool isMigrated;
+  final int? createdBy;
 
   PurchaseModel({
     this.id,
     required this.supplier,
     required this.date,
     required this.items,
-    required this.discountPercentage,
-    required this.vatPercentage,
+    this.discountAmount = 0.0,
+    this.vatAmount = 0.0,
+    this.netTotal = 0.0,
+    this.grandTotal = 0.0,
+    this.paidAmount = 0.0,
+    this.remainingAmount = 0.0,
+    this.status = 'pending',
+    this.isMigrated = false,
+    this.createdBy,
   });
 
+  // ---------------- FROM JSON ----------------
   factory PurchaseModel.fromJson(Map<String, dynamic> json) {
     return PurchaseModel(
       id: json['id'],
       supplier: json['supplier'],
-      date: DateTime.parse(json['date']),
+      date: _parseDate(json['date']),
       items: (json['items'] as List? ?? [])
           .map((e) => PurchaseItemModel.fromJson(e))
           .toList(),
-      discountPercentage:
-          (json['discount_percentage'] as num?)?.toDouble() ?? 0.0,
-      vatPercentage: (json['vat_percentage'] as num?)?.toDouble() ?? 0.0,
+      discountAmount: (json['discount_amount'] as num?)?.toDouble() ?? 0.0,
+      vatAmount: (json['vat_amount'] as num?)?.toDouble() ?? 0.0,
+      netTotal: (json['net_total'] as num?)?.toDouble() ?? 0.0,
+      grandTotal: (json['grand_total'] as num?)?.toDouble() ?? 0.0,
+      paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
+      remainingAmount: (json['remaining_amount'] as num?)?.toDouble() ?? 0.0,
+      status: json['status'] ?? 'pending',
+      isMigrated: json['is_migrated'] ?? false,
+      createdBy: json['created_by'],
     );
   }
 
+  // ---------------- TO JSON (API) ----------------
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'supplier': supplier,
       'date': date.toIso8601String(),
-      'items': items.map((e) => e.toJson()).toList(),
-      'discount_percentage': discountPercentage,
-      'vat_percentage': vatPercentage,
-    };
-  }
-
-  // ===============================
-  // Amount Calculations
-  // ===============================
-  double get subTotal => items.fold(0.0, (sum, item) => sum + item.totalPrice);
-
-  double get discountAmount => subTotal * (discountPercentage / 100);
-
-  double get vatAmount => (subTotal - discountAmount) * (vatPercentage / 100);
-
-  double get grandTotal => subTotal - discountAmount + vatAmount;
-
-  // ===============================
-  // API JSON for POST/PUT
-  // ===============================
-  Map<String, dynamic> toJsonForApi() {
-    return {
-      'supplier': supplier,
-      'date': date.toIso8601String(),
-      'discount_percentage': discountPercentage,
-      'vat_percentage': vatPercentage,
       'items': items.map((e) => e.toJsonForApi()).toList(),
+      'discount_amount': discountAmount,
+      'vat_amount': vatAmount,
+      'net_total': netTotal,
+      'grand_total': grandTotal,
+      'paid_amount': paidAmount,
+      'remaining_amount': remainingAmount,
+      'status': status,
+      'is_migrated': isMigrated,
+      'created_by': createdBy,
     };
   }
+
+  /// ===============================
+  /// SAFE CALCULATIONS
+  /// ===============================
+  double get subTotal =>
+      items.fold<double>(0.0, (sum, i) => sum + i.totalPrice);
+
+  double get calculatedNetTotal => subTotal - discountAmount + vatAmount;
+
+  bool get isPaid => remainingAmount <= 0;
 }
 
+/// ===============================
+/// Purchase Item Model
+/// ===============================
 class PurchaseItemModel {
+  final int id;
   final int item;
-  final String? itemName; // optional
   final int quantity;
-  final double purchasePrice;
-  final double salePrice;
-  final double vat;
+  final double price;
   final double totalPrice;
+  final String? itemName;
 
   PurchaseItemModel({
+    this.id = 0,
     required this.item,
-    this.itemName,
     required this.quantity,
-    required this.purchasePrice,
-    required this.salePrice,
-    required this.vat,
-    required this.totalPrice,
-  });
+    required this.price,
+    double? totalPrice,
+    this.itemName,
+  }) : totalPrice = totalPrice ?? quantity * price;
 
+  // ---------------- FROM JSON ----------------
   factory PurchaseItemModel.fromJson(Map<String, dynamic> json) {
+    final qty = json['quantity'] as int? ?? 0;
+    final price = (json['price'] as num?)?.toDouble() ?? 0.0;
+
     return PurchaseItemModel(
+      id: json['id'] ?? 0,
       item: json['item'],
+      quantity: qty,
+      price: price,
+      totalPrice: (json['total_price'] as num?)?.toDouble() ?? qty * price,
       itemName: json['item_name'],
-      quantity: json['quantity'],
-      purchasePrice: (json['purchase_price'] as num?)?.toDouble() ?? 0.0,
-      salePrice: (json['sale_price'] as num?)?.toDouble() ?? 0.0,
-      vat: (json['vat'] as num?)?.toDouble() ?? 0.0,
-      totalPrice: (json['total_price'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
+  // ---------------- UI JSON ----------------
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'item': item,
-      'item_name': itemName,
       'quantity': quantity,
-      'purchase_price': purchasePrice,
-      'sale_price': salePrice,
-      'vat': vat,
+      'price': price,
       'total_price': totalPrice,
+      'item_name': itemName,
     };
   }
 
+  // ---------------- API JSON ----------------
   Map<String, dynamic> toJsonForApi() {
     return {
       'item': item,
       'quantity': quantity,
-      'purchase_price': purchasePrice,
-      'sale_price': salePrice,
-      'vat': vat,
+      'price': price,
     };
   }
 }
 
 /// ===============================
-/// Date Filters Extension
+/// DATE PARSER (SAFE FOR DJANGO)
 /// ===============================
-extension PurchaseDateFilter on List<PurchaseModel> {
-  List<PurchaseModel> filterByDate(DateTime date) {
-    return where((p) =>
-        p.date.year == date.year &&
-        p.date.month == date.month &&
-        p.date.day == date.day).toList();
+DateTime _parseDate(dynamic value) {
+  if (value == null) return DateTime.now();
+
+  if (value is String) {
+    // Django: "2025-12-25 00:00:00"
+    return DateTime.parse(value.replaceFirst(' ', 'T'));
   }
 
-  List<PurchaseModel> filterByDateRange(DateTime start, DateTime end) {
-    return where((p) => !p.date.isBefore(start) && !p.date.isAfter(end))
-        .toList();
-  }
-
-  List<PurchaseModel> filterToday() => filterByDate(DateTime.now());
-
-  List<PurchaseModel> filterLastNDays(int days) {
-    final now = DateTime.now();
-    final start = now.subtract(Duration(days: days - 1));
-    return filterByDateRange(start, now);
-  }
-}
-
-/// ===============================
-/// Category Filter Extension
-/// ===============================
-extension PurchaseCategoryFilter on List<PurchaseModel> {
-  List<PurchaseModel> filterByCategory(String keyword) {
-    return where((p) => p.items.any((i) =>
-        i.itemName != null &&
-        i.itemName!.toLowerCase().contains(keyword.toLowerCase()))).toList();
-  }
+  return DateTime.now();
 }

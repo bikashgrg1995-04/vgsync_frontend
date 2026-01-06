@@ -5,54 +5,50 @@ import '../models/sale_model.dart';
 class SaleService {
   final Dio _dio = ApiService.dio;
 
-  // ---------------- FETCH ----------------
+  // ================= FETCH =================
   Future<List<SaleModel>> fetchSales() async {
-    try {
-      final response = await _dio.get('/sales/');
+    final res = await _dio.get('/sales/');
+    final list = res.data['results'] ?? res.data;
 
-      final data = response.data;
-      return (data['results'] as List)
-          .map((e) => SaleModel.fromJson(e))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to load sales: $e');
-    }
+    return (list as List).map((saleJson) {
+      return _parseSaleJson(saleJson);
+    }).toList();
   }
 
-  // ---------------- CREATE ----------------
+  // ================= CREATE =================
   Future<SaleModel> createSale(SaleModel sale) async {
-    try {
-      final response = await _dio.post(
-        '/sales/',
-        data: sale.toJson(),
-      );
+    final payload = sale.toBackendJson();
+    final res = await _dio.post('/sales/', data: payload);
 
-      return SaleModel.fromJson(response.data);
-    } catch (e) {
-      throw Exception('Failed to create sale: $e');
-    }
+    return _parseSaleJson(res.data);
   }
 
-  // ---------------- UPDATE ----------------
+  // ================= UPDATE =================
   Future<SaleModel> updateSale(SaleModel sale) async {
-    try {
-      final response = await _dio.put(
-        '/sales/${sale.id}/',
-        data: sale.toJson(),
-      );
+    final payload = sale.toBackendJson();
+    final res = await _dio.put('/sales/${sale.id}/', data: payload);
 
-      return SaleModel.fromJson(response.data);
-    } catch (e) {
-      throw Exception('Failed to update sale: $e');
-    }
+    return _parseSaleJson(res.data);
   }
 
-  // ---------------- DELETE ----------------
+  // ================= DELETE =================
   Future<void> deleteSale(int id) async {
-    try {
-      await _dio.delete('/sales/$id/');
-    } catch (e) {
-      throw Exception('Failed to delete sale: $e');
-    }
+    await _dio.delete('/sales/$id/');
+  }
+
+  // ================= HELPER =================
+  SaleModel _parseSaleJson(Map<String, dynamic> json) {
+    final itemsList = (json['items'] as List<dynamic>? ?? [])
+        .map((item) {
+          if (item is Map<String, dynamic>) {
+            return SaleItemModel.fromJson(item); // just use item directly
+          }
+          return null;
+        })
+        .whereType<SaleItemModel>()
+        .toList();
+
+    json['items'] = itemsList;
+    return SaleModel.fromJson(json);
   }
 }

@@ -37,7 +37,7 @@ class ExpenseController extends GetxController {
   void onInit() {
     super.onInit();
     fetchExpenses();
-    setToday();
+    //setToday();
   }
 
   @override
@@ -170,7 +170,7 @@ class ExpenseController extends GetxController {
       isLoading.value = true;
       await expenseRepository.delete(expense);
       expenses.removeWhere((e) => e.id == expense.id);
-      globalController.triggerRefresh(DashboardRefreshType.charts);
+      globalController.triggerRefresh(DashboardRefreshType.all);
     } finally {
       isLoading.value = false;
     }

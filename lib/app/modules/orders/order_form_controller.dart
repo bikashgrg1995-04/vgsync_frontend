@@ -108,7 +108,6 @@ class OrderFormController extends GetxController {
           stock: 0,
           purchasePrice: 0,
           salePrice: i.rate,
-          vat: 0,
           image: null,
           itemNo: "",
         ),

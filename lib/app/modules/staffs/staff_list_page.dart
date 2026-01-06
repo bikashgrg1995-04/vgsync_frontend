@@ -160,7 +160,6 @@ class _StaffListPageState extends State<StaffListPage> {
       controller.designationController.text = staff.designation;
       controller.salaryModeController.text = staff.salaryMode;
       controller.phoneController.text = staff.phone;
-      controller.addressController.text = staff.address;
       controller.emailController.text = staff.email;
       controller.isActiveController.value = staff.isActive;
     }

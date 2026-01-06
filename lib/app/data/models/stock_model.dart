@@ -46,7 +46,6 @@ class Result {
   int stock;
   double purchasePrice;
   double salePrice;
-  double vat;
   dynamic image;
 
   Result({
@@ -59,7 +58,6 @@ class Result {
     required this.stock,
     required this.purchasePrice,
     required this.salePrice,
-    required this.vat,
     this.image,
   });
 
@@ -79,7 +77,6 @@ class Result {
         purchasePrice:
             double.tryParse(json["purchase_price"].toString()) ?? 0.0,
         salePrice: double.tryParse(json["sale_price"].toString()) ?? 0.0,
-        vat: double.tryParse(json["vat"].toString()) ?? 0.0,
         image: json["image"],
       );
 
@@ -93,7 +90,6 @@ class Result {
         "stock": stock,
         "purchase_price": purchasePrice,
         "sale_price": salePrice,
-        "vat": vat,
         "image": image,
       };
 }

@@ -20,7 +20,9 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
   @override
   void initState() {
     super.initState();
-    controller.fetchFollowUps();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchFollowUps();
+    });
   }
 
   // ---------------- Helpers ----------------

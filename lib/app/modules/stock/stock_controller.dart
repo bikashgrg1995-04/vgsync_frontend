@@ -21,7 +21,6 @@ class StockController extends GetxController {
   late TextEditingController salePriceController;
   late TextEditingController categoryController;
   late TextEditingController itemNoController;
-  late TextEditingController vatController;
 
   @override
   void onReady() async {
@@ -34,7 +33,6 @@ class StockController extends GetxController {
     salePriceController = TextEditingController();
     categoryController = TextEditingController();
     itemNoController = TextEditingController();
-    vatController = TextEditingController();
 
     await fetchStocks();
   }
@@ -74,7 +72,6 @@ class StockController extends GetxController {
       purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
       salePrice: double.tryParse(salePriceController.text) ?? 0.0,
       category: int.tryParse(categoryController.text) ?? 0,
-      vat: double.tryParse(vatController.text) ?? 0.0,
       image: null,
     );
 
@@ -97,7 +94,6 @@ class StockController extends GetxController {
       purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
       salePrice: double.tryParse(salePriceController.text) ?? 0.0,
       category: int.tryParse(categoryController.text) ?? 0,
-      vat: oldStock.vat,
       image: oldStock.image,
     );
 
@@ -134,7 +130,6 @@ class StockController extends GetxController {
     salePriceController.text = stock.salePrice.toString();
     categoryController.text = stock.category.toString();
     itemNoController.text = stock.itemNo.toString();
-    vatController.text = stock.vat.toString();
   }
 
   void clearForm() {
@@ -145,7 +140,6 @@ class StockController extends GetxController {
     purchasePriceController.clear();
     salePriceController.clear();
     categoryController.clear();
-    vatController.clear();
     itemNoController.clear();
   }
 }

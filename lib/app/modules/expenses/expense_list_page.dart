@@ -356,10 +356,10 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         onSave: () async {
           if (isEdit) {
             await controller.updateExpense(expense);
-            globalController.triggerRefresh(DashboardRefreshType.charts);
+            globalController.triggerRefresh(DashboardRefreshType.all);
           } else {
             await controller.addExpense();
-            globalController.triggerRefresh(DashboardRefreshType.charts);
+            globalController.triggerRefresh(DashboardRefreshType.all);
           }
           Get.back();
         },

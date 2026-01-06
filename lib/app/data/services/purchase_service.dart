@@ -19,7 +19,7 @@ class PurchaseService {
   Future<PurchaseModel> createPurchase(PurchaseModel purchase) async {
     final res = await _dio.post(
       "/purchases/",
-      data: purchase.toJsonForApi(),
+      data: purchase.toJson(),
     );
     return PurchaseModel.fromJson(res.data);
   }
@@ -28,7 +28,7 @@ class PurchaseService {
     if (purchase.id == null) throw Exception("Purchase ID required for update");
     final res = await _dio.put(
       "/purchases/${purchase.id}/",
-      data: purchase.toJsonForApi(),
+      data: purchase.toJson(),
     );
     return PurchaseModel.fromJson(res.data);
   }

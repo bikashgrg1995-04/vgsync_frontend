@@ -3,7 +3,8 @@ import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import '../../data/models/dashboard_model.dart';
 import '../../data/repositories/dashboard_repository.dart';
 
-enum ChartPeriod { monthly, yearly }
+/// Profit & Loss period selection
+enum ProfitLossPeriod { today, monthly, yearly }
 
 class DashboardController extends GetxController {
   final DashboardRepository dashboardRepository;
@@ -11,28 +12,34 @@ class DashboardController extends GetxController {
 
   DashboardController({required this.dashboardRepository});
 
+  // ---------------- Reactive fields ----------------
   RxBool isLoading = false.obs;
   var dashboardData = DashboardResponse.empty().obs;
 
-  // Reactive low stock list
   var lowStockItems = <LowStockItem>[].obs;
+  var orderRecords = <OrderItem>[].obs;
+  var staffSalaryRecords = <StaffSalaryItem>[].obs;
+  var followupRecords = <FollowupItem>[].obs;
 
-  // Selected Chart
-  Rx<ChartPeriod> selectedChartPeriod = ChartPeriod.monthly.obs;
+  Rx<ProfitLossPeriod> selectedPLPeriod = ProfitLossPeriod.today.obs;
 
-  ChartData get chartData {
-    switch (selectedChartPeriod.value) {
-      case ChartPeriod.monthly:
-        return dashboardData.value.charts.profitLoss.monthly;
-      case ChartPeriod.yearly:
-        return dashboardData.value.charts.profitLoss.yearly;
-    }
-  }
+  // ---------------- Computed getters ----------------
+  StockSummary get stock => dashboardData.value.stock;
+  IncomeSummary get income => dashboardData.value.income;
+  ExpenseSummary get expense => dashboardData.value.expense;
+  OrdersSummary get orders => dashboardData.value.orders;
+  FollowupSummary get followups => dashboardData.value.followups;
+  StaffSalarySummary get staffSalary => dashboardData.value.staffSalary;
 
-  // ---------------- Dashboard getters ----------------
-  StockSummary get summary => dashboardData.value.stock;
-  List<FollowupItem> get upcomingFollowups =>
-      dashboardData.value.followups.records;
+  /// Profit/Loss based on selected period
+  ProfitLoss get profitLoss => ProfitLoss(
+        income: dashboardData.value.profitLoss.income,
+        expense: dashboardData.value.profitLoss.expense,
+        profit: dashboardData.value.profitLoss.profit,
+        loss: dashboardData.value.profitLoss.loss,
+      );
+
+  List<FollowupItem> get upcomingFollowups => followupRecords;
 
   // ---------------- Lifecycle ----------------
   @override
@@ -40,8 +47,12 @@ class DashboardController extends GetxController {
     super.onInit();
     loadDashboardData();
 
+    // Listen for dashboard refresh triggers
     ever<List<DashboardRefreshType>>(globalController.refreshTriggers, (_) {
-      for (var type in _) {
+      final triggersCopy =
+          List<DashboardRefreshType>.from(globalController.refreshTriggers);
+
+      for (var type in triggersCopy) {
         _partialRefresh(type);
         globalController.removeTrigger(type);
       }
@@ -50,66 +61,81 @@ class DashboardController extends GetxController {
 
   // ---------------- Load full dashboard ----------------
   Future<void> loadDashboardData() async {
+    await _fetchDashboardData(DashboardRefreshType.all);
+  }
+
+  // ---------------- Partial / full refresh ----------------
+  Future<void> _partialRefresh(DashboardRefreshType type) async {
+    await _fetchDashboardData(type);
+  }
+
+  /// Internal method to fetch dashboard data and update reactive fields
+  Future<void> _fetchDashboardData(DashboardRefreshType type) async {
     try {
       isLoading.value = true;
       final data = await dashboardRepository.getDashboard();
-      dashboardData.value = data;
-      lowStockItems.assignAll(data.stock.lowStockItems); // reactive
+
+      switch (type) {
+        case DashboardRefreshType.stock:
+          dashboardData.update((val) {
+            val?.stock = data.stock;
+          });
+          lowStockItems.assignAll(data.stock.lowStockItems);
+          break;
+
+        case DashboardRefreshType.income:
+        case DashboardRefreshType.expense:
+        case DashboardRefreshType.profitLoss:
+          dashboardData.update((val) {
+            val?.income = data.income;
+            val?.expense = data.expense;
+            val?.profitLoss = data.profitLoss;
+          });
+          break;
+
+        case DashboardRefreshType.order:
+          dashboardData.update((val) {
+            val?.orders = data.orders;
+          });
+          orderRecords.assignAll(data.orders.records);
+          break;
+
+        case DashboardRefreshType.staff:
+          dashboardData.update((val) {
+            val?.staffSalary = data.staffSalary;
+          });
+          staffSalaryRecords.assignAll(data.staffSalary.details);
+          break;
+
+        case DashboardRefreshType.followup:
+          dashboardData.update((val) {
+            val?.followups = data.followups;
+          });
+          followupRecords.assignAll(data.followups.records);
+          break;
+
+        case DashboardRefreshType.all:
+          dashboardData.value = data;
+          lowStockItems.assignAll(data.stock.lowStockItems);
+          orderRecords.assignAll(data.orders.records);
+          staffSalaryRecords.assignAll(data.staffSalary.details);
+          followupRecords.assignAll(data.followups.records);
+          break;
+      }
     } catch (e) {
-      print('Dashboard load error: $e');
+      // Handle error or log
+      print('Dashboard fetch error: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ---------------- Partial refresh ----------------
-  void _partialRefresh(DashboardRefreshType type) async {
-    try {
-      isLoading.value = true;
-      final data = await dashboardRepository.getDashboard();
-
-      dashboardData.update((val) {
-        if (val == null) return;
-
-        switch (type) {
-          case DashboardRefreshType.stock:
-            val.stock = data.stock;
-            lowStockItems
-                .assignAll(data.stock.lowStockItems); // update reactive list
-            break;
-          case DashboardRefreshType.purchase:
-            val.purchases = data.purchases;
-            break;
-          case DashboardRefreshType.sale:
-            val.sales = data.sales;
-            break;
-          case DashboardRefreshType.order:
-            val.orders = data.orders;
-            break;
-          case DashboardRefreshType.staff:
-            val.staffSalary = data.staffSalary;
-            break;
-          case DashboardRefreshType.followup:
-            val.followups = data.followups;
-            break;
-          case DashboardRefreshType.charts:
-            val.charts = data.charts;
-            break;
-          case DashboardRefreshType.all:
-            dashboardData.value = data;
-            lowStockItems.assignAll(data.stock.lowStockItems);
-            break;
-        }
-      });
-    } catch (e) {
-      print('Dashboard partial refresh error: $e');
-    } finally {
-      isLoading.value = false;
-    }
+  // ---------------- Profit & Loss period switch ----------------
+  void changeProfitLossPeriod(ProfitLossPeriod period) {
+    selectedPLPeriod.value = period;
   }
 
-  // ---------------- Chart period switch ----------------
-  void changeChartPeriod(ChartPeriod period) {
-    selectedChartPeriod.value = period;
-  }
+  // ---------------- Utility ----------------
+  bool isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 }

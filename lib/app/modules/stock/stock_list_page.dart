@@ -8,11 +8,25 @@ import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../data/models/stock_model.dart';
 import 'stock_controller.dart';
 
-class StockListPage extends StatelessWidget {
-  StockListPage({super.key});
+class StockListPage extends StatefulWidget {
+  const StockListPage({super.key});
 
+  @override
+  State<StockListPage> createState() => _StockListPageState();
+}
+
+class _StockListPageState extends State<StockListPage> {
   final StockController stockController = Get.find<StockController>();
+
   final searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      stockController.fetchStocks();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -233,9 +247,7 @@ class StockListPage extends StatelessWidget {
                   _buildTextField(
                       stockController.salePriceController, "Sale Price",
                       keyboardType: TextInputType.number),
-                  const SizedBox(height: 12),
-                  _buildTextField(stockController.vatController, "VAT (%)",
-                      keyboardType: TextInputType.number),
+
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
