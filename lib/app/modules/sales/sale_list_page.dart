@@ -9,43 +9,45 @@ import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_form_dialog.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 
-class SaleListPage extends StatelessWidget {
-  SaleListPage({super.key});
+class SaleListPage extends StatefulWidget {
+  const SaleListPage({super.key});
 
+  @override
+  State<SaleListPage> createState() => _SaleListPageState();
+}
+
+class _SaleListPageState extends State<SaleListPage> {
   final SalesController controller =
       Get.put(SalesController(saleRepository: Get.find()));
   final StaffController staffController = Get.find();
+  final StockController stockController = Get.find();
+
   final searchController = TextEditingController();
-  final RxString selectedSaleType = 'all'.obs;
+  Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
+  RxString selectedStatus = 'all'.obs;
+
+  @override
+  void initState() {
+    super.initState();
+    controller.fetchSales();
+  }
 
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
-
     return Scaffold(
       backgroundColor: const Color(0xfff6f7fb),
       appBar: AppBar(
         title: const Text('Sales'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _resetFilters,
-          ),
-        ],
       ),
-      body: Padding(
-        padding: EdgeInsets.all(SizeConfig.sw(0.03)),
-        child: Column(
-          children: [
-            _searchField(),
-            const SizedBox(height: 10),
-            _filtersRow(),
-            const SizedBox(height: 10),
-            _summaryRow(),
-            const SizedBox(height: 10),
-            Expanded(child: _saleList()),
-          ],
-        ),
+      body: Column(
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 8),
+          _buildStatusFilter(),
+          const SizedBox(height: 8),
+          Expanded(child: _buildSaleList()),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openSaleDialog(),
@@ -55,131 +57,84 @@ class SaleListPage extends StatelessWidget {
     );
   }
 
-  // ---------------- SEARCH ----------------
-  Widget _searchField() {
-    return TextField(
-      controller: searchController,
-      onChanged: (val) => controller.searchText.value = val,
-      decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.search),
-        hintText: 'Search by customer...',
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  // ---------------- FILTERS ----------------
-  Widget _filtersRow() {
-    return Row(
-      children: [
-        Expanded(child: _dateFilter()),
-        const SizedBox(width: 8),
-        Expanded(child: _typeFilter()),
-      ],
-    );
-  }
-
-  Widget _dateFilter() {
-    return Obx(() => InkWell(
-          onTap: _pickDate,
-          child: Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
+  // ---------------- HEADER ----------------
+  Widget _buildHeader() {
+    return Card(
+      margin: const EdgeInsets.all(12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Search customer...',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (v) => controller.searchText.value = v,
             ),
-            child: Row(
+            const SizedBox(height: 10),
+            Row(
               children: [
-                const Icon(Icons.calendar_today, size: 16),
-                const SizedBox(width: 6),
-                Text(controller.saleDate.value == null
-                    ? 'Select date'
-                    : controller.saleDate.value!
-                        .toIso8601String()
-                        .split('T')
-                        .first),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _pickDate,
+                    icon: const Icon(Icons.date_range),
+                    label: Obx(() => Text(
+                          selectedDate.value == null
+                              ? 'Select Date'
+                              : selectedDate.value!
+                                  .toIso8601String()
+                                  .split('T')[0],
+                        )),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: controller.fetchSales,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Refresh'),
+                ),
               ],
             ),
-          ),
-        ));
-  }
-
-  void _pickDate() async {
-    final picked = await showDatePicker(
-      context: Get.context!,
-      initialDate: controller.saleDate.value ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) controller.saleDate.value = picked;
-  }
-
-  Widget _typeFilter() {
-    return Obx(() => DropdownButtonFormField<String>(
-          value: selectedSaleType.value,
-          items: const [
-            DropdownMenuItem(value: 'all', child: Text('All')),
-            DropdownMenuItem(value: 'stock', child: Text('Stock')),
-            DropdownMenuItem(value: 'service', child: Text('Service')),
           ],
-          onChanged: (v) => selectedSaleType.value = v ?? 'all',
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ));
-  }
-
-  void _resetFilters() {
-    searchController.clear();
-    selectedSaleType.value = 'all';
-    controller.saleDate.value = null;
-    controller.fetchSales();
-  }
-
-  // ---------------- SUMMARY ----------------
-  Widget _summaryRow() {
-    return Obx(() {
-      final list = _filteredSales();
-      final total = list.fold<double>(0, (sum, e) => sum + e.totalAmount);
-      final paid = list.fold<double>(0, (sum, e) => sum + e.paidAmount);
-      final remaining =
-          list.fold<double>(0, (sum, e) => sum + e.remainingAmount);
-
-      return Row(
-        children: [
-          _summaryCard('Total', total, Colors.blue),
-          _summaryCard('Paid', paid, Colors.green),
-          _summaryCard('Remaining', remaining, Colors.red),
-        ],
-      );
-    });
-  }
-
-  Widget _summaryCard(String title, double value, Color color) {
-    return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              Text(title, style: TextStyle(color: color)),
-              const SizedBox(height: 4),
-              Text(
-                value.toStringAsFixed(2),
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ],
-          ),
         ),
       ),
     );
+  }
+
+  // ---------------- STATUS FILTER ----------------
+  Widget _buildStatusFilter() {
+    const statuses = [
+      {'label': 'All', 'value': 'all'},
+      {'label': 'Paid', 'value': 'paid'},
+      {'label': 'Partial', 'value': 'partial'},
+      {'label': 'Not Paid', 'value': 'not_paid'},
+    ];
+
+    return Obx(() => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: statuses
+                .map((s) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(s['label']!),
+                        selected: selectedStatus.value == s['value'],
+                        onSelected: (_) => selectedStatus.value = s['value']!,
+                        selectedColor: Colors.deepPurple,
+                        labelStyle: TextStyle(
+                          color: selectedStatus.value == s['value']
+                              ? Colors.white
+                              : Colors.black,
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ));
   }
 
   // ---------------- FILTER LOGIC ----------------
@@ -187,13 +142,15 @@ class SaleListPage extends StatelessWidget {
     final query = controller.searchText.value.toLowerCase();
 
     return controller.sales.where((sale) {
-      if (selectedSaleType.value == 'stock' && sale.isServicing) return false;
-      if (selectedSaleType.value == 'service' && !sale.isServicing) {
+      // Status filter
+      if (selectedStatus.value != 'all' &&
+          sale.isPaid != selectedStatus.value) {
         return false;
       }
 
-      if (controller.saleDate.value != null) {
-        final d = controller.saleDate.value!;
+      // Date filter
+      if (selectedDate.value != null) {
+        final d = selectedDate.value!;
         if (sale.saleDate.year != d.year ||
             sale.saleDate.month != d.month ||
             sale.saleDate.day != d.day) {
@@ -201,6 +158,7 @@ class SaleListPage extends StatelessWidget {
         }
       }
 
+      // Search by customer
       if (query.isNotEmpty &&
           !sale.customerName.toLowerCase().contains(query)) {
         return false;
@@ -211,28 +169,30 @@ class SaleListPage extends StatelessWidget {
   }
 
   // ---------------- SALE LIST ----------------
-  Widget _saleList() {
+  Widget _buildSaleList() {
     return Obx(() {
       if (controller.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
       }
+
       final list = _filteredSales();
       if (list.isEmpty) return const Center(child: Text('No sales found'));
 
       return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         itemCount: list.length,
         itemBuilder: (_, i) => _saleTile(list[i]),
       );
     });
   }
 
-  Widget _saleTile(SaleModel sale) {
-    final badgeColor = sale.isPaid == 'paid'
-        ? Colors.green
-        : sale.isPaid == 'partial'
-            ? Colors.orange
-            : Colors.red;
+  Color _statusColor(String status) {
+    if (status == 'paid') return Colors.green;
+    if (status == 'partial') return Colors.orange;
+    return Colors.red;
+  }
 
+  Widget _saleTile(SaleModel sale) {
     return Slidable(
       key: ValueKey(sale.id),
       endActionPane: ActionPane(
@@ -254,27 +214,92 @@ class SaleListPage extends StatelessWidget {
       ),
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 4),
-        child: ListTile(
-          leading: Icon(sale.isServicing ? Icons.build : Icons.shopping_cart),
-          title: Text(sale.customerName),
-          subtitle: Text(
-              'Total: ${sale.totalAmount.toStringAsFixed(2)} | Paid: ${sale.paidAmount.toStringAsFixed(2)} | Remaining: ${sale.remainingAmount.toStringAsFixed(2)}'),
-          trailing: Chip(
-            label: Text(sale.isPaid.toUpperCase()),
-            backgroundColor: badgeColor.withOpacity(0.15),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      sale.customerName,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Chip(
+                    label: Text(
+                      sale.isPaid.replaceAll('_', ' ').toUpperCase(),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    backgroundColor: _statusColor(sale.isPaid),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text('Date: ${sale.saleDate.toIso8601String().split('T')[0]}'),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Text('Total: ${sale.netTotal.toStringAsFixed(2)}'),
+                  const SizedBox(width: 12),
+                  Text('Paid: ${sale.paidAmount.toStringAsFixed(2)}'),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Remaining: ${sale.remainingAmount.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Paid From: ${sale.paidFrom}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // ---------------- SALE FORM ----------------
+  // ---------------- DATE PICKER ----------------
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate.value ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) selectedDate.value = picked;
+  }
+
+  // ---------------- ADD / EDIT SALE ----------------
   void _openSaleDialog({SaleModel? sale}) {
-    final stockCtrl = Get.find<StockController>();
     final isEdit = sale != null;
 
     controller.clearForm();
     if (isEdit) controller.fillForEdit(sale);
+
+    // ---------- Observables ----------
+    final isServicing = (sale?.isServicing ?? false).obs;
+    final staffSelected = (sale?.handledBy ?? 0).obs;
+
+    // Ensure paidFrom is always one of the dropdown options
+    final paidFromOptions = ['cash', 'online', 'bank'];
+    final initialPaidFrom =
+        (sale?.paidFrom != null && paidFromOptions.contains(sale!.paidFrom))
+            ? sale.paidFrom
+            : 'cash';
+    final paidFrom = initialPaidFrom.obs;
+
+    controller.discountController.text =
+        (sale?.discountPercentage ?? 0).toString();
+    controller.vatController.text =
+        (sale?.vatPercentage ?? 13).toString(); // default 13%
+
+    controller.updateTotals(); // recalc grand, net, remaining
 
     Get.dialog(
       CustomFormDialog(
@@ -282,9 +307,150 @@ class SaleListPage extends StatelessWidget {
         isEditMode: isEdit,
         width: 0.9,
         height: 0.9,
-        content: _saleForm(stockCtrl),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              // ---------- Bill No ----------
+              _buildTextField('Bill No', controller.billNoController),
+
+              const SizedBox(height: 8),
+              // ---------- Customer ----------
+              _buildTextField(
+                  'Customer Name', controller.customerNameController),
+              const SizedBox(height: 8),
+              _buildTextField('Contact No', controller.contactNoController),
+
+              const SizedBox(height: 8),
+              // ---------- Sale Date ----------
+              _datePickerField('Sale Date', controller.saleDate,
+                  required: true),
+
+              const SizedBox(height: 8),
+              // ---------- Staff Dropdown ----------
+              Obx(() {
+                return DropdownButtonFormField<int>(
+                  value: staffSelected.value > 0 ? staffSelected.value : null,
+                  items: staffController.staffs
+                      .map((s) => DropdownMenuItem(
+                            value: s.id, // int
+                            child: Text(s.name),
+                          ))
+                      .toList(),
+                  onChanged: (v) => staffSelected.value = v ?? 0,
+                );
+              }),
+
+              const SizedBox(height: 8),
+              // ---------- Servicing Switch ----------
+              Obx(() => SwitchListTile(
+                    title: const Text('Servicing Sale'),
+                    value: isServicing.value,
+                    onChanged: (v) => isServicing.value = v,
+                  )),
+
+              const SizedBox(height: 8),
+              // ---------- Items ----------
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Item'),
+                  onPressed: () async {
+                    final selectedStock = await _selectStock();
+                    if (selectedStock != null) {
+                      controller
+                          .addItem(SaleItemModel.fromStock(selectedStock));
+                      controller.updateTotals();
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Obx(() => Column(
+                    children: controller.selectedItems.map(_itemRow).toList(),
+                  )),
+
+              const SizedBox(height: 8),
+              // ---------- Discount & VAT ----------
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                        'Discount %', controller.discountController,
+                        keyboardType: TextInputType.number, onChanged: (_) {
+                      controller.updateTotals();
+                    }),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildTextField('VAT %', controller.vatController,
+                        keyboardType: TextInputType.number, onChanged: (_) {
+                      controller.updateTotals();
+                    }),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+              // ---------- Paid From ----------
+              Obx(() {
+                return DropdownButtonFormField<String>(
+                  value: paidFromOptions.contains(paidFrom.value)
+                      ? paidFrom.value
+                      : null,
+                  items: paidFromOptions
+                      .map((p) => DropdownMenuItem(
+                            value: p,
+                            child: Text(p.toUpperCase()),
+                          ))
+                      .toList(),
+                  onChanged: (v) => paidFrom.value = v ?? 'cash',
+                  decoration: const InputDecoration(
+                    labelText: 'Paid From',
+                    border: OutlineInputBorder(),
+                  ),
+                );
+              }),
+
+              const SizedBox(height: 8),
+              // ---------- Paid Amount ----------
+              _buildTextField('Paid Amount', controller.paidAmountController,
+                  keyboardType: TextInputType.number, onChanged: (_) {
+                controller.updateTotals();
+              }),
+
+              const SizedBox(height: 8),
+              // ---------- Net / Remaining ----------
+              Obx(() => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          'Grand Total: ${controller.totalAmount.toStringAsFixed(2)}'),
+                      Text(
+                          'Discount Amount: ${controller.discountAmount.toStringAsFixed(2)}'),
+                      Text(
+                          'VAT Amount: ${controller.vatAmount.toStringAsFixed(2)}'),
+                      Text(
+                          'Net Total: ${controller.netAmount.toStringAsFixed(2)}'),
+                      Text(
+                          'Remaining: ${controller.remainingAmount.toStringAsFixed(2)}'),
+                    ],
+                  )),
+
+              const SizedBox(height: 8),
+              // ---------- Remarks ----------
+              _buildTextField('Remarks', controller.remarksController,
+                  keyboardType: TextInputType.text),
+            ],
+          ),
+        ),
         onSave: () async {
-          if (!_validateForm(controller.isServicing.value)) return;
+          if (!_validateForm()) return;
+
+          // Assign handled_by & paid_from to controller / model
+          controller.handledBy.value = staffSelected.value;
+          controller.paidFrom.value = paidFrom.value;
+
           if (isEdit) {
             await controller.updateSale(sale.id!);
           } else {
@@ -292,177 +458,127 @@ class SaleListPage extends StatelessWidget {
           }
           Get.back();
         },
+        onDelete: isEdit
+            ? () async {
+                await controller.deleteSale(sale.id!);
+                Get.back();
+              }
+            : null,
       ),
       barrierDismissible: false,
     );
   }
 
-  bool _validateForm(bool isService) {
+  // ---------- HELPERS ----------
+  bool _validateForm() {
     if (controller.customerNameController.text.isEmpty) {
       Get.snackbar('Error', 'Customer name is required');
       return false;
     }
-
     if (controller.saleDate.value == null) {
       Get.snackbar('Error', 'Sale date is required');
       return false;
     }
-
     if (controller.selectedItems.isEmpty) {
       Get.snackbar('Error', 'Please add at least one item');
       return false;
     }
-
-    if (isService) {
-      if (controller.vehicleModelController.text.isEmpty ||
-          controller.jobDoneOnVehicleController.text.isEmpty) {
-        Get.snackbar('Error', 'Vehicle details are required');
-        return false;
-      }
-
-      if (controller.receivedDate.value == null ||
-          controller.deliveryDate.value == null) {
-        Get.snackbar('Error', 'Received & Delivery dates are required');
-        return false;
-      }
-    }
-
     return true;
   }
 
-  // ---------------- FORM FIELDS ----------------
-  Widget _saleForm(StockController stockCtrl) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _input(controller.billNoController, 'Bill No'),
-          _input(controller.customerNameController, 'Customer Name'),
-          _input(controller.contactNoController, 'Contact No'),
-          Obx(() => SwitchListTile(
-                title: const Text('Servicing Sale'),
-                value: controller.isServicing.value,
-                onChanged: (v) => controller.isServicing.value = v,
-              )),
-          const Divider(),
-          Obx(() => controller.isServicing.value
-              ? Column(children: _servicingFields())
-              : const SizedBox.shrink()),
-          const Divider(),
-          _datePickerField('Sale Date', controller.saleDate, required: true),
-          Obx(() => controller.isServicing.value
-              ? _datePickerField('Received Date', controller.receivedDate,
-                  required: true)
-              : const SizedBox.shrink()),
-          Obx(() => controller.isServicing.value
-              ? _datePickerField('Delivery Date', controller.deliveryDate,
-                  required: true)
-              : const SizedBox.shrink()),
-          const SizedBox(height: 10),
-          const Text('Items', style: TextStyle(fontWeight: FontWeight.bold)),
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.add),
-              label: const Text('Add Item'),
-              onPressed: () async {
-                final selectedStock = await _selectStock(stockCtrl);
-                if (selectedStock != null) {
-                  controller.addItem(SaleItemModel.fromStock(selectedStock));
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Obx(() => Column(
-                children: controller.selectedItems.map(_itemRow).toList(),
-              )),
-          const Divider(),
-          Obx(() => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                      'Items Total: ${controller.itemsTotal.toStringAsFixed(2)}'),
-                  if (controller.isServicing.value)
-                    Text(
-                        'Labour Charge: ${controller.labourCharge.toStringAsFixed(2)}'),
-                  Text(
-                      'Total Amount: ${controller.totalAmount.toStringAsFixed(2)}'),
-                ],
-              )),
-          const SizedBox(height: 10),
-          Obx(() => DropdownButtonFormField<int>(
-                value: controller.handledBy.value,
-                items: [
-                  const DropdownMenuItem<int>(
-                    value: 0,
-                    child: Text('Select Staff',
-                        style: TextStyle(color: Colors.grey)),
-                  ),
-                  ...staffController.staffs.map(
-                    (s) => DropdownMenuItem<int>(
-                      value: s.id,
-                      child: Text(s.name),
-                    ),
-                  ),
-                ],
-                onChanged: (v) => controller.handledBy.value = v ?? 0,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-              )),
-          const SizedBox(height: 10),
-          _input(controller.paidAmountController, 'Paid Amount',
-              type: TextInputType.number),
-          _input(controller.remarksController, 'Remarks'),
-        ],
-      ),
+  Widget _buildTextField(String label, TextEditingController controller,
+      {TextInputType keyboardType = TextInputType.text,
+      void Function(String)? onChanged}) {
+    return TextField(
+      controller: controller,
+      decoration:
+          InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      keyboardType: keyboardType,
+      onChanged: onChanged,
     );
   }
 
-  List<Widget> _servicingFields() => [
-        _input(controller.vehicleModelController, 'Vehicle Model'),
-        _input(controller.kmDrivenController, 'Km Driven',
-            type: TextInputType.number),
-        _input(controller.jobCardNoController, 'Job Card No'),
-        _input(controller.bikeRegistrationController, 'Bike Registration No'),
-        _input(controller.vehicleColorController, 'Vehicle Color'),
-        _input(controller.jobDoneOnVehicleController, 'Job Done On Vehicle'),
-        _input(controller.labourChargeController, 'Labour Charge',
-            type: TextInputType.number),
-        _checkbox('Free Servicing', controller.isFreeServicing),
-        _checkbox('Repair Job', controller.isRepairJob),
-        _checkbox('Accident', controller.isAccident),
-        _checkbox('Warranty Job', controller.isWarrantyJob),
-      ];
+  Widget _datePickerField(String label, Rx<DateTime?> dateField,
+      {bool required = false}) {
+    return Obx(() => InkWell(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: dateField.value ?? DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+            );
+            if (picked != null) {
+              dateField.value = picked;
+
+              // ✅ Auto-update followUpDate and postServiceFeedbackDate
+              if (dateField == controller.deliveryDate) {
+                controller.updateDerivedDates();
+              }
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                  color: required && dateField.value == null
+                      ? Colors.red
+                      : Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 18),
+                const SizedBox(width: 10),
+                Text(dateField.value == null
+                    ? '$label ${required ? "*" : ""}'
+                    : dateField.value!.toIso8601String().split('T').first),
+              ],
+            ),
+          ),
+        ));
+  }
+
+  Widget _readonlyDateField(String label, Rx<DateTime?> dateField) {
+    return Obx(() => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+              const SizedBox(width: 10),
+              Text(dateField.value == null
+                  ? label
+                  : dateField.value!.toIso8601String().split('T').first),
+            ],
+          ),
+        ));
+  }
 
   Widget _itemRow(SaleItemModel item) {
-    item.initControllerIfNull(); // Ensure controllers exist
-
+    item.initControllerIfNull();
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: Row(
           children: [
-            Expanded(flex: 3, child: Text(item.itemName)), // Item Name
+            Expanded(flex: 3, child: Text(item.itemName)),
             Expanded(
               flex: 2,
               child: TextField(
-                controller: item.qtyController,
+                controller: item.quantityController,
                 keyboardType: TextInputType.number,
                 decoration:
                     const InputDecoration(labelText: 'Qty', isDense: true),
-                onChanged: (_) {
-                  item.recalculate();
-                  controller.updateTotals();
-                },
+                onChanged: (_) => controller.updateTotals(),
               ),
             ),
-            const SizedBox(width: 8),
             Expanded(
               flex: 2,
               child: TextField(
@@ -470,19 +586,15 @@ class SaleListPage extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 decoration:
                     const InputDecoration(labelText: 'Rate', isDense: true),
-                onChanged: (_) {
-                  item.recalculate();
-                  controller.updateTotals();
-                },
+                onChanged: (_) => controller.updateTotals(),
               ),
             ),
-            const SizedBox(width: 8),
             Expanded(
-              flex: 2,
-              child: Obx(() => Text(
-                  'Total: ${item.totalPrice.value.toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold))),
-            ),
+                flex: 2,
+                child: Obx(() => Text(
+                      'Total: ${item.totalPrice.value.toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ))),
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: () => controller.removeItem(item),
@@ -493,10 +605,10 @@ class SaleListPage extends StatelessWidget {
     );
   }
 
-  Future<dynamic> _selectStock(StockController stockCtrl) async {
+  Future<dynamic> _selectStock() async {
     final searchCtrl = TextEditingController();
     return showDialog(
-      context: Get.context!,
+      context: context,
       builder: (_) => StatefulBuilder(
         builder: (_, setState) => AlertDialog(
           title: const Text('Select Stock'),
@@ -513,7 +625,7 @@ class SaleListPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Expanded(
                   child: Obx(() {
-                    final filtered = stockCtrl.stocks
+                    final filtered = stockController.stocks
                         .where((s) => s.name
                             .toLowerCase()
                             .contains(searchCtrl.text.toLowerCase()))
@@ -525,7 +637,7 @@ class SaleListPage extends StatelessWidget {
                         return ListTile(
                           title: Text(s.name),
                           subtitle: Text('Available: ${s.stock}'),
-                          onTap: () => Get.back(result: s),
+                          onTap: () => Navigator.pop(context, s),
                         );
                       },
                     );
@@ -538,71 +650,4 @@ class SaleListPage extends StatelessWidget {
       ),
     );
   }
-
-  Widget _datePickerField(String label, Rx<DateTime?> dateField,
-      {bool required = false}) {
-    return Obx(() => InkWell(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: Get.context!,
-              initialDate: dateField.value ?? DateTime.now(),
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-            );
-            if (picked != null) dateField.value = picked;
-          },
-          child: Container(
-            margin: const EdgeInsets.only(top: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: required && dateField.value == null
-                    ? Colors.red
-                    : Colors.grey.shade300,
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 18),
-                const SizedBox(width: 10),
-                Text(
-                  dateField.value == null
-                      ? '$label ${required ? "*" : ""}'
-                      : dateField.value!.toIso8601String().split('T').first,
-                  style: TextStyle(
-                      color: required && dateField.value == null
-                          ? Colors.red
-                          : Colors.black),
-                ),
-              ],
-            ),
-          ),
-        ));
-  }
-
-  Widget _input(TextEditingController c, String label,
-          {TextInputType type = TextInputType.text}) =>
-      Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: TextField(
-          controller: c,
-          keyboardType: type,
-          decoration: InputDecoration(
-            labelText: label,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            filled: true,
-            fillColor: Colors.white,
-          ),
-        ),
-      );
-}
-
-Widget _checkbox(String label, RxBool value) {
-  return Obx(() => CheckboxListTile(
-        title: Text(label),
-        value: value.value,
-        onChanged: (v) => value.value = v ?? false,
-      ));
 }

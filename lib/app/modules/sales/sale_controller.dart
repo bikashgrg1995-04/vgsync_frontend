@@ -17,12 +17,12 @@ class SalesController extends GetxController {
   final StockController stockController = Get.find();
   final FollowUpController followUpController = Get.find();
 
-  // ---------------- OBSERVABLES ----------------
+  // ---------------- STATE ----------------
   final sales = <SaleModel>[].obs;
   final isLoading = false.obs;
 
   // ---------------- SEARCH ----------------
-  final searchText = ''.obs;
+  final searchText = ''.obs; // ✅ ADD THIS LINE
 
   // ---------------- TEXT CONTROLLERS ----------------
   late TextEditingController customerNameController;
@@ -49,16 +49,29 @@ class SalesController extends GetxController {
   final saleDate = Rx<DateTime?>(null);
   final receivedDate = Rx<DateTime?>(null);
   final deliveryDate = Rx<DateTime?>(null);
-
   final handledBy = 0.obs;
 
-  // ---------------- ITEMS & TOTALS ----------------
+  final followUpDate = Rx<DateTime?>(null); // 30 days after delivery
+  final postServiceFeedbackDate = Rx<DateTime?>(null); // 3 days after delivery
+
+  // ---------------- ITEMS ----------------
   final selectedItems = <SaleItemModel>[].obs;
 
+  // ---------------- TOTALS ----------------
   final itemsTotal = 0.0.obs;
   final labourCharge = 0.0.obs;
+  final vatPercent = 13.0.obs;
+  final vatAmount = 0.0.obs;
+  final discountPercent = 0.0.obs;
+  final discountAmount = 0.0.obs;
   final totalAmount = 0.0.obs;
   final remainingAmount = 0.0.obs;
+  final netAmount = 0.0.obs;
+
+  final paidFrom = 'cash'.obs; // default to 'cash'
+
+  late TextEditingController discountController;
+  late TextEditingController vatController;
 
   // ---------------- LIFECYCLE ----------------
   @override
@@ -85,26 +98,18 @@ class SalesController extends GetxController {
 
     labourChargeController.addListener(updateTotals);
     paidAmountController.addListener(updateTotals);
+
+    discountController = TextEditingController();
+    vatController = TextEditingController();
+
+    discountController.addListener(updateTotals);
+    vatController.addListener(updateTotals);
   }
 
   @override
   void onClose() {
-    customerNameController.dispose();
-    contactNoController.dispose();
-    vehicleModelController.dispose();
-    kmDrivenController.dispose();
-    jobCardNoController.dispose();
-    bikeRegistrationController.dispose();
-    vehicleColorController.dispose();
-    billNoController.dispose();
-    technicianNameController.dispose();
-    jobDoneOnVehicleController.dispose();
-    remarksController.dispose();
-    labourChargeController.dispose();
-    paidAmountController.dispose();
-
-    for (final item in selectedItems) {
-      item.dispose();
+    for (final i in selectedItems) {
+      i.dispose();
     }
     super.onClose();
   }
@@ -114,23 +119,63 @@ class SalesController extends GetxController {
     try {
       isLoading.value = true;
       sales.value = await saleRepository.getSales();
-      print(sales.first.items.first.itemName);
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ---------------- TOTALS ----------------
+  final saleStatus = 'not_paid'.obs;
+  // ---------------- CALCULATIONS ----------------
   void updateTotals() {
+    // ---------- ITEMS TOTAL ----------
     itemsTotal.value =
-        selectedItems.fold(0.0, (s, e) => s + e.totalPrice.value);
+        selectedItems.fold(0.0, (sum, e) => sum + e.totalPrice.value);
 
-    labourCharge.value = double.tryParse(labourChargeController.text) ?? 0.0;
+    // ---------- LABOUR ----------
+    labourCharge.value = double.tryParse(labourChargeController.text) ?? 0;
+    if (labourCharge.value < 0) labourCharge.value = 0;
 
-    final paid = double.tryParse(paidAmountController.text) ?? 0.0;
+    // ---------- DISCOUNT ----------
+    double discount = double.tryParse(discountController.text) ?? 0;
+    if (discount < 0) discount = 0;
+    discountPercent.value = discount;
 
-    totalAmount.value = itemsTotal.value + labourCharge.value;
-    remainingAmount.value = totalAmount.value - paid;
+    discountAmount.value =
+        (itemsTotal.value + labourCharge.value) * discount / 100;
+
+    // ---------- VAT ----------
+    double vat = double.tryParse(vatController.text) ?? vatPercent.value;
+    vatPercent.value = vat;
+
+    double subTotal =
+        itemsTotal.value + labourCharge.value - discountAmount.value;
+    vatAmount.value = subTotal * vat / 100;
+
+    // ---------- TOTAL & NET ----------
+    netAmount.value = subTotal + vatAmount.value;
+    totalAmount.value =
+        itemsTotal.value + labourCharge.value; // optional display if needed
+
+    // ---------- PAID & REMAINING ----------
+    double paid = double.tryParse(paidAmountController.text) ?? 0;
+    if (paid < 0) paid = 0;
+    if (paid > netAmount.value) paid = netAmount.value;
+
+    remainingAmount.value = netAmount.value - paid;
+
+    // ---------- STATUS ----------
+    saleStatus.value = SaleModel.resolvePaidStatus(netAmount.value, paid);
+  }
+
+  void updateDerivedDates() {
+    if (deliveryDate.value != null) {
+      postServiceFeedbackDate.value =
+          deliveryDate.value!.add(const Duration(days: 3));
+      followUpDate.value = deliveryDate.value!.add(const Duration(days: 30));
+    } else {
+      postServiceFeedbackDate.value = null;
+      followUpDate.value = null;
+    }
   }
 
   // ---------------- ITEM HANDLING ----------------
@@ -142,7 +187,6 @@ class SalesController extends GetxController {
 
     final copy = item.copy();
     copy.initControllerIfNull();
-
     selectedItems.add(copy);
     updateTotals();
   }
@@ -157,50 +201,25 @@ class SalesController extends GetxController {
   Future<void> addSale() async {
     if (!_validateForm()) return;
 
-    final newSale = SaleModel(
-      saleDate: saleDate.value ?? DateTime.now(),
-      customerName: customerNameController.text,
-      contactNo: contactNoController.text,
-      vehicleModel: vehicleModelController.text,
-      kmDriven: int.tryParse(kmDrivenController.text),
-      jobCardNo: jobCardNoController.text,
-      bikeRegistrationNo: bikeRegistrationController.text,
-      vehicleColor: vehicleColorController.text,
-      receivedDate: receivedDate.value,
-      deliveryDate: deliveryDate.value,
-      billNo: billNoController.text,
-      technicianName: technicianNameController.text,
-      isServicing: isServicing.value,
-      isFreeServicing: isFreeServicing.value,
-      isRepairJob: isRepairJob.value,
-      isAccident: isAccident.value,
-      isWarrantyJob: isWarrantyJob.value,
-      jobDoneOnVehicle: jobDoneOnVehicleController.text,
-      remarks: remarksController.text,
-      labourCharge: labourCharge.value,
-      totalAmount: totalAmount.value,
-      paidAmount: double.tryParse(paidAmountController.text) ?? 0.0,
-      remainingAmount: remainingAmount.value,
-      handledBy: handledBy.value,
-      items: selectedItems.map((e) => e.copy()).toList(),
-    );
-
-    print(newSale);
+    final sale = _buildSale();
 
     try {
       isLoading.value = true;
-
       final created = isServicing.value
-          ? await saleRepository.createServicingSale(newSale,
-              handledBy: handledBy.value)
-          : await saleRepository.createStockSale(newSale,
-              handledBy: handledBy.value);
+          ? await saleRepository.createServicingSale(
+              sale,
+              handledBy: handledBy.value,
+            )
+          : await saleRepository.createStockSale(
+              sale,
+              handledBy: handledBy.value,
+            );
 
       sales.add(created);
-      _postMutationRefresh();
+      _postRefresh();
       clearForm();
       Get.back();
-      Get.snackbar('Success', 'Sale added successfully');
+      Get.snackbar('Success', 'Sale added');
     } finally {
       isLoading.value = false;
     }
@@ -210,48 +229,19 @@ class SalesController extends GetxController {
   Future<void> updateSale(int saleId) async {
     if (!_validateForm()) return;
 
-    final index = sales.indexWhere((s) => s.id == saleId);
+    final index = sales.indexWhere((e) => e.id == saleId);
     if (index == -1) return;
 
-    final updatedSale = SaleModel(
-      id: saleId,
-      saleDate: saleDate.value ?? DateTime.now(),
-      customerName: customerNameController.text,
-      contactNo: contactNoController.text,
-      vehicleModel: vehicleModelController.text,
-      kmDriven: int.tryParse(kmDrivenController.text),
-      jobCardNo: jobCardNoController.text,
-      bikeRegistrationNo: bikeRegistrationController.text,
-      vehicleColor: vehicleColorController.text,
-      receivedDate: receivedDate.value,
-      deliveryDate: deliveryDate.value,
-      billNo: billNoController.text,
-      technicianName: technicianNameController.text,
-      isServicing: isServicing.value,
-      isFreeServicing: isFreeServicing.value,
-      isRepairJob: isRepairJob.value,
-      isAccident: isAccident.value,
-      isWarrantyJob: isWarrantyJob.value,
-      jobDoneOnVehicle: jobDoneOnVehicleController.text,
-      remarks: remarksController.text,
-      labourCharge: labourCharge.value,
-      totalAmount: totalAmount.value,
-      paidAmount: double.tryParse(paidAmountController.text) ?? 0.0,
-      remainingAmount: remainingAmount.value,
-      handledBy: handledBy.value,
-      items: selectedItems.map((e) => e.copy()).toList(),
-    );
+    final updated = _buildSale(id: saleId);
 
     try {
       isLoading.value = true;
-
-      final result = await saleRepository.updateSale(updatedSale);
-
+      final result = await saleRepository.updateSale(updated);
       sales[index] = result;
-      _postMutationRefresh();
+      _postRefresh();
       clearForm();
       Get.back();
-      Get.snackbar('Success', 'Sale updated successfully');
+      Get.snackbar('Success', 'Sale updated');
     } finally {
       isLoading.value = false;
     }
@@ -259,24 +249,22 @@ class SalesController extends GetxController {
 
   // ---------------- DELETE SALE ----------------
   Future<void> deleteSale(int saleId) async {
-    final index = sales.indexWhere((s) => s.id == saleId);
+    final index = sales.indexWhere((e) => e.id == saleId);
     if (index == -1) return;
 
     try {
       isLoading.value = true;
       await saleRepository.deleteSale(saleId);
       sales.removeAt(index);
-      _postMutationRefresh();
-      Get.snackbar('Success', 'Sale deleted successfully');
+      _postRefresh();
+      Get.snackbar('Success', 'Sale deleted');
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ---------------- FILL FORM FOR EDIT ----------------
   void fillForEdit(SaleModel sale) {
-    clearForm();
-
+    // ---------------- FILL FORM ----------------
     customerNameController.text = sale.customerName;
     contactNoController.text = sale.contactNo ?? '';
     vehicleModelController.text = sale.vehicleModel ?? '';
@@ -286,12 +274,10 @@ class SalesController extends GetxController {
     vehicleColorController.text = sale.vehicleColor ?? '';
     billNoController.text = sale.billNo ?? '';
     technicianNameController.text = sale.technicianName ?? '';
-    jobDoneOnVehicleController.text = sale.jobDoneOnVehicle;
-    remarksController.text = sale.remarks;
-
-    saleDate.value = sale.saleDate;
-    receivedDate.value = sale.receivedDate;
-    deliveryDate.value = sale.deliveryDate;
+    jobDoneOnVehicleController.text = sale.jobDoneOnVehicle ?? '';
+    remarksController.text = sale.remarks ?? '';
+    labourChargeController.text = sale.labourCharge.toStringAsFixed(2);
+    paidAmountController.text = sale.paidAmount.toStringAsFixed(2);
 
     isServicing.value = sale.isServicing;
     isFreeServicing.value = sale.isFreeServicing;
@@ -299,35 +285,70 @@ class SalesController extends GetxController {
     isAccident.value = sale.isAccident;
     isWarrantyJob.value = sale.isWarrantyJob;
 
+    saleDate.value = sale.saleDate;
+    receivedDate.value = sale.receivedDate;
+    deliveryDate.value = sale.deliveryDate;
     handledBy.value = sale.handledBy ?? 0;
 
-    labourChargeController.text = sale.labourCharge.toString();
-    paidAmountController.text = sale.paidAmount.toString();
-
-    // resolve items
+    // ---------------- FILL ITEMS ----------------
     selectedItems.clear();
-    for (final saleItem in sale.items) {
-      final stock = stockController.stocks.firstWhereOrNull(
-        (s) => s.id == saleItem.itemId,
-      );
-
-      final resolved = SaleItemModel(
-        id: saleItem.id,
-        itemId: saleItem.itemId,
-        itemNo: saleItem.itemNo,
-        itemName: stock?.name != null && stock!.name.isNotEmpty
-            ? stock.name
-            : (saleItem.itemName.isNotEmpty ? saleItem.itemName : 'Unknown'),
-        category: saleItem.category,
-        quantity: saleItem.quantity,
-        salePrice: stock?.salePrice ?? saleItem.salePrice,
-      );
-
-      resolved.initControllerIfNull();
-      selectedItems.add(resolved);
+    for (var item in sale.items) {
+      final copy = item.copy();
+      copy.initControllerIfNull();
+      selectedItems.add(copy);
     }
 
+    // ---------------- UPDATE TOTALS ----------------
     updateTotals();
+  }
+
+  // ---------------- BUILD MODEL ----------------
+  SaleModel _buildSale({int? id}) {
+    final paid = double.tryParse(paidAmountController.text) ?? 0;
+    final discount = discountPercent.value;
+    final discountAmt = discountAmount.value;
+    final vat = vatPercent.value;
+    final vatAmt = vatAmount.value;
+    final net = netAmount.value;
+    final remaining = remainingAmount.value;
+
+    return SaleModel(
+      id: id,
+      saleDate: saleDate.value ?? DateTime.now(),
+      customerName: customerNameController.text,
+      contactNo: contactNoController.text,
+      handledBy: handledBy.value,
+      billNo: billNoController.text,
+      remarks: remarksController.text,
+      isServicing: isServicing.value,
+
+      // ---------- ITEMS ----------
+      items: selectedItems.map((e) => e.copy()).toList(),
+
+      // ---------- TOTALS ----------
+      grandTotal: itemsTotal.value + labourCharge.value,
+      discountPercentage: discount,
+      discountAmount: discountAmt,
+      vatPercentage: vat,
+      vatAmount: vatAmt,
+      netTotal: net,
+      paidAmount: paid,
+      remainingAmount: remaining,
+      isPaid: SaleModel.resolvePaidStatus(net, paid),
+
+      // ---------- STOCK / SERVICING ----------
+      vehicleModel: vehicleModelController.text,
+      kmDriven: int.tryParse(kmDrivenController.text),
+      jobCardNo: jobCardNoController.text,
+      bikeRegistrationNo: bikeRegistrationController.text,
+      vehicleColor: vehicleColorController.text,
+      labourCharge: labourCharge.value,
+      technicianName: technicianNameController.text,
+      jobDoneOnVehicle: jobDoneOnVehicleController.text,
+
+      receivedDate: receivedDate.value,
+      deliveryDate: deliveryDate.value,
+    );
   }
 
   // ---------------- CLEAR ----------------
@@ -360,16 +381,16 @@ class SalesController extends GetxController {
     for (final i in selectedItems) {
       i.dispose();
     }
-
     selectedItems.clear();
+
     itemsTotal.value = 0;
-    labourCharge.value = 0;
+    vatAmount.value = 0;
     totalAmount.value = 0;
     remainingAmount.value = 0;
   }
 
-  // ---------------- COMMON REFRESH ----------------
-  void _postMutationRefresh() {
+  // ---------------- REFRESH ----------------
+  void _postRefresh() {
     stockController.fetchStocks();
     followUpController.fetchFollowUps();
     globalController.triggerRefresh(DashboardRefreshType.all);
@@ -378,23 +399,19 @@ class SalesController extends GetxController {
   // ---------------- VALIDATION ----------------
   bool _validateForm() {
     if (customerNameController.text.isEmpty) {
-      Get.snackbar('Error', 'Customer name is required');
+      Get.snackbar('Error', 'Customer name required');
       return false;
     }
     if (saleDate.value == null) {
-      Get.snackbar('Error', 'Sale date is required');
+      Get.snackbar('Error', 'Sale date required');
       return false;
     }
     if (handledBy.value == 0) {
-      Get.snackbar('Error', 'Please select handled by staff');
-      return false;
-    }
-    if (isServicing.value && jobDoneOnVehicleController.text.isEmpty) {
-      Get.snackbar('Error', 'Job Done On Vehicle is required');
+      Get.snackbar('Error', 'Select staff');
       return false;
     }
     if (selectedItems.isEmpty) {
-      Get.snackbar('Error', 'At least one item must be added');
+      Get.snackbar('Error', 'Add at least one item');
       return false;
     }
     return true;

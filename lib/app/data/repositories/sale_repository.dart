@@ -13,39 +13,53 @@ class SaleRepository {
 
   // ================= CREATE =================
 
-  /// Create Stock Sale
-  /// - UI manual add
-  /// - Excel upload
+  /// ---------------- STOCK SALE ----------------
+  /// - Manual UI
+  /// - Excel import
   Future<SaleModel> createStockSale(
     SaleModel sale, {
-    int? handledBy,
+    required int handledBy,
   }) {
-    // business rule
-    sale.isServicing = false;
-    sale.handledBy = handledBy;
+    sale
+      ..isServicing = false
+      ..handledBy = handledBy;
 
     return saleService.createSale(sale);
   }
 
-  /// Create Servicing Sale
-  /// - UI manual add
-  /// - Excel upload
+  /// ---------------- SERVICING SALE ----------------
+  /// - Manual UI
+  /// - Excel import
   Future<SaleModel> createServicingSale(
     SaleModel sale, {
-    int? handledBy,
+    required int handledBy,
   }) {
-    sale.isServicing = true;
-    sale.handledBy = handledBy;
+    sale
+      ..isServicing = true
+      ..handledBy = handledBy;
 
     return saleService.createSale(sale);
   }
 
   // ================= UPDATE =================
 
-  /// Update Sale
-  /// - UI edit
-  /// - Excel re-import (update mode)
-  Future<SaleModel> updateSale(SaleModel sale) {
+  /// ---------------- UPDATE SALE ----------------
+  /// - Edit mode
+  /// - Excel re-import
+  Future<SaleModel> updateSale(
+    SaleModel sale, {
+    bool? isServicingOverride,
+    int? handledBy,
+  }) {
+    // 🔒 prevent accidental change
+    if (isServicingOverride != null) {
+      sale.isServicing = isServicingOverride;
+    }
+
+    if (handledBy != null) {
+      sale.handledBy = handledBy;
+    }
+
     return saleService.updateSale(sale);
   }
 

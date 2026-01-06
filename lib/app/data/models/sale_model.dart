@@ -1,162 +1,164 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
+import 'package:vgsync_frontend/app/data/models/stock_model.dart';
 
-/// ================= SALE ITEM MODEL =================
+/// ================= SALE ITEM =================
 class SaleItemModel {
   int? id;
   int itemId;
-  String? itemNo;
   String itemName;
-  String? category;
+  String? categoryName;
 
   int quantity;
   double salePrice;
 
-  RxDouble totalPrice = 0.0.obs;
+  // ---------- REACTIVE ----------
+  late RxInt quantityRx;
+  late RxDouble priceRx;
+  late RxDouble totalPrice;
 
-  late TextEditingController qtyController;
-  late TextEditingController priceController;
+  TextEditingController? quantityController;
+  TextEditingController? priceController;
 
   SaleItemModel({
     this.id,
     required this.itemId,
-    this.itemNo,
     required this.itemName,
-    this.category,
-    this.quantity = 1,
+    this.categoryName,
+    required this.quantity,
     required this.salePrice,
   }) {
-    // Controllers are NOT initialized automatically here
-    totalPrice.value = quantity * salePrice;
+    initControllerIfNull();
   }
 
-  /// ✅ Initialize controllers if null
   void initControllerIfNull() {
-    qtyController = TextEditingController(text: quantity.toString());
+    quantityRx = quantity.obs;
+    priceRx = salePrice.obs;
+    totalPrice = (quantity * salePrice).obs;
+
+    quantityController = TextEditingController(text: quantity.toString());
     priceController = TextEditingController(text: salePrice.toStringAsFixed(2));
 
-    qtyController.addListener(recalculate);
-    priceController.addListener(recalculate);
-
-    recalculate();
+    quantityController!.addListener(_recalculate);
+    priceController!.addListener(_recalculate);
   }
 
-  /// 🔹 ONLY quantity × salePrice
-  void recalculate() {
-    final q = int.tryParse(qtyController.text) ?? 1;
-    final p = double.tryParse(priceController.text) ?? 0;
+  void _recalculate() {
+    quantity = int.tryParse(quantityController!.text) ?? 1;
+    salePrice = double.tryParse(priceController!.text) ?? 0;
 
-    quantity = q < 1 ? 1 : q;
-    salePrice = p < 0 ? 0 : p;
+    if (quantity < 1) quantity = 1;
+    if (salePrice < 0) salePrice = 0;
 
+    quantityRx.value = quantity;
+    priceRx.value = salePrice;
     totalPrice.value = quantity * salePrice;
   }
 
-  /// Copy item (fresh controllers)
+  SaleItemModel.fromStock(Result stock)
+      : id = null,
+        itemId = stock.id ?? 0,
+        itemName = stock.name,
+        categoryName = stock.categoryName,
+        quantity = 1,
+        salePrice = stock.salePrice {
+    initControllerIfNull();
+  }
+
   SaleItemModel copy() {
     return SaleItemModel(
       id: id,
       itemId: itemId,
-      itemNo: itemNo,
       itemName: itemName,
-      category: category,
+      categoryName: categoryName,
       quantity: quantity,
       salePrice: salePrice,
     );
   }
 
-  bool isSameItem(SaleItemModel other) {
-    if (itemId != 0 && other.itemId != 0) return itemId == other.itemId;
-    if (itemNo != null && other.itemNo != null) return itemNo == other.itemNo;
-    return false;
-  }
-
   void dispose() {
-    qtyController.dispose();
-    priceController.dispose();
+    quantityController?.dispose();
+    priceController?.dispose();
   }
 
-  // ---------------- BACKEND ----------------
-  factory SaleItemModel.fromJson(dynamic json) {
-    if (json is! Map<String, dynamic>) {
-      return SaleItemModel(
-        itemId: 0,
-        itemName: 'Unknown',
-        salePrice: 0,
-      );
+  factory SaleItemModel.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      if (value is Map<String, dynamic> && value['id'] != null) {
+        return int.tryParse(value['id'].toString());
+      }
+      return null;
     }
 
     return SaleItemModel(
       id: json['id'],
-      itemId: json['item'] ?? 0,
-      itemNo: json['item_no'],
+      itemId: parseInt(json['item']) ?? 0,
       itemName: json['item_name'] ?? '',
-      category: json['category_name'],
+      categoryName: json['category_name'],
       quantity: json['quantity'] ?? 1,
-      salePrice: (json['price'] ?? json['sale_price'] ?? 0).toDouble(),
+      salePrice: (json['sale_price'] ?? 0).toDouble(),
     );
   }
 
   Map<String, dynamic> toBackendJson() {
     return {
       'item': itemId,
-      'item_no': itemNo,
       'quantity': quantity,
-      'price': salePrice,
+      'sale_price': salePrice,
     };
-  }
-
-  // ---------------- FROM STOCK ----------------
-  static SaleItemModel fromStock(dynamic stock) {
-    return SaleItemModel(
-      itemId: stock.id,
-      itemName: stock.name,
-      salePrice: stock.salePrice,
-    );
   }
 }
 
 /// ================= SALE MODEL =================
 class SaleModel {
   int? id;
+
   DateTime saleDate;
   String customerName;
   String? contactNo;
-  String? vehicleModel;
 
   bool isServicing;
-  int? kmDriven;
+  int? handledBy;
 
+  // ---------- TOTALS ----------
+  double grandTotal;
+  double discountPercentage;
+  double discountAmount;
+  double vatPercentage;
+  double vatAmount;
+  double netTotal;
+  double paidAmount;
+  double remainingAmount;
+  String isPaid;
+  String paidFrom;
+
+  // ---------- STOCK ----------
+  String? vehicleModel;
+
+  // ---------- SERVICING ----------
+  String? billNo;
+  String? remarks;
   String? jobCardNo;
   String? bikeRegistrationNo;
   String? vehicleColor;
-
-  DateTime? receivedDate;
-  DateTime? deliveryDate;
-
-  String? billNo;
-  String? technicianName;
+  int? kmDriven;
+  double labourCharge;
 
   bool isFreeServicing;
   bool isRepairJob;
   bool isAccident;
   bool isWarrantyJob;
 
+  /// 🆕 NEW FIELDS
+  String? jobDoneOnVehicle;
+  String? technicianName;
+
+  DateTime? receivedDate;
+  DateTime? deliveryDate;
   DateTime? followUpDate;
   DateTime? postServiceFeedbackDate;
-
-  String jobDoneOnVehicle;
-  String remarks;
-
-  double totalAmount;
-  double labourCharge;
-  double paidAmount;
-  double remainingAmount;
-
-  String paidFrom;
-  String isPaid;
-  int? handledBy;
 
   List<SaleItemModel> items;
 
@@ -165,108 +167,141 @@ class SaleModel {
     required this.saleDate,
     required this.customerName,
     this.contactNo,
-    this.vehicleModel,
     required this.isServicing,
-    this.kmDriven,
+    this.handledBy,
+    required this.grandTotal,
+    required this.discountPercentage,
+    required this.discountAmount,
+    required this.vatPercentage,
+    required this.vatAmount,
+    required this.netTotal,
+    required this.paidAmount,
+    required this.remainingAmount,
+    required this.isPaid,
+    this.paidFrom = 'cash',
+    this.vehicleModel,
+    this.billNo,
+    this.remarks,
     this.jobCardNo,
     this.bikeRegistrationNo,
     this.vehicleColor,
-    this.receivedDate,
-    this.deliveryDate,
-    this.billNo,
-    this.technicianName,
+    this.kmDriven,
+    this.labourCharge = 0,
     this.isFreeServicing = false,
     this.isRepairJob = false,
     this.isAccident = false,
     this.isWarrantyJob = false,
+    this.jobDoneOnVehicle,
+    this.technicianName,
+    this.receivedDate,
+    this.deliveryDate,
     this.followUpDate,
     this.postServiceFeedbackDate,
-    required this.jobDoneOnVehicle,
-    required this.remarks,
-    this.totalAmount = 0,
-    this.labourCharge = 0,
-    this.paidAmount = 0,
-    this.remainingAmount = 0,
-    this.paidFrom = '',
-    this.isPaid = 'not_paid',
-    this.handledBy,
     this.items = const [],
   });
 
-  // ---------------- BACKEND RESPONSE ----------------
+  /// Auto resolve paid status
+  static String resolvePaidStatus(double net, double paid) {
+    if (paid <= 0) return 'not_paid';
+    if (paid >= net) return 'paid';
+    return 'partial';
+  }
+
+  /// ---------- FROM BACKEND ----------
   factory SaleModel.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      if (value is Map<String, dynamic> && value['id'] != null) {
+        return int.tryParse(value['id'].toString());
+      }
+      return null;
+    }
+
+    DateTime? parseDate(dynamic value) {
+      if (value == null) return null;
+      if (value is DateTime) return value;
+      return DateTime.tryParse(value.toString());
+    }
+
     return SaleModel(
-      id: json['id'],
-      saleDate: _parse(json['sale_date']) ?? DateTime.now(),
+      id: parseInt(json['id']),
+      saleDate: parseDate(json['sale_date']) ?? DateTime.now(),
       customerName: json['customer_name'] ?? '',
       contactNo: json['contact_no'],
-      vehicleModel: json['vehicle_model'],
       isServicing: json['is_servicing'] ?? false,
-      kmDriven: json['km_driven'],
+      handledBy: parseInt(json['handled_by']), // ✅ fixed
+      grandTotal: (json['grand_total'] ?? 0).toDouble(),
+      discountPercentage: (json['discount_percentage'] ?? 0).toDouble(),
+      discountAmount: (json['discount_amount'] ?? 0).toDouble(),
+      vatPercentage: (json['vat_percentage'] ?? 0).toDouble(),
+      vatAmount: (json['vat_amount'] ?? 0).toDouble(),
+      netTotal: (json['net_total'] ?? 0).toDouble(),
+      paidAmount: (json['paid_amount'] ?? 0).toDouble(),
+      remainingAmount: (json['remaining_amount'] ?? 0).toDouble(),
+      isPaid: json['is_paid'] ?? 'not_paid',
+      paidFrom: json['paid_from'] ?? 'cash',
+      vehicleModel: json['vehicle_model'],
+      billNo: json['bill_no'],
+      remarks: json['remarks'],
       jobCardNo: json['job_card_no'],
       bikeRegistrationNo: json['bike_registration_no'],
       vehicleColor: json['vehicle_color'],
-      receivedDate: _parse(json['received_date']),
-      deliveryDate: _parse(json['delivery_date']),
-      billNo: json['bill_no'],
-      technicianName: json['technician_name'],
+      kmDriven: parseInt(json['km_driven']),
+      labourCharge: (json['labour_charge'] ?? 0).toDouble(),
       isFreeServicing: json['is_free_servicing'] ?? false,
       isRepairJob: json['is_repair_job'] ?? false,
       isAccident: json['is_accident'] ?? false,
       isWarrantyJob: json['is_warranty_job'] ?? false,
-      followUpDate: _parse(json['follow_up_date']),
-      postServiceFeedbackDate: _parse(json['post_service_feedback_date']),
-      jobDoneOnVehicle: json['job_done_on_vehicle'] ?? '',
-      remarks: json['remarks'] ?? '',
-      totalAmount: (json['total_amount'] ?? 0).toDouble(),
-      labourCharge: (json['labour_charge'] ?? 0).toDouble(),
-      paidAmount: (json['paid_amount'] ?? 0).toDouble(),
-      remainingAmount: (json['remaining_amount'] ?? 0).toDouble(),
-      paidFrom: json['paid_from'] ?? '',
-      isPaid: json['is_paid'] ?? 'not_paid',
-      handledBy: json['handled_by'],
+      jobDoneOnVehicle: json['job_done_on_vehicle'],
+      technicianName: json['technician_name'],
+      receivedDate: parseDate(json['received_date']),
+      deliveryDate: parseDate(json['delivery_date']),
+      followUpDate: parseDate(json['follow_up_date']),
+      postServiceFeedbackDate: parseDate(json['post_service_feedback_date']),
       items: (json['items'] as List? ?? [])
           .map((e) => SaleItemModel.fromJson(e))
           .toList(),
     );
   }
 
-  // ---------------- BACKEND PAYLOAD ----------------
+  /// ---------- TO BACKEND ----------
   Map<String, dynamic> toBackendJson() {
-    final df = DateFormat('yyyy-MM-dd');
     return {
-      'sale_date': df.format(saleDate),
+      'sale_date': saleDate.toIso8601String(),
       'customer_name': customerName,
       'contact_no': contactNo,
-      'vehicle_model': vehicleModel,
       'is_servicing': isServicing,
-      'km_driven': kmDriven,
+      'handled_by': handledBy,
+      'grand_total': grandTotal,
+      'discount_percentage': discountPercentage,
+      'discount_amount': discountAmount,
+      'vat_percentage': vatPercentage,
+      'vat_amount': vatAmount,
+      'net_total': netTotal,
+      'paid_amount': paidAmount,
+      'remaining_amount': remainingAmount,
+      'is_paid': isPaid,
+      'paid_from': paidFrom,
+      'vehicle_model': vehicleModel,
+      'bill_no': billNo,
+      'remarks': remarks,
       'job_card_no': jobCardNo,
       'bike_registration_no': bikeRegistrationNo,
       'vehicle_color': vehicleColor,
-      'received_date': receivedDate != null ? df.format(receivedDate!) : null,
-      'delivery_date': deliveryDate != null ? df.format(deliveryDate!) : null,
-      'bill_no': billNo,
-      'technician_name': technicianName,
+      'km_driven': kmDriven,
+      'labour_charge': labourCharge,
       'is_free_servicing': isFreeServicing,
       'is_repair_job': isRepairJob,
       'is_accident': isAccident,
       'is_warranty_job': isWarrantyJob,
+      'job_done_on_vehicle': jobDoneOnVehicle,
+      'received_date': receivedDate?.toIso8601String(),
+      'delivery_date': deliveryDate?.toIso8601String(),
       'follow_up_date': followUpDate?.toIso8601String(),
       'post_service_feedback_date': postServiceFeedbackDate?.toIso8601String(),
-      'job_done_on_vehicle': jobDoneOnVehicle,
-      'remarks': remarks,
-      'total_amount': totalAmount,
-      'labour_charge': labourCharge,
-      'paid_amount': paidAmount,
-      'remaining_amount': remainingAmount,
-      'paid_from': paidFrom,
-      'handled_by': handledBy,
-      'is_paid': isPaid,
       'items': items.map((e) => e.toBackendJson()).toList(),
     };
   }
-
-  static DateTime? _parse(dynamic v) =>
-      v == null ? null : DateTime.tryParse(v.toString());
 }
