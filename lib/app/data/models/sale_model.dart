@@ -207,6 +207,13 @@ class SaleModel {
     return 'partial';
   }
 
+  String? _formatDate(DateTime? date) {
+    if (date == null) return null;
+    return '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+  }
+
   /// ---------- FROM BACKEND ----------
   factory SaleModel.fromJson(Map<String, dynamic> json) {
     int? parseInt(dynamic value) {
@@ -269,7 +276,7 @@ class SaleModel {
   /// ---------- TO BACKEND ----------
   Map<String, dynamic> toBackendJson() {
     return {
-      'sale_date': saleDate.toIso8601String(),
+      'sale_date': _formatDate(saleDate),
       'customer_name': customerName,
       'contact_no': contactNo,
       'is_servicing': isServicing,
@@ -297,10 +304,10 @@ class SaleModel {
       'is_accident': isAccident,
       'is_warranty_job': isWarrantyJob,
       'job_done_on_vehicle': jobDoneOnVehicle,
-      'received_date': receivedDate?.toIso8601String(),
-      'delivery_date': deliveryDate?.toIso8601String(),
-      'follow_up_date': followUpDate?.toIso8601String(),
-      'post_service_feedback_date': postServiceFeedbackDate?.toIso8601String(),
+      'received_date': _formatDate(receivedDate),
+      'delivery_date': _formatDate(deliveryDate),
+      'follow_up_date': _formatDate(followUpDate),
+      'post_service_feedback_date': _formatDate(postServiceFeedbackDate),
       'items': items.map((e) => e.toBackendJson()).toList(),
     };
   }

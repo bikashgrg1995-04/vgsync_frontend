@@ -1,22 +1,34 @@
+import 'package:vgsync_frontend/app/data/models/sale_model.dart';
+
 class FollowUpModel {
-  int id;
-  int sale;
-  String customerName;
-  String? contactNo;
-  String? vehicle;
-  DateTime? deliveryDate;
-  DateTime? postServiceFeedbackDate;
-  DateTime? followUpDate;
-  String? remarks;
-  int? assignedTo;
-  String? status;
-  String? reason;
-  DateTime createdAt;
-  DateTime updatedAt;
+  final int id;
+
+  // -------- SALE --------
+  final int saleId;
+  final SaleModel? sale; // optional full sale object
+
+  final String customerName;
+  final String? contactNo;
+  final String? vehicle;
+
+  final DateTime? deliveryDate;
+  final DateTime? postServiceFeedbackDate;
+  final DateTime? followUpDate;
+
+  final String? remarks;
+
+  // -------- ASSIGNMENT --------
+  final String? assignedTo;
+  final String? status;
+  final String? reason;
+
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   FollowUpModel({
     required this.id,
-    required this.sale,
+    required this.saleId,
+    this.sale,
     required this.customerName,
     this.contactNo,
     this.vehicle,
@@ -31,47 +43,48 @@ class FollowUpModel {
     required this.updatedAt,
   });
 
+  /// ---------------- FROM JSON ----------------
   factory FollowUpModel.fromJson(Map<String, dynamic> json) {
+    final dynamic saleJson = json['sale'];
+
+    int resolvedSaleId = 0;
+    SaleModel? resolvedSale;
+
+    // 🔥 LOGIC MAINTAINED
+    if (saleJson is Map) {
+      final Map<String, dynamic> saleMap = Map<String, dynamic>.from(saleJson);
+
+      resolvedSaleId = saleMap['id'] ?? 0;
+      resolvedSale = SaleModel.fromJson(saleMap);
+    } else if (saleJson is int) {
+      resolvedSaleId = saleJson;
+    } else if (saleJson is String) {
+      resolvedSaleId = int.tryParse(saleJson) ?? 0;
+    }
+
     return FollowUpModel(
-      id: json['id'],
-      sale: json['sale'],
-      customerName: json['customer_name'],
+      id: json['id'] ?? 0,
+      saleId: resolvedSaleId,
+      sale: resolvedSale,
+      customerName: json['customer_name'] ?? '',
       contactNo: json['contact_no']?.toString(),
       vehicle: json['vehicle'],
-      deliveryDate: json['delivery_date'] != null
-          ? DateTime.parse(json['delivery_date'])
-          : null,
-      postServiceFeedbackDate: json['post_service_feedback_date'] != null
-          ? DateTime.parse(json['post_service_feedback_date'])
-          : null,
-      followUpDate: json['follow_up_date'] != null
-          ? DateTime.parse(json['follow_up_date'])
-          : null,
+      deliveryDate: _parseDate(json['delivery_date']),
+      postServiceFeedbackDate: _parseDate(json['post_service_feedback_date']),
+      followUpDate: _parseDate(json['follow_up_date']),
       remarks: json['remarks'],
       assignedTo: json['assigned_to'],
       status: json['status'],
       reason: json['reason'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: _parseDate(json['created_at']) ?? DateTime.now(),
+      updatedAt: _parseDate(json['updated_at']) ?? DateTime.now(),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'sale': sale,
-      'customer_name': customerName,
-      'contact_no': contactNo,
-      'vehicle': vehicle,
-      'delivery_date': deliveryDate?.toIso8601String(),
-      'post_service_feedback_date': postServiceFeedbackDate?.toIso8601String(),
-      'follow_up_date': followUpDate?.toIso8601String(),
-      'remarks': remarks,
-      'assigned_to': assignedTo,
-      'status': status,
-      'reason': reason,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
+  /// ---------------- DATE PARSER ----------------
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    return DateTime.tryParse(value.toString());
   }
 }

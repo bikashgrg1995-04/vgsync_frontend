@@ -22,7 +22,11 @@ class SalesController extends GetxController {
   final isLoading = false.obs;
 
   // ---------------- SEARCH ----------------
-  final searchText = ''.obs; // ✅ ADD THIS LINE
+  final searchText = ''.obs;
+  RxString selectedStatus = 'all'.obs;
+  final searchController = TextEditingController();
+
+  Rx<DateTime?> filterSelectedDate = Rx<DateTime?>(null);
 
   // ---------------- TEXT CONTROLLERS ----------------
   late TextEditingController customerNameController;
@@ -69,6 +73,7 @@ class SalesController extends GetxController {
   final netAmount = 0.0.obs;
 
   final paidFrom = 'cash'.obs; // default to 'cash'
+  final saleStatus = 'not_paid'.obs;
 
   late TextEditingController discountController;
   late TextEditingController vatController;
@@ -108,6 +113,21 @@ class SalesController extends GetxController {
 
   @override
   void onClose() {
+    customerNameController.dispose();
+    contactNoController.dispose();
+    vehicleModelController.dispose();
+    kmDrivenController.dispose();
+    jobCardNoController.dispose();
+    bikeRegistrationController.dispose();
+    vehicleColorController.dispose();
+    billNoController.dispose();
+    technicianNameController.dispose();
+    jobDoneOnVehicleController.dispose();
+    remarksController.dispose();
+    labourChargeController.dispose();
+    paidAmountController.dispose();
+    discountController.dispose();
+    vatController.dispose();
     for (final i in selectedItems) {
       i.dispose();
     }
@@ -124,7 +144,6 @@ class SalesController extends GetxController {
     }
   }
 
-  final saleStatus = 'not_paid'.obs;
   // ---------------- CALCULATIONS ----------------
   void updateTotals() {
     // ---------- ITEMS TOTAL ----------
@@ -261,6 +280,17 @@ class SalesController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> refreshSales() async {
+    // 🔥 RESET FILTERS
+
+    filterSelectedDate.value = null;
+    searchText.value = '';
+    searchController.clear(); // 🔥 VERY IMPORTANT
+    selectedStatus.value = "all";
+
+    await fetchSales();
   }
 
   void fillForEdit(SaleModel sale) {
@@ -412,6 +442,10 @@ class SalesController extends GetxController {
     }
     if (selectedItems.isEmpty) {
       Get.snackbar('Error', 'Add at least one item');
+      return false;
+    }
+    if (isServicing.value == true && deliveryDate.value == null) {
+      Get.snackbar('Error', 'Delivery date is required for servicing');
       return false;
     }
     return true;

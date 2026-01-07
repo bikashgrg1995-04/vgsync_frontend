@@ -10,8 +10,8 @@ class FollowUpController extends GetxController {
 
   FollowUpController({required this.followUpRepository});
 
-  var followUps = <FollowUpModel>[].obs;
-  var isLoading = false.obs;
+  final RxList<FollowUpModel> followUps = <FollowUpModel>[].obs;
+  final RxBool isLoading = false.obs;
 
   // ---------------- TEXT CONTROLLERS ----------------
   final startDateController = TextEditingController();
@@ -50,23 +50,25 @@ class FollowUpController extends GetxController {
     try {
       await followUpRepository.terminate(id);
 
-      // 🔹 Update local followup status only
       final index = followUps.indexWhere((f) => f.id == id);
       if (index != -1) {
+        final old = followUps[index];
+
         followUps[index] = FollowUpModel(
-          id: followUps[index].id,
-          sale: followUps[index].sale,
-          customerName: followUps[index].customerName,
-          contactNo: followUps[index].contactNo,
-          vehicle: followUps[index].vehicle,
-          deliveryDate: followUps[index].deliveryDate,
-          postServiceFeedbackDate: followUps[index].postServiceFeedbackDate,
-          followUpDate: followUps[index].followUpDate,
-          remarks: followUps[index].remarks,
-          assignedTo: followUps[index].assignedTo,
+          id: old.id,
+          saleId: old.saleId, // ✅ REQUIRED
+          sale: old.sale,
+          customerName: old.customerName,
+          contactNo: old.contactNo,
+          vehicle: old.vehicle,
+          deliveryDate: old.deliveryDate,
+          postServiceFeedbackDate: old.postServiceFeedbackDate,
+          followUpDate: old.followUpDate,
+          remarks: old.remarks,
+          assignedTo: old.assignedTo,
           status: 'terminated', // 🔴 important
-          reason: followUps[index].reason,
-          createdAt: followUps[index].createdAt,
+          reason: old.reason,
+          createdAt: old.createdAt,
           updatedAt: DateTime.now(),
         );
       }
@@ -87,19 +89,26 @@ class FollowUpController extends GetxController {
     DateTime? end,
   }) {
     return followUps.where((f) {
-      final matchesQuery = query == null ||
-          query.isEmpty ||
-          f.remarks.toString().toLowerCase().contains(query.toLowerCase()) ||
-          f.customerName.toLowerCase().contains(query.toLowerCase()) ||
-          f.sale.toString().contains(query);
+      final q = query?.toLowerCase() ?? '';
+
+      final matchesQuery = q.isEmpty ||
+          f.customerName.toLowerCase().contains(q) ||
+          (f.contactNo ?? '').toLowerCase().contains(q) ||
+          (f.vehicle ?? '').toLowerCase().contains(q) ||
+          (f.remarks ?? '').toLowerCase().contains(q) ||
+          f.saleId.toString().contains(q);
 
       final serviceDate = f.deliveryDate;
       final matchesDate = (start == null ||
               serviceDate == null ||
-              serviceDate.isAfter(start.subtract(const Duration(days: 1)))) &&
+              serviceDate.isAfter(
+                start.subtract(const Duration(days: 1)),
+              )) &&
           (end == null ||
               serviceDate == null ||
-              serviceDate.isBefore(end.add(const Duration(days: 1))));
+              serviceDate.isBefore(
+                end.add(const Duration(days: 1)),
+              ));
 
       return matchesQuery && matchesDate;
     }).toList();

@@ -13,17 +13,9 @@ class FollowUpListPage extends StatefulWidget {
 
 class _FollowUpListPageState extends State<FollowUpListPage> {
   final FollowUpController controller = Get.find<FollowUpController>();
-  final searchController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
 
   final RxString selectedStatus = 'All'.obs;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.fetchFollowUps();
-    });
-  }
 
   // ---------------- Helpers ----------------
   Color _statusColor(String? status) {
@@ -101,10 +93,14 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                 SizedBox(width: SizeConfig.sw(0.01)),
                 SizedBox(
                   width: SizeConfig.sw(0.12),
-                  child: ElevatedButton.icon(
-                    onPressed: controller.fetchFollowUps,
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    label: const Text("Refresh"),
+                  child: Obx(
+                    () => ElevatedButton.icon(
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : controller.fetchFollowUps,
+                      icon: const Icon(Icons.refresh, color: Colors.white),
+                      label: const Text("Refresh"),
+                    ),
                   ),
                 ),
               ],
@@ -124,16 +120,18 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final filtered = controller.followUps.where((f) {
-                  final query = searchController.text.toLowerCase();
+                final query = searchController.text.toLowerCase();
 
-                  final matchesSearch =
-                      f.remarks.toString().toLowerCase().contains(query) ||
-                          f.customerName.toLowerCase().contains(query) ||
-                          f.sale.toString().contains(query);
+                final filtered = controller.followUps.where((f) {
+                  final matchesSearch = query.isEmpty ||
+                      f.customerName.toLowerCase().contains(query) ||
+                      (f.contactNo ?? '').toLowerCase().contains(query) ||
+                      (f.vehicle ?? '').toLowerCase().contains(query) ||
+                      (f.remarks ?? '').toLowerCase().contains(query) ||
+                      f.saleId.toString().contains(query);
 
                   final matchesStatus = selectedStatus.value == 'All' ||
-                      f.status?.toLowerCase() ==
+                      (f.status ?? 'pending').toLowerCase() ==
                           selectedStatus.value.toLowerCase();
 
                   return matchesSearch && matchesStatus;
@@ -147,6 +145,8 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                   itemCount: filtered.length,
                   itemBuilder: (_, index) {
                     final followUp = filtered[index];
+                    final isTerminated =
+                        followUp.status?.toLowerCase() == 'terminated';
 
                     return Padding(
                       padding: EdgeInsets.symmetric(
@@ -155,20 +155,22 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                       ),
                       child: Slidable(
                         key: ValueKey(followUp.id),
-                        endActionPane: ActionPane(
-                          motion: const DrawerMotion(),
-                          extentRatio: 0.35,
-                          children: [
-                            SlidableAction(
-                              onPressed: (_) =>
-                                  controller.terminateFollowUp(followUp.id),
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              icon: Icons.cancel,
-                              label: 'Terminate',
-                            ),
-                          ],
-                        ),
+                        endActionPane: isTerminated
+                            ? null
+                            : ActionPane(
+                                motion: const DrawerMotion(),
+                                extentRatio: 0.35,
+                                children: [
+                                  SlidableAction(
+                                    onPressed: (_) => controller
+                                        .terminateFollowUp(followUp.id),
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                    icon: Icons.cancel,
+                                    label: 'Terminate',
+                                  ),
+                                ],
+                              ),
                         child: Card(
                           shape: RoundedRectangleBorder(
                             borderRadius:
@@ -265,8 +267,7 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                                         child: Text(
                                           followUp.remarks!,
                                           style: TextStyle(
-                                            fontSize: SizeConfig.sw(0.0085),
-                                          ),
+                                              fontSize: SizeConfig.sw(0.0085)),
                                         ),
                                       ),
                                     ],

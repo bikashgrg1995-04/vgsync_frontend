@@ -22,10 +22,6 @@ class _SaleListPageState extends State<SaleListPage> {
   final StaffController staffController = Get.find();
   final StockController stockController = Get.find();
 
-  final searchController = TextEditingController();
-  Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
-  RxString selectedStatus = 'all'.obs;
-
   @override
   void initState() {
     super.initState();
@@ -66,7 +62,7 @@ class _SaleListPageState extends State<SaleListPage> {
         child: Column(
           children: [
             TextField(
-              controller: searchController,
+              controller: controller.searchController,
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.search),
                 hintText: 'Search customer...',
@@ -82,20 +78,24 @@ class _SaleListPageState extends State<SaleListPage> {
                     onPressed: _pickDate,
                     icon: const Icon(Icons.date_range),
                     label: Obx(() => Text(
-                          selectedDate.value == null
+                          controller.filterSelectedDate.value == null
                               ? 'Select Date'
-                              : selectedDate.value!
+                              : controller.filterSelectedDate.value!
                                   .toIso8601String()
                                   .split('T')[0],
                         )),
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: controller.fetchSales,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh'),
-                ),
+                Obx(() => ElevatedButton.icon(
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () async {
+                              await controller.refreshSales();
+                            },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Refresh'),
+                    )),
               ],
             ),
           ],
@@ -122,11 +122,12 @@ class _SaleListPageState extends State<SaleListPage> {
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
                         label: Text(s['label']!),
-                        selected: selectedStatus.value == s['value'],
-                        onSelected: (_) => selectedStatus.value = s['value']!,
+                        selected: controller.selectedStatus.value == s['value'],
+                        onSelected: (_) =>
+                            controller.selectedStatus.value = s['value']!,
                         selectedColor: Colors.deepPurple,
                         labelStyle: TextStyle(
-                          color: selectedStatus.value == s['value']
+                          color: controller.selectedStatus.value == s['value']
                               ? Colors.white
                               : Colors.black,
                         ),
@@ -143,14 +144,14 @@ class _SaleListPageState extends State<SaleListPage> {
 
     return controller.sales.where((sale) {
       // Status filter
-      if (selectedStatus.value != 'all' &&
-          sale.isPaid != selectedStatus.value) {
+      if (controller.selectedStatus.value != 'all' &&
+          sale.isPaid != controller.selectedStatus.value) {
         return false;
       }
 
       // Date filter
-      if (selectedDate.value != null) {
-        final d = selectedDate.value!;
+      if (controller.filterSelectedDate.value != null) {
+        final d = controller.filterSelectedDate.value!;
         if (sale.saleDate.year != d.year ||
             sale.saleDate.month != d.month ||
             sale.saleDate.day != d.day) {
@@ -268,11 +269,11 @@ class _SaleListPageState extends State<SaleListPage> {
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: selectedDate.value ?? DateTime.now(),
+      initialDate: controller.filterSelectedDate.value ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (picked != null) selectedDate.value = picked;
+    if (picked != null) controller.filterSelectedDate.value = picked;
   }
 
   // ---------------- ADD / EDIT SALE ----------------
@@ -282,8 +283,9 @@ class _SaleListPageState extends State<SaleListPage> {
     controller.clearForm();
     if (isEdit) controller.fillForEdit(sale);
 
+    controller.isServicing.value = sale?.isServicing ?? false;
+
     // ---------- Observables ----------
-    final isServicing = (sale?.isServicing ?? false).obs;
     final staffSelected = (sale?.handledBy ?? 0).obs;
 
     // Ensure paidFrom is always one of the dropdown options
@@ -344,10 +346,108 @@ class _SaleListPageState extends State<SaleListPage> {
               // ---------- Servicing Switch ----------
               Obx(() => SwitchListTile(
                     title: const Text('Servicing Sale'),
-                    value: isServicing.value,
-                    onChanged: (v) => isServicing.value = v,
+                    value: controller.isServicing.value,
+                    onChanged: (v) => controller.isServicing.value = v,
                   )),
 
+              const SizedBox(height: 8),
+
+              // ================= SERVICING SECTION =================
+              Obx(() {
+                if (!controller.isServicing.value) return const SizedBox();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(),
+                    const Text(
+                      'Servicing Details',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+
+                    _buildTextField(
+                        'Vehicle Model', controller.vehicleModelController),
+                    const SizedBox(height: 8),
+
+                    _buildTextField('KM Driven', controller.kmDrivenController,
+                        keyboardType: TextInputType.number),
+                    const SizedBox(height: 8),
+
+                    _buildTextField(
+                        'Job Card No', controller.jobCardNoController),
+                    const SizedBox(height: 8),
+
+                    _buildTextField('Bike Registration No',
+                        controller.bikeRegistrationController),
+                    const SizedBox(height: 8),
+
+                    _buildTextField(
+                        'Vehicle Color', controller.vehicleColorController),
+                    const SizedBox(height: 8),
+
+                    _buildTextField(
+                        'Technician Name', controller.technicianNameController),
+                    const SizedBox(height: 8),
+
+                    _buildTextField('Job Done On Vehicle',
+                        controller.jobDoneOnVehicleController),
+                    const SizedBox(height: 8),
+
+                    _buildTextField(
+                      'Labour Charge',
+                      controller.labourChargeController,
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => controller.updateTotals(),
+                    ),
+
+                    const SizedBox(height: 8),
+                    _datePickerField('Received Date', controller.receivedDate),
+                    const SizedBox(height: 8),
+                    _datePickerField(
+                      'Delivery Date',
+                      controller.deliveryDate,
+                      required: true,
+                    ),
+
+                    const SizedBox(height: 8),
+                    _readonlyDateField(
+                        'Follow Up Date', controller.followUpDate),
+                    const SizedBox(height: 8),
+                    _readonlyDateField('Post Service Feedback Date',
+                        controller.postServiceFeedbackDate),
+
+                    const SizedBox(height: 8),
+
+                    // ---------- Service Flags ----------
+                    Obx(() => CheckboxListTile(
+                          title: const Text('Free Servicing'),
+                          value: controller.isFreeServicing.value,
+                          onChanged: (v) =>
+                              controller.isFreeServicing.value = v ?? false,
+                        )),
+                    Obx(() => CheckboxListTile(
+                          title: const Text('Repair Job'),
+                          value: controller.isRepairJob.value,
+                          onChanged: (v) =>
+                              controller.isRepairJob.value = v ?? false,
+                        )),
+                    Obx(() => CheckboxListTile(
+                          title: const Text('Accident Case'),
+                          value: controller.isAccident.value,
+                          onChanged: (v) =>
+                              controller.isAccident.value = v ?? false,
+                        )),
+                    Obx(() => CheckboxListTile(
+                          title: const Text('Warranty Job'),
+                          value: controller.isWarrantyJob.value,
+                          onChanged: (v) =>
+                              controller.isWarrantyJob.value = v ?? false,
+                        )),
+                  ],
+                );
+              }),
               const SizedBox(height: 8),
               // ---------- Items ----------
               Align(
