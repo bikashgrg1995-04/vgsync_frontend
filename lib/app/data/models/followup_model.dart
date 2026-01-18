@@ -87,4 +87,41 @@ class FollowUpModel {
     if (value is DateTime) return value;
     return DateTime.tryParse(value.toString());
   }
+
+  FollowUpModel copyWith({
+    int? id,
+    int? saleId,
+    SaleModel? sale,
+    String? customerName,
+    String? contactNo,
+    String? vehicle,
+    DateTime? deliveryDate,
+    DateTime? postServiceFeedbackDate,
+    DateTime? followUpDate,
+    String? remarks,
+    String? assignedTo,
+    String? status,
+    String? reason,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return FollowUpModel(
+      id: id ?? this.id,
+      saleId: saleId ?? this.saleId,
+      sale: sale ?? this.sale,
+      customerName: customerName ?? this.customerName,
+      contactNo: contactNo ?? this.contactNo,
+      vehicle: vehicle ?? this.vehicle,
+      deliveryDate: deliveryDate ?? this.deliveryDate,
+      postServiceFeedbackDate:
+          postServiceFeedbackDate ?? this.postServiceFeedbackDate,
+      followUpDate: followUpDate ?? this.followUpDate,
+      remarks: remarks ?? this.remarks,
+      assignedTo: assignedTo ?? this.assignedTo,
+      status: status ?? this.status,
+      reason: reason ?? this.reason,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

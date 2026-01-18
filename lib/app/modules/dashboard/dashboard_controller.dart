@@ -85,6 +85,11 @@ class DashboardController extends GetxController {
 
         case DashboardRefreshType.income:
         case DashboardRefreshType.expense:
+          dashboardData.update((val) {
+            val?.expense = data.expense;
+          });
+          break;
+
         case DashboardRefreshType.profitLoss:
           dashboardData.update((val) {
             val?.income = data.income;
@@ -124,7 +129,6 @@ class DashboardController extends GetxController {
       }
     } catch (e) {
       // Handle error or log
-      print('Dashboard fetch error: $e');
     } finally {
       isLoading.value = false;
     }

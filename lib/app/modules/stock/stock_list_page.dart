@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
-import 'package:vgsync_frontend/app/data/repositories/category_repository.dart';
-import 'package:vgsync_frontend/app/data/services/category_service.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_controller.dart';
+import 'package:vgsync_frontend/app/modules/stock/item_detail_page.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
+import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../data/models/stock_model.dart';
 import 'stock_controller.dart';
@@ -17,8 +20,8 @@ class StockListPage extends StatefulWidget {
 
 class _StockListPageState extends State<StockListPage> {
   final StockController stockController = Get.find<StockController>();
-
-  final searchController = TextEditingController();
+  final CategoryController categoryController = Get.find<CategoryController>();
+  final GlobalController globalController = Get.find<GlobalController>();
 
   @override
   void initState() {
@@ -39,12 +42,14 @@ class _StockListPageState extends State<StockListPage> {
           children: [
             Row(
               children: [
-                Flexible(
+                Expanded(
+                  flex: 3, // search gets more space
                   child: TextField(
-                    controller: searchController,
+                    controller: stockController.searchController,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search),
                       hintText: 'Search stocks...',
+                      isDense: true,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(SizeConfig.sw(0.02)),
@@ -54,14 +59,32 @@ class _StockListPageState extends State<StockListPage> {
                   ),
                 ),
                 SizedBox(width: SizeConfig.sw(0.01)),
-                SizedBox(
-                  width: SizeConfig.sw(0.08),
-                  child: ElevatedButton.icon(
-                    onPressed: stockController.fetchStocks,
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    label: const Text("Refresh"),
-                  ),
+                actionButton(
+                  label: 'Refresh',
+                  icon: Icons.refresh,
+                  onPressed: stockController.refreshStock,
                 ),
+                SizedBox(width: SizeConfig.sw(0.01)),
+                actionButton(
+                  label: 'Import',
+                  icon: Icons.upload_file,
+                  onPressed: () {
+                    FileUploadDialog.show(
+                      context: context,
+                      title: 'Import Stock Excel',
+                      endpoint: '/stock/excel-upload/',
+                      fileKey: 'file',
+                      allowedExtensions: ['xls', 'xlsx'],
+                      onSuccess: () async {
+                        await stockController.fetchStocks();
+                        await categoryController.fetchCategories();
+                        globalController
+                            .triggerRefresh(DashboardRefreshType.stock);
+                      },
+                    );
+                  },
+                ),
+                SizedBox(width: SizeConfig.sw(0.01)),
               ],
             ),
             SizedBox(height: SizeConfig.sh(0.02)),
@@ -71,11 +94,10 @@ class _StockListPageState extends State<StockListPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final query = searchController.text.toLowerCase();
+                final query =
+                    stockController.searchController.text.toLowerCase();
                 final filtered = stockController.stocks.where((s) {
                   return s.name.toLowerCase().contains(query) ||
-                      s.group.toLowerCase().contains(query) ||
-                      s.model.toLowerCase().contains(query) ||
                       s.itemNo.toLowerCase().contains(query);
                 }).toList();
 
@@ -101,8 +123,8 @@ class _StockListPageState extends State<StockListPage> {
                             label: 'Edit',
                           ),
                           SlidableAction(
-                            onPressed: (_) =>
-                                stockController.deleteStock(stock.id ?? 0),
+                            onPressed: (_) => stockController.deleteStock(
+                                context, stock.id ?? 0),
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
                             icon: Icons.delete,
@@ -137,9 +159,12 @@ class _StockListPageState extends State<StockListPage> {
                             ),
                           ),
                           subtitle: Text(
-                            'Item No: ${stock.itemNo} | Stock: ${stock.stock} | Price: ${stock.salePrice}',
+                            'Item No: ${stock.itemNo} | Stock: ${stock.stock} | Selling Price: Rs. ${stock.salePrice}',
                             style: TextStyle(fontSize: SizeConfig.sw(0.008)),
                           ),
+                          onTap: () {
+                            Get.to(() => StockDetailPage(stockId: stock.id!));
+                          },
                         ),
                       ),
                     );
@@ -158,22 +183,14 @@ class _StockListPageState extends State<StockListPage> {
     );
   }
 
-  void _injectCategoryController() {
-    if (!Get.isRegistered<CategoryController>()) {
-      Get.put(CategoryController(
-          categoryRepository:
-              CategoryRepository(categoryService: CategoryService())));
-    }
-  }
-
   void openAddDialog() {
-    _injectCategoryController();
+    // _injectCategoryController();
     stockController.clearForm();
     _showStockDialog(isEditMode: false);
   }
 
   void openEditDialog(Result stock) {
-    _injectCategoryController();
+    // _injectCategoryController();
     stockController.fillForm(stock);
     _showStockDialog(isEditMode: true, stock: stock);
   }
@@ -187,7 +204,7 @@ class _StockListPageState extends State<StockListPage> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: SizedBox(
-            width: 350,
+            width: SizeConfig.sw(0.2),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -195,23 +212,24 @@ class _StockListPageState extends State<StockListPage> {
                   Text(
                     isEditMode ? 'Edit Stock' : 'Add Stock',
                     style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                        fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                      stockController.itemNoController, "Item No *"),
-                  const SizedBox(height: 12),
-                  _buildTextField(stockController.nameController, "Name *"),
-                  // const SizedBox(height: 12),
-                  // _buildTextField(stockController.groupController, "Group"),
-                  const SizedBox(height: 12),
-                  _buildTextField(stockController.modelController, "Model"),
-                  const SizedBox(height: 12),
+                  SizedBox(height: SizeConfig.sh(0.02)),
+                  buildTextField(stockController.itemNoController, "Item No *",
+                      Icons.confirmation_number),
+                  SizedBox(height: SizeConfig.sh(0.015)),
+                  buildTextField(
+                      stockController.nameController, "Name *", Icons.label),
+                  SizedBox(height: SizeConfig.sh(0.015)),
+                  buildTextField(stockController.modelController, "Model",
+                      Icons.model_training),
+                  SizedBox(height: SizeConfig.sh(0.015)),
                   Obx(() {
-                    final selectedId = stockController
-                            .categoryController.text.isNotEmpty
-                        ? int.tryParse(stockController.categoryController.text)
-                        : null;
+                    final selectedId =
+                        stockController.categorySelectController.text.isNotEmpty
+                            ? int.tryParse(
+                                stockController.categorySelectController.text)
+                            : null;
                     return DropdownButtonFormField<int>(
                       value: selectedId,
                       items: categoryCtrl.categories
@@ -222,7 +240,7 @@ class _StockListPageState extends State<StockListPage> {
                         if (value != null) {
                           final selected = categoryCtrl.categories
                               .firstWhere((c) => c.id == value);
-                          stockController.categoryController.text =
+                          stockController.categorySelectController.text =
                               selected.id.toString();
                         }
                       },
@@ -235,20 +253,29 @@ class _StockListPageState extends State<StockListPage> {
                       ),
                     );
                   }),
-
-                  const SizedBox(height: 12),
-                  _buildTextField(stockController.stockQtyController, "Stock",
-                      keyboardType: TextInputType.number),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                      stockController.purchasePriceController, "Purchase Price",
-                      keyboardType: TextInputType.number),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                      stockController.salePriceController, "Sale Price",
-                      keyboardType: TextInputType.number),
-
-                  const SizedBox(height: 20),
+                  SizedBox(height: SizeConfig.sh(0.015)),
+                  buildTextField(
+                    stockController.stockQtyController,
+                    "Stock",
+                    Icons.inventory,
+                    keyboardType: TextInputType.number, // numeric keyboard
+                  ),
+                  SizedBox(height: SizeConfig.sh(0.015)),
+                  buildTextField(
+                    stockController.purchasePriceController,
+                    "Purchase Price",
+                    Icons.price_change,
+                    keyboardType: TextInputType.number, // numeric keyboard
+                  ),
+                  SizedBox(height: SizeConfig.sh(0.015)),
+                  buildTextField(
+                    stockController.salePriceController,
+                    "Sale Price (13% VAT)",
+                    Icons.sell,
+                    keyboardType: TextInputType.number,
+                    readOnly: true,
+                  ),
+                  SizedBox(height: SizeConfig.sh(0.015)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -261,20 +288,31 @@ class _StockListPageState extends State<StockListPage> {
                         TextButton(
                           onPressed: () {
                             if (stock != null) {
-                              stockController.deleteStock(stock.id ?? 0);
+                              stockController.deleteStock(
+                                  context, stock.id ?? 0);
                             }
                             Get.back();
                           },
                           child: const Text('Delete',
                               style: TextStyle(color: Colors.red)),
                         ),
-                      const SizedBox(width: 8),
+                      SizedBox(height: SizeConfig.sw(0.008)),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (isEditMode && stock != null) {
-                            stockController.updateStock(stock);
+                            await stockController.updateStock(stock);
+                            Get.back(closeOverlays: true);
+                            DesktopToast.show(
+                              'Stock updated successfully',
+                              backgroundColor: Colors.greenAccent,
+                            );
                           } else {
-                            stockController.addStock();
+                            await stockController.addStock();
+                            Get.back(closeOverlays: true);
+                            DesktopToast.show(
+                              'Stock added successfully',
+                              backgroundColor: Colors.greenAccent,
+                            );
                           }
                         },
                         child: const Text('Save'),
@@ -286,19 +324,6 @@ class _StockListPageState extends State<StockListPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(TextEditingController controller, String label,
-      {TextInputType keyboardType = TextInputType.text}) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
     );
   }

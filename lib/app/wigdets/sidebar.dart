@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/utils/constants.dart';
 import '../controllers/global_controller.dart';
 import '../controllers/sidebar_controller.dart';
@@ -175,11 +176,27 @@ class Sidebar extends StatelessWidget {
 
           /// Logout (Pinned Bottom)
           const Divider(color: Colors.white24),
+          // Example: Logout button in Sidebar
           _menuItem(
             icon: Icons.logout,
             title: 'Logout',
-            onTap: authController.logout,
+            onTap: () {
+              ConfirmDialog.show(
+                context,
+                title: "Logout",
+                message: "Are you sure you want to logout?",
+                onConfirm: () {
+                  authController.logout();
+                  globalController.changeMenu('Dashboard');
+                },
+                showSnackbarAfter: true, // show snackbar after confirmation
+                snackbarMessage: "Logged out successfully",
+                snackbarColor: Colors.orange,
+                snackbarIcon: Icons.logout,
+              );
+            },
           ),
+
           const SizedBox(height: 12),
         ],
       ),

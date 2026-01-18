@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/routes/app_routes.dart';
+import 'package:vgsync_frontend/app/wigdets/common_date_picker.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import '../../data/models/staff_model.dart';
 import 'staff_controller.dart';
 import '../../wigdets/custom_form_dialog.dart';
@@ -40,22 +43,95 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: SizeConfig.sw(0.03),
-                vertical: SizeConfig.sh(0.01),
-              ),
-              child: IconButton(
-                icon: Icon(Icons.arrow_back, size: SizeConfig.res(10)),
-                onPressed: () => Get.offAndToNamed(AppRoutes.navigation),
-              ),
+            // ---------- BACK BUTTON ----------
+            CommonBackButton(
+              onTap: () => Get.offAndToNamed(AppRoutes.navigation),
             ),
+            SizedBox(height: SizeConfig.sh(0.02)),
             _buildProfileCard(),
+            SizedBox(height: SizeConfig.sh(0.02)),
+            // ---------- PROFILE CARD ----------
+            Obx(() {
+              final tracker = controller.salaryTrackers
+                  .firstWhereOrNull((t) => t['staff'] == widget.staff.id);
+              if (tracker != null && widget.staff.salaryMode != 'daily') {
+                return _buildSalarySummary(tracker);
+              }
+              return const SizedBox();
+            }),
+
+            // ---------- TRANSACTION LIST ----------
             _buildTransactionList(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildSalarySummary(Map<String, dynamic>? tracker) {
+    return Card(
+        elevation: 4,
+        margin: EdgeInsets.symmetric(
+          horizontal: SizeConfig.sw(0.04),
+          vertical: SizeConfig.sh(0.01),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: EdgeInsets.all(SizeConfig.sw(0.01)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ---------- TITLE ----------
+              Row(
+                children: [
+                  Icon(Icons.account_balance_wallet, color: Colors.indigo),
+                  SizedBox(width: 8),
+                  Text(
+                    "Salary Summary",
+                    style: TextStyle(
+                      fontSize: SizeConfig.sw(0.016),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: SizeConfig.sh(0.02)),
+
+              // ---------- ROW 1 ----------
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _salaryItem(
+                    title: "Total Salary",
+                    value: tracker!['total_salary'].toString(),
+                    icon: Icons.attach_money,
+                    color: Colors.blue,
+                  ),
+                  _salaryItem(
+                    title: "Paid Amount",
+                    value: tracker['paid_amount'].toString(),
+                    icon: Icons.check_circle,
+                    color: Colors.green,
+                  ),
+                  _salaryItem(
+                    title: "Remaining",
+                    value: tracker['remaining_amount'].toString(),
+                    icon: Icons.pending_actions,
+                    color: Colors.orange,
+                  ),
+                  _salaryItem(
+                    title: "Status",
+                    value: tracker['status'],
+                    icon: Icons.info,
+                    color:
+                        tracker['status'] == 'paid' ? Colors.green : Colors.red,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ));
   }
 
   Widget _buildProfileCard() {
@@ -69,23 +145,26 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
           vertical: SizeConfig.sh(0.01),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 6,
+        elevation: 2,
         child: Padding(
-          padding: EdgeInsets.all(SizeConfig.sw(0.04)),
+          padding: EdgeInsets.symmetric(
+              horizontal: SizeConfig.sw(0.08), vertical: SizeConfig.sh(0.02)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   CircleAvatar(
-                    radius: SizeConfig.sw(0.05),
+                    radius: SizeConfig.sw(0.03),
                     backgroundColor: Colors.blueAccent,
                     child: Text(
                       widget.staff.name.isNotEmpty
                           ? widget.staff.name[0].toUpperCase()
                           : '?',
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: SizeConfig.res(10)),
                     ),
                   ),
                   SizedBox(width: SizeConfig.sw(0.03)),
@@ -95,67 +174,119 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
                       children: [
                         Text(widget.staff.name,
                             style: TextStyle(
-                                fontSize: SizeConfig.sw(0.04),
+                                fontSize: SizeConfig.sw(0.025),
                                 fontWeight: FontWeight.bold)),
-                        Text(widget.staff.designation.toUpperCase(),
-                            style: TextStyle(
-                                fontSize: SizeConfig.sw(0.035),
-                                color: Colors.grey)),
+                        Container(
+                          color: Colors.orangeAccent.withOpacity(0.2),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: SizeConfig.sw(0.015),
+                              vertical: SizeConfig.sh(0.002)),
+                          child: Text(widget.staff.designation.toUpperCase(),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: SizeConfig.sw(0.015),
+                                  color: Colors.black)),
+                        ),
                         SizedBox(height: SizeConfig.sh(0.01)),
-                        Text("Email: ${widget.staff.email}"),
-                        Text("Phone: ${widget.staff.phone}"),
+                        Row(
+                          children: [
+                            Text("Email: ${widget.staff.email ?? 'N/A'}"),
+                            SizedBox(width: SizeConfig.sw(0.03)),
+                            Text("Phone: +977-${widget.staff.phone}"),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                   Column(
                     children: [
                       if (widget.staff.salaryMode != 'daily') ...[
-                        if (tracker != null) ...[
-                          ElevatedButton(
+                        SizedBox(
+                          width: SizeConfig.sw(0.15),
+                          child: ElevatedButton(
                             onPressed: () =>
                                 _openSalaryDialog(widget.staff.id!, tracker),
-                            child: const Text("Update Salary"),
+                            child: Text(tracker != null
+                                ? "Update Salary"
+                                : "Set Salary"),
                           ),
-                          SizedBox(height: SizeConfig.sh(0.01)),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green),
-                            onPressed: () =>
-                                _openTransactionDialog(widget.staff.id!),
-                            child: const Text("Pay Salary"),
+                        ),
+                        SizedBox(height: SizeConfig.sh(0.01)),
+                        if (tracker != null) ...[
+                          SizedBox(
+                            width: SizeConfig.sw(0.15),
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green),
+                              onPressed: () => _openTransactionDialogUnified(
+                                  staffId: widget.staff.id!),
+                              child: const Text("Pay Salary"),
+                            ),
                           ),
-                        ] else
-                          ElevatedButton(
-                            onPressed: () =>
-                                _openSalaryDialog(widget.staff.id!, null),
-                            child: const Text("Set Salary"),
-                          ),
+                        ],
                       ],
                       if (widget.staff.salaryMode == 'daily') ...[
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green),
-                          onPressed: () =>
-                              _openTransactionDialog(widget.staff.id!),
-                          child: const Text("Pay Salary"),
+                        SizedBox(
+                          width: SizeConfig.sw(0.15),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green),
+                            onPressed: () => _openTransactionDialogUnified(
+                                staffId: widget.staff.id!),
+                            child: const Text("Pay Wage"),
+                          ),
                         ),
                       ],
                     ],
                   ),
                 ],
               ),
-              if (tracker != null && widget.staff.salaryMode != 'daily') ...[
-                Divider(),
-                Text("Total Salary: ${tracker['total_salary']}"),
-                Text("Paid Amount: ${tracker['paid_amount']}"),
-                Text("Remaining: ${tracker['remaining_amount']}"),
-                Text("Status: ${tracker['status']}"),
-              ]
             ],
           ),
         ),
       );
     });
+  }
+
+  Widget _salaryItem({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: color.withOpacity(0.15),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTransactionList() {
@@ -174,37 +305,54 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
           children: [
             Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: SizeConfig.sw(0.03),
+                horizontal: SizeConfig.sw(0.05),
                 vertical: SizeConfig.sh(0.01),
               ),
               child: Text(
                 "Transactions",
                 style: TextStyle(
-                  fontSize: SizeConfig.sw(0.045),
-                  fontWeight: FontWeight.bold,
+                  fontSize: SizeConfig.sw(0.015),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             Expanded(
               child: ListView.builder(
-                padding: EdgeInsets.all(SizeConfig.sw(0.03)),
+                padding: EdgeInsets.symmetric(
+                  horizontal: SizeConfig.sw(0.06),
+                ),
                 itemCount: transactions.length,
                 itemBuilder: (_, i) {
                   final tx = transactions[i];
                   return Slidable(
                     key: ValueKey(tx['id']),
-                    startActionPane: ActionPane(
+                    endActionPane: ActionPane(
                       motion: const DrawerMotion(),
                       children: [
                         SlidableAction(
-                          onPressed: (_) => _editTransaction(tx),
+                          onPressed: (_) => _openTransactionDialogUnified(
+                            staffId: widget.staff.id!,
+                            tx: tx,
+                          ),
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
                           icon: Icons.edit,
                           label: 'Edit',
                         ),
                         SlidableAction(
-                          onPressed: (_) => _deleteTransaction(tx['id']),
+                          onPressed: (_) => ConfirmDialog.show(context,
+                              title: 'Confirm Deletion',
+                              message:
+                                  'Are you sure you want to delete this transaction?',
+                              onConfirm: () async {
+                            await controller.deleteSalaryTransaction(
+                                tx['id'], widget.staff.id!);
+                            await controller.refreshStaffData(widget.staff.id!);
+                            DesktopToast.show(
+                              'Transaction deleted successfully',
+                              backgroundColor: Colors.greenAccent,
+                            );
+                          }),
                           backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
                           icon: Icons.delete,
@@ -213,11 +361,27 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
                       ],
                     ),
                     child: Card(
-                      margin: EdgeInsets.only(bottom: SizeConfig.sh(0.015)),
+                      margin: EdgeInsets.only(bottom: SizeConfig.sh(0.02)),
                       child: ListTile(
-                        title: Text("Amount: ${tx['amount']}"),
-                        subtitle: Text("Date: ${tx['payment_date']}"),
-                        trailing: Text(tx['payment_mode']),
+                        title: Text("Date: ${tx['payment_date']}",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Amount: ${tx['amount']}"),
+                            Text("Note: ${tx['note'] ?? 'N/A'}"),
+                          ],
+                        ),
+                        trailing: Text(
+                          tx['payment_mode'].toString().capitalizeFirst!,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: tx['payment_mode'] == 'cash'
+                                ? Colors.green
+                                : Colors.blueAccent,
+                            fontSize: SizeConfig.sw(0.016),
+                          ),
+                        ),
                       ),
                     ),
                   );
@@ -249,166 +413,98 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(labelText: "Total Salary"),
           ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: dateCtrl,
-            readOnly: true,
-            decoration: const InputDecoration(labelText: "Payment Date"),
-          ),
         ],
       ),
       onSave: () async {
+        Navigator.of(Get.context!, rootNavigator: true)
+            .pop(); // ✅ ONLY dialog close
         controller.totalSalaryController.text = totalCtrl.text;
         controller.paymentDateController.text = dateCtrl.text;
         controller.paymentModeController.text = modeCtrl.text;
 
         if (tracker != null) {
           await controller.updateSalaryTracker(tracker['id'], staffId);
+          DesktopToast.show(
+            'Salary updated successfully',
+            backgroundColor: Colors.greenAccent,
+          );
         } else {
           await controller.createSalaryTracker(staffId);
-        }
-
-        Navigator.of(context, rootNavigator: true).pop();
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Get.closeAllSnackbars();
-          Get.snackbar(
-            "Success",
-            "Salary saved successfully",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
+          DesktopToast.show(
+            'Salary created successfully',
+            backgroundColor: Colors.greenAccent,
           );
-        });
+        }
+        await controller.refreshStaffData(staffId); // optional but good
       },
     ));
   }
 
-  // ---------------- Transaction Dialog ----------------
-  void _openTransactionDialog(int staffId) {
-    final amountCtrl = TextEditingController();
-    final noteCtrl = TextEditingController();
-    String paymentMode = 'cash';
+  void _openTransactionDialogUnified({
+    required int staffId,
+    Map<String, dynamic>? tx,
+  }) {
+    final Rxn<DateTime> selectedDate = Rxn<DateTime>(
+      tx != null ? DateTime.parse(tx['payment_date']) : DateTime.now(),
+    );
+
+    final amountCtrl =
+        TextEditingController(text: tx?['amount']?.toString() ?? '');
+    final noteCtrl = TextEditingController(text: tx?['note'] ?? '');
+    String paymentMode = tx?['payment_mode'] ?? 'cash';
 
     Map<String, dynamic>? tracker = controller.salaryTrackers
         .firstWhereOrNull((t) => t['staff'] == staffId);
 
-    Get.dialog(CustomFormDialog(
-      title: "Add Salary Transaction",
-      width: 0.45,
-      height: 0.5,
-      content: Column(
-        children: [
-          TextField(
-            controller: amountCtrl,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: "Amount"),
-          ),
-          const SizedBox(height: 10),
-          DropdownButtonFormField<String>(
-            value: paymentMode,
-            items: const [
-              DropdownMenuItem(value: 'cash', child: Text('Cash')),
-              DropdownMenuItem(value: 'online', child: Text('Online')),
-            ],
-            onChanged: (value) {
-              if (value != null) paymentMode = value;
-            },
-            decoration: const InputDecoration(labelText: "Payment Mode"),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: noteCtrl,
-            decoration: const InputDecoration(labelText: "Note"),
-          ),
-        ],
-      ),
-      onSave: () async {
-        Navigator.of(context, rootNavigator: true).pop();
+    Get.dialog(
+      CustomFormDialog(
+        title: tx == null ? "Add Salary Transaction" : "Edit Transaction",
+        width: 0.45,
+        height: 0.5,
+        content: Column(
+          children: [
+            CommonDatePicker(
+              label: "Transaction Date",
+              selectedDate: selectedDate,
+              firstDate: DateTime(2000),
+              lastDate: DateTime.now(),
+            ),
+            SizedBox(height: SizeConfig.sh(0.01)),
+            TextField(
+              controller: amountCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "Amount"),
+            ),
+            SizedBox(height: SizeConfig.sh(0.01)),
+            DropdownButtonFormField<String>(
+              value: paymentMode,
+              items: const [
+                DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                DropdownMenuItem(value: 'online', child: Text('Online')),
+              ],
+              onChanged: (value) {
+                if (value != null) paymentMode = value;
+              },
+              decoration: const InputDecoration(labelText: "Payment Mode"),
+            ),
+            SizedBox(height: SizeConfig.sh(0.01)),
+            TextField(
+              controller: noteCtrl,
+              decoration: const InputDecoration(labelText: "Note"),
+            ),
+          ],
+        ),
+        onSave: () async {
+          Navigator.of(context, rootNavigator: true).pop();
 
-        if (widget.staff.salaryMode != 'daily' && tracker == null) {
-          await controller.createSalaryTracker(staffId);
-          tracker = controller.salaryTrackers
-              .firstWhereOrNull((t) => t['staff'] == staffId);
-        }
+          /// 🟢 Ensure tracker exists (monthly)
+          if (widget.staff.salaryMode != 'daily' && tracker == null) {
+            await controller.createSalaryTracker(staffId);
+            tracker = controller.salaryTrackers
+                .firstWhereOrNull((t) => t['staff'] == staffId);
+          }
 
-        await controller.createSalaryTransaction({
-          "staff": staffId,
-          "amount": double.parse(amountCtrl.text),
-          "payment_mode": paymentMode,
-          "payment_date": DateTime.now().toIso8601String().split('T')[0],
-          "transaction_type": widget.staff.salaryMode == 'daily'
-              ? "daily_salary"
-              : "monthly_salary",
-          "note": noteCtrl.text,
-          "salary_tracker": tracker != null ? tracker!['id'] : null,
-        }, staffId);
-
-        await controller.fetchTransactions(staffId);
-
-        // Trigger dashboard chart refresh
-        globalController.triggerRefresh(DashboardRefreshType.all);
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Get.snackbar(
-            "Success",
-            "Salary transaction added",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-          );
-        });
-      },
-    ));
-  }
-
-  // ---------------- Edit Transaction ----------------
-  void _editTransaction(Map<String, dynamic> tx) {
-    final amountCtrl = TextEditingController(text: tx['amount'].toString());
-    final noteCtrl = TextEditingController(text: tx['note']);
-    String paymentMode = tx['payment_mode'];
-
-    final staffId = tx['staff'];
-    Map<String, dynamic>? tracker = controller.salaryTrackers
-        .firstWhereOrNull((t) => t['staff'] == staffId);
-
-    Get.dialog(CustomFormDialog(
-      title: "Edit Transaction",
-      width: 0.45,
-      height: 0.5,
-      content: Column(
-        children: [
-          TextField(
-            controller: amountCtrl,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: "Amount"),
-          ),
-          const SizedBox(height: 10),
-          DropdownButtonFormField<String>(
-            value: paymentMode,
-            items: const [
-              DropdownMenuItem(value: 'cash', child: Text('Cash')),
-              DropdownMenuItem(value: 'online', child: Text('Online')),
-            ],
-            onChanged: (value) {
-              if (value != null) paymentMode = value;
-            },
-            decoration: const InputDecoration(labelText: "Payment Mode"),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: noteCtrl,
-            decoration: const InputDecoration(labelText: "Note"),
-          ),
-        ],
-      ),
-      onSave: () async {
-        Navigator.of(context, rootNavigator: true).pop();
-
-        // 1️⃣ Update salary transaction
-        await controller.updateSalaryTransaction(
-          tx['id'],
-          {
+          final payload = {
             "staff": staffId,
             "amount": double.parse(amountCtrl.text),
             "payment_mode": paymentMode,
@@ -416,65 +512,38 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
             "transaction_type": widget.staff.salaryMode == 'daily'
                 ? "daily_salary"
                 : "monthly_salary",
-            "salary_tracker": tracker != null ? tracker['id'] : null,
-          },
-          staffId,
-        );
+            "salary_tracker": tracker != null ? tracker!['id'] : null,
+            if (tx == null)
+              "payment_date":
+                  selectedDate.value!.toIso8601String().split('T')[0],
+          };
 
-        // 3️⃣ Refresh transactions & charts
-        await controller.fetchTransactions(staffId);
-        // await expenseController.fetchExpenses();
-        globalController.triggerRefresh(DashboardRefreshType.all);
+          /// 🟢 ADD
+          if (tx == null) {
+            await controller.createSalaryTransaction(payload, staffId);
+            DesktopToast.show(
+              'Transaction added successfully',
+              backgroundColor: Colors.greenAccent,
+            );
+          }
 
-        // 4️⃣ Success message
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Get.snackbar(
-            "Success",
-            "Transaction updated successfully",
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-          );
-        });
-      },
-    ));
-  }
+          /// 🟢 UPDATE
+          else {
+            await controller.updateSalaryTransaction(
+              tx['id'],
+              payload,
+              staffId,
+            );
+            DesktopToast.show(
+              'Transaction updated successfully',
+              backgroundColor: Colors.greenAccent,
+            );
+          }
 
-  // ---------------- Delete Transaction ----------------
-  void _deleteTransaction(int txId) async {
-    final confirmed = await Get.dialog(
-      AlertDialog(
-        title: const Text("Confirm Delete"),
-        content:
-            const Text("Are you sure you want to delete this transaction?"),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => Get.back(result: true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
+          /// 🔥 Refresh summary + list
+          await controller.refreshStaffData(staffId);
+        },
       ),
     );
-
-    if (confirmed == true) {
-      await controller.deleteSalaryTransaction(txId, widget.staff.id!);
-
-      // Trigger dashboard chart refresh
-      globalController.triggerRefresh(DashboardRefreshType.all);
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.snackbar(
-          "Deleted",
-          "Transaction deleted successfully",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-      });
-    }
   }
 }

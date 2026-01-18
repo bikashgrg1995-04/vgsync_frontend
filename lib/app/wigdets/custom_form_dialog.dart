@@ -32,7 +32,7 @@ class CustomFormDialog extends StatelessWidget {
         height: SizeConfig.sh(height),
         width: SizeConfig.sw(width),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(SizeConfig.res(6)),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxHeight: SizeConfig.sh(0.8),
@@ -48,16 +48,14 @@ class CustomFormDialog extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: SizeConfig.sh(0.02)),
 
                 // ----------- SCROLLABLE CONTENT -----------
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: content,
-                  ),
+                  child: content,
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: SizeConfig.sh(0.02)),
 
                 // ----------- ACTION BUTTONS -----------
                 Row(

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
+import 'package:vgsync_frontend/app/modules/expenses/expense_controller.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import '../../data/models/purchase_model.dart';
 import '../../data/models/stock_model.dart';
 import '../../data/repositories/purchase_repository.dart';
@@ -42,12 +45,26 @@ class PurchaseItemController {
     });
   }
 
+  // Convert reactive form back to model
+  PurchaseItemModel toModel() {
+    final qty = int.tryParse(quantityController.text) ?? 0;
+    final price = double.tryParse(priceController.text) ?? 0.0;
+    return PurchaseItemModel(
+      id: item.id,
+      item: item.item,
+      quantity: qty,
+      price: price,
+      totalPrice: qty * price,
+      itemName: item.itemName,
+    );
+  }
+
   String get itemName => item.itemName ?? '';
   double get totalPrice => quantity.value * price.value;
 }
 
 /// ===============================
-/// Purchase Controller
+/// Purchase Controller (VAT removed)
 /// ===============================
 class PurchaseController extends GetxController {
   final PurchaseRepository purchaseRepository;
@@ -58,13 +75,13 @@ class PurchaseController extends GetxController {
   final purchases = <PurchaseModel>[].obs;
   final items = <PurchaseItemController>[].obs;
   final isLoading = false.obs;
-  final message = ''.obs;
+
+  final isModified = false.obs;
 
   // ---------------- FORM ----------------
   final selectedSupplierId = RxnInt();
   final selectedStaffId = RxnInt(); // Created by staff
   final discountController = TextEditingController(text: '0');
-  final vatController = TextEditingController(text: '13');
   final paidController = TextEditingController(text: '0');
   final dateController = TextEditingController();
 
@@ -76,6 +93,13 @@ class PurchaseController extends GetxController {
   final StockController stockController = Get.find();
   final GlobalController globalController = Get.find();
   final SupplierController supplierController = Get.find();
+  final ExpenseController expenseController = Get.find();
+
+  //filter
+  Rx<DateTime?> filterSelectedDate = Rx<DateTime?>(null);
+  RxString selectedStatus = 'all'.obs;
+  final searchController = TextEditingController();
+  final searchText = ''.obs;
 
   @override
   void onInit() {
@@ -86,9 +110,6 @@ class PurchaseController extends GetxController {
     // Recalculate when discount changes
     discountController.addListener(_recalculateTotals);
 
-    // Recalculate when VAT changes
-    vatController.addListener(_recalculateTotals);
-
     // Recalculate when paid amount changes
     paidController.addListener(_recalculateTotals);
 
@@ -98,14 +119,13 @@ class PurchaseController extends GetxController {
   void _recalculateTotals() {
     final t = items.fold<double>(0.0, (s, i) => s + i.totalPrice);
     final disc = double.tryParse(discountController.text) ?? 0;
-    final vatP = double.tryParse(vatController.text) ?? 0;
     final discAmount = disc == 0 ? 0 : t * disc / 100;
-    final vatAmount = vatP == 0 ? 0 : (t - discAmount) * vatP / 100;
-    final net = t - discAmount + vatAmount;
 
+    final net = t - discAmount;
     final paid = double.tryParse(paidController.text) ?? 0;
 
     remaining.value = net - paid;
+
     if (paid <= 0) {
       purchaseStatus.value = 'not_paid';
     } else if (remaining.value <= 0) {
@@ -113,32 +133,10 @@ class PurchaseController extends GetxController {
     } else {
       purchaseStatus.value = 'partial';
     }
+
+    // mark as modified whenever totals recalc
+    isModified.value = true;
   }
-
-  // void _validatePaid() {
-  //   double paid = double.tryParse(paidController.text) ?? 0;
-
-  //   // ❌ negative रोक्ने
-  //   if (paid < 0) {
-  //     paid = 0;
-  //   }
-
-  //   // ❌ net total भन्दा बढी रोक्ने
-  //   if (paid > netTotal) {
-  //     paid = netTotal;
-  //   }
-
-  //   // 🔁 update text only if needed (avoid infinite loop)
-  //   final fixed = paid.toStringAsFixed(2);
-  //   if (paidController.text != fixed) {
-  //     paidController.text = fixed;
-  //     paidController.selection = TextSelection.collapsed(
-  //       offset: fixed.length,
-  //     );
-  //   }
-
-  //   _recalculateTotals();
-  // }
 
   // ---------------- FETCH ----------------
   Future<void> fetchPurchases() async {
@@ -146,7 +144,10 @@ class PurchaseController extends GetxController {
       isLoading.value = true;
       purchases.assignAll(await purchaseRepository.getPurchases());
     } catch (e) {
-      message.value = 'Failed to fetch purchases: $e';
+      DesktopToast.show(
+        'Failed to fetch purchases: $e',
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -157,12 +158,9 @@ class PurchaseController extends GetxController {
   // ===============================
   double get total => items.fold<double>(0.0, (s, i) => s + i.totalPrice);
   double get discountPercent => double.tryParse(discountController.text) ?? 0;
-  double get vatPercent => double.tryParse(vatController.text) ?? 0;
   double get discountAmount =>
       discountPercent == 0 ? 0 : total * discountPercent / 100;
-  double get vatAmount =>
-      vatPercent == 0 ? 0 : (total - discountAmount) * vatPercent / 100;
-  double get netTotal => total - discountAmount + vatAmount;
+  double get netTotal => total - discountAmount;
   double get paidAmount => double.tryParse(paidController.text) ?? 0;
   double get grandTotal => total;
 
@@ -170,20 +168,51 @@ class PurchaseController extends GetxController {
   // ITEM MANAGEMENT //
   // ===============================
   void addItem(Result stock) {
+    // Check if item is already added
+    final exists = items.any((i) => i.item.item == stock.id);
+    if (exists) {
+      DesktopToast.show(
+        'This item is already added',
+        backgroundColor: Colors.redAccent,
+      );
+      return;
+    }
     items.add(
       PurchaseItemController(
         item: PurchaseItemModel(
           item: stock.id!,
           itemName: stock.name,
           quantity: 1,
-          price: stock.salePrice,
+          price: stock.purchasePrice,
         ),
         onChanged: _recalculateTotals,
       ),
     );
+    isModified.value = true;
   }
 
-  void removeItem(PurchaseItemController item) => items.remove(item);
+  Future<void> pickPurchaseDate(BuildContext context) async {
+    // Use current date if the field is empty or invalid
+    final initialDate =
+        DateTime.tryParse(dateController.text) ?? DateTime.now();
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      dateController.text = picked.toIso8601String().split('T')[0];
+    }
+  }
+
+  void removeItem(PurchaseItemController item) {
+    items.remove(item);
+    _recalculateTotals();
+  }
+
   void clearItems() => items.clear();
 
   // =============================== //
@@ -193,7 +222,6 @@ class PurchaseController extends GetxController {
     selectedSupplierId.value = null;
     selectedStaffId.value = null;
     discountController.text = '0';
-    vatController.text = '13';
     paidController.text = '0';
     dateController.clear();
     clearItems();
@@ -201,22 +229,19 @@ class PurchaseController extends GetxController {
 
   void populateForm(PurchaseModel purchase) {
     selectedSupplierId.value = purchase.supplier;
-    selectedStaffId.value = null; // assign staff if available
+    selectedStaffId.value = purchase.createdBy;
     dateController.text = purchase.date.toIso8601String().split('T')[0];
+    paidController.text = purchase.paidAmount.toString();
 
-    final itemsTotal =
-        purchase.items.fold<double>(0.0, (s, i) => s + (i.price * i.quantity));
+    // Calculate discount %
+    final itemsTotal = purchase.items
+        .fold<double>(0.0, (sum, i) => sum + (i.price * i.quantity));
 
     discountController.text = itemsTotal == 0
         ? '0'
         : ((purchase.discountAmount * 100) / itemsTotal).toStringAsFixed(2);
 
-    final vatBase = itemsTotal - purchase.discountAmount;
-    vatController.text = vatBase <= 0
-        ? '0'
-        : ((purchase.vatAmount * 100) / vatBase).toStringAsFixed(2);
-
-    paidController.text = purchase.paidAmount.toString();
+    // Replace items list completely with fresh controllers
     items.assignAll(
       purchase.items.map(
         (i) => PurchaseItemController(
@@ -225,6 +250,8 @@ class PurchaseController extends GetxController {
         ),
       ),
     );
+
+    _recalculateTotals();
   }
 
   // =============================== //
@@ -246,12 +273,11 @@ class PurchaseController extends GetxController {
           .toList(),
       grandTotal: total,
       discountAmount: discountAmount,
-      vatAmount: vatAmount,
       netTotal: netTotal,
       paidAmount: paidAmount,
       remainingAmount: remaining.value,
       status: purchaseStatus.value,
-      createdBy: selectedStaffId.value, // <-- pass the staff who created it
+      createdBy: selectedStaffId.value,
     );
   }
 
@@ -264,12 +290,23 @@ class PurchaseController extends GetxController {
       final purchase = buildPurchase();
       final created = await purchaseRepository.create(purchase);
       purchases.add(created);
+      await fetchPurchases();
+
       await stockController.fetchStocks();
+      await expenseController.fetchExpenses();
       globalController.triggerRefresh(DashboardRefreshType.all);
       clearForm();
-      message.value = 'Purchase added successfully';
+
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Purchase added successfully',
+        backgroundColor: Colors.greenAccent,
+      );
     } catch (e) {
-      message.value = 'Failed to add purchase: $e';
+      DesktopToast.show(
+        'Failed to add purchase: $e',
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -282,29 +319,69 @@ class PurchaseController extends GetxController {
           await purchaseRepository.update(buildPurchase(id: purchase.id ?? 0));
       final index = purchases.indexWhere((p) => p.id == updated.id);
       if (index != -1) purchases[index] = updated;
+      await fetchPurchases();
       await stockController.fetchStocks();
+      await expenseController.fetchExpenses();
       globalController.triggerRefresh(DashboardRefreshType.all);
+
       clearForm();
-      message.value = 'Purchase updated successfully';
+      isModified.value = false;
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Purchase updated successfully',
+        backgroundColor: Colors.greenAccent,
+      );
     } catch (e) {
-      message.value = 'Failed to update purchase: $e';
+      DesktopToast.show(
+        'Failed to update purchase: $e',
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> deletePurchase(int id) async {
-    try {
-      isLoading.value = true;
-      await purchaseRepository.delete(id);
-      purchases.removeWhere((p) => p.id == id);
-      await stockController.fetchStocks();
-      globalController.triggerRefresh(DashboardRefreshType.all);
-    } catch (e) {
-      message.value = 'Failed to delete purchase: $e';
-    } finally {
-      isLoading.value = false;
-    }
+  Future<void> deletePurchase(BuildContext context, int id) async {
+    ConfirmDialog.show(context,
+        title: "Delete Purchase",
+        message: "Are you sure you want to delete this Purchase?",
+        onConfirm: () async {
+      try {
+        isLoading.value = true;
+        await purchaseRepository.delete(id);
+        purchases.removeWhere((o) => o.id == id);
+        await fetchPurchases();
+        await stockController.fetchStocks();
+        await expenseController.fetchExpenses();
+        globalController.triggerRefresh(DashboardRefreshType.all);
+
+        Get.back(closeOverlays: true);
+        DesktopToast.show(
+          "Purchase Deleted: Success",
+          backgroundColor: Colors.greenAccent,
+        );
+      } catch (e) {
+        DesktopToast.show(
+          "Failed to delete purchase.",
+          backgroundColor: Colors.redAccent,
+        );
+      } finally {
+        isLoading.value = false;
+      }
+    });
+  }
+
+  Future<void> refreshSales() async {
+    filterSelectedDate.value = null;
+    searchText.value = '';
+    searchController.clear();
+    selectedStatus.value = "all";
+
+    await fetchPurchases();
+  }
+
+  void clearModifiedFlag() {
+    isModified.value = false;
   }
 
   // =============================== //
@@ -317,11 +394,25 @@ class PurchaseController extends GetxController {
           p.supplier != selectedSupplierId.value) {
         return false;
       }
-      if (q.isNotEmpty) {
-        final matches =
-            p.items.any((i) => (i.itemName ?? '').toLowerCase().contains(q));
-        if (!matches) return false;
+
+      if (filterSelectedDate.value != null) {
+        final date = filterSelectedDate.value!;
+        if (p.date.year != date.year ||
+            p.date.month != date.month ||
+            p.date.day != date.day) {
+          return false;
+        }
       }
+
+      if (selectedStatus.value != 'all' && p.status != selectedStatus.value) {
+        return false;
+      }
+
+      if (q.isNotEmpty &&
+          !p.items.any((i) => (i.itemName ?? '').toLowerCase().contains(q))) {
+        return false;
+      }
+
       return true;
     }).toList();
   }

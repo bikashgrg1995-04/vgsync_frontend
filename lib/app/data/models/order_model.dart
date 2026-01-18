@@ -1,12 +1,12 @@
 class OrderItemModel {
-  final int id;
+  final int? id;
   final int item; // reference to stock/item id
   final int quantity;
   final double rate;
   final double totalPrice;
 
   OrderItemModel({
-    required this.id,
+    this.id,
     required this.item,
     required this.quantity,
     required this.rate,

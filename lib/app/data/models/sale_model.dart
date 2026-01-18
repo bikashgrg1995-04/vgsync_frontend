@@ -126,8 +126,6 @@ class SaleModel {
   double grandTotal;
   double discountPercentage;
   double discountAmount;
-  double vatPercentage;
-  double vatAmount;
   double netTotal;
   double paidAmount;
   double remainingAmount;
@@ -142,6 +140,7 @@ class SaleModel {
   String? remarks;
   String? jobCardNo;
   String? bikeRegistrationNo;
+  String? vehicleType;
   String? vehicleColor;
   int? kmDriven;
   double labourCharge;
@@ -172,13 +171,12 @@ class SaleModel {
     required this.grandTotal,
     required this.discountPercentage,
     required this.discountAmount,
-    required this.vatPercentage,
-    required this.vatAmount,
     required this.netTotal,
     required this.paidAmount,
     required this.remainingAmount,
     required this.isPaid,
     this.paidFrom = 'cash',
+    this.vehicleType = "bike",
     this.vehicleModel,
     this.billNo,
     this.remarks,
@@ -242,8 +240,6 @@ class SaleModel {
       grandTotal: (json['grand_total'] ?? 0).toDouble(),
       discountPercentage: (json['discount_percentage'] ?? 0).toDouble(),
       discountAmount: (json['discount_amount'] ?? 0).toDouble(),
-      vatPercentage: (json['vat_percentage'] ?? 0).toDouble(),
-      vatAmount: (json['vat_amount'] ?? 0).toDouble(),
       netTotal: (json['net_total'] ?? 0).toDouble(),
       paidAmount: (json['paid_amount'] ?? 0).toDouble(),
       remainingAmount: (json['remaining_amount'] ?? 0).toDouble(),
@@ -254,6 +250,7 @@ class SaleModel {
       remarks: json['remarks'],
       jobCardNo: json['job_card_no'],
       bikeRegistrationNo: json['bike_registration_no'],
+      vehicleType: json['vehicle_type'],
       vehicleColor: json['vehicle_color'],
       kmDriven: parseInt(json['km_driven']),
       labourCharge: (json['labour_charge'] ?? 0).toDouble(),
@@ -284,8 +281,6 @@ class SaleModel {
       'grand_total': grandTotal,
       'discount_percentage': discountPercentage,
       'discount_amount': discountAmount,
-      'vat_percentage': vatPercentage,
-      'vat_amount': vatAmount,
       'net_total': netTotal,
       'paid_amount': paidAmount,
       'remaining_amount': remainingAmount,
@@ -296,6 +291,7 @@ class SaleModel {
       'remarks': remarks,
       'job_card_no': jobCardNo,
       'bike_registration_no': bikeRegistrationNo,
+      'vehicle_type': vehicleType,
       'vehicle_color': vehicleColor,
       'km_driven': kmDriven,
       'labour_charge': labourCharge,

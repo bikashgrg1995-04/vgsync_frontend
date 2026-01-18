@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 
 import 'package:vgsync_frontend/app/data/models/sale_model.dart';
 import 'package:vgsync_frontend/app/modules/sales/sale_controller.dart';
+import 'package:vgsync_frontend/app/modules/sales/sale_detail_page.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_form_dialog.dart';
+import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 
 class SaleListPage extends StatefulWidget {
@@ -17,10 +21,17 @@ class SaleListPage extends StatefulWidget {
 }
 
 class _SaleListPageState extends State<SaleListPage> {
-  final SalesController controller =
-      Get.put(SalesController(saleRepository: Get.find()));
+  final SalesController controller = Get.find();
   final StaffController staffController = Get.find();
   final StockController stockController = Get.find();
+  final GlobalController globalController = Get.find();
+
+  final statuses = [
+    {'label': 'All', 'value': 'all'},
+    {'label': 'Paid', 'value': 'paid'},
+    {'label': 'Partial', 'value': 'partial'},
+    {'label': 'Not Paid', 'value': 'not_paid'},
+  ];
 
   @override
   void initState() {
@@ -33,17 +44,15 @@ class _SaleListPageState extends State<SaleListPage> {
     SizeConfig.init(context);
     return Scaffold(
       backgroundColor: const Color(0xfff6f7fb),
-      appBar: AppBar(
-        title: const Text('Sales'),
-      ),
-      body: Column(
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 8),
-          _buildStatusFilter(),
-          const SizedBox(height: 8),
-          Expanded(child: _buildSaleList()),
-        ],
+      body: Container(
+        margin: EdgeInsets.all(SizeConfig.res(4)),
+        child: Column(
+          children: [
+            _buildHeader(),
+            SizedBox(height: SizeConfig.sh(0.005)),
+            Expanded(child: _buildSaleList()),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openSaleDialog(),
@@ -56,24 +65,68 @@ class _SaleListPageState extends State<SaleListPage> {
   // ---------------- HEADER ----------------
   Widget _buildHeader() {
     return Card(
-      margin: const EdgeInsets.all(12),
+      margin: EdgeInsets.all(12),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         child: Column(
           children: [
-            TextField(
-              controller: controller.searchController,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search customer...',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (v) => controller.searchText.value = v,
-            ),
-            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: controller.searchController,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: 'Search Sales',
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onChanged: (v) => controller.searchText.value = v,
+                  ),
+                ),
+                SizedBox(width: SizeConfig.sw(0.01)),
+                Obx(
+                  () => actionButton(
+                    label: 'Refresh',
+                    icon: Icons.refresh,
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : () async {
+                            await controller.refreshSales();
+                          },
+                  ),
+                ),
+                SizedBox(width: SizeConfig.sw(0.01)),
+                actionButton(
+                  label: 'Import',
+                  icon: Icons.upload_file,
+                  onPressed: () {
+                    FileUploadDialog.show(
+                      context: context,
+                      title: 'Import Sales (Excel)',
+                      endpoint: '/upload/sales-excel/',
+                      fileKey: 'file',
+                      allowedExtensions: ['xls', 'xlsx'],
+                      onSuccess: () async {
+                        await controller.fetchSales();
+                        globalController
+                            .triggerRefresh(DashboardRefreshType.all);
+                      },
+                    );
+                  },
+                ),
+                SizedBox(width: SizeConfig.sw(0.01)),
+              ],
+            ),
+            SizedBox(height: SizeConfig.sh(0.02)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SizedBox(
+                  width: SizeConfig.sw(0.15),
                   child: ElevatedButton.icon(
                     onPressed: _pickDate,
                     icon: const Icon(Icons.date_range),
@@ -86,56 +139,39 @@ class _SaleListPageState extends State<SaleListPage> {
                         )),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Obx(() => ElevatedButton.icon(
-                      onPressed: controller.isLoading.value
-                          ? null
-                          : () async {
-                              await controller.refreshSales();
-                            },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Refresh'),
-                    )),
+
+                // ---------------- STATUS FILTER ----------------
+                Obx(() => SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: statuses
+                            .map((s) => Padding(
+                                  padding: const EdgeInsets.only(right: 5),
+                                  child: ChoiceChip(
+                                    label: Text(s['label']!),
+                                    selected: controller.selectedStatus.value ==
+                                        s['value'],
+                                    onSelected: (_) => controller
+                                        .selectedStatus.value = s['value']!,
+                                    selectedColor: Colors.deepPurple,
+                                    labelStyle: TextStyle(
+                                      color: controller.selectedStatus.value ==
+                                              s['value']
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ))
               ],
             ),
           ],
         ),
       ),
     );
-  }
-
-  // ---------------- STATUS FILTER ----------------
-  Widget _buildStatusFilter() {
-    const statuses = [
-      {'label': 'All', 'value': 'all'},
-      {'label': 'Paid', 'value': 'paid'},
-      {'label': 'Partial', 'value': 'partial'},
-      {'label': 'Not Paid', 'value': 'not_paid'},
-    ];
-
-    return Obx(() => SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: statuses
-                .map((s) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(s['label']!),
-                        selected: controller.selectedStatus.value == s['value'],
-                        onSelected: (_) =>
-                            controller.selectedStatus.value = s['value']!,
-                        selectedColor: Colors.deepPurple,
-                        labelStyle: TextStyle(
-                          color: controller.selectedStatus.value == s['value']
-                              ? Colors.white
-                              : Colors.black,
-                        ),
-                      ),
-                    ))
-                .toList(),
-          ),
-        ));
   }
 
   // ---------------- FILTER LOGIC ----------------
@@ -180,7 +216,8 @@ class _SaleListPageState extends State<SaleListPage> {
       if (list.isEmpty) return const Center(child: Text('No sales found'));
 
       return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.symmetric(
+            horizontal: SizeConfig.sw(0.01), vertical: SizeConfig.sh(0.01)),
         itemCount: list.length,
         itemBuilder: (_, i) => _saleTile(list[i]),
       );
@@ -213,52 +250,66 @@ class _SaleListPageState extends State<SaleListPage> {
           ),
         ],
       ),
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      sale.customerName,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
+      child: InkWell(
+        onTap: () {
+          Get.to(() => SaleDetailPage(sale: sale));
+        },
+        child: Card(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: Padding(
+            padding: EdgeInsets.all(SizeConfig.res(5)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                        'Date: ${sale.saleDate.toIso8601String().split('T')[0]}'),
+                    Chip(
+                      label: Text(
+                        sale.isPaid.replaceAll('_', ' ').toUpperCase(),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      backgroundColor: _statusColor(sale.isPaid),
                     ),
-                  ),
-                  Chip(
-                    label: Text(
-                      sale.isPaid.replaceAll('_', ' ').toUpperCase(),
-                      style: const TextStyle(color: Colors.white),
+                  ],
+                ),
+                Text(
+                  sale.customerName.capitalizeFirst ?? "",
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Row(
+                  children: [
+                    SizedBox(
+                        width: SizeConfig.sw(0.2),
+                        child:
+                            Text('Total: ${sale.netTotal.toStringAsFixed(2)}')),
+                    SizedBox(
+                      width: SizeConfig.sw(0.05),
                     ),
-                    backgroundColor: _statusColor(sale.isPaid),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text('Date: ${sale.saleDate.toIso8601String().split('T')[0]}'),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Text('Total: ${sale.netTotal.toStringAsFixed(2)}'),
-                  const SizedBox(width: 12),
-                  Text('Paid: ${sale.paidAmount.toStringAsFixed(2)}'),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Remaining: ${sale.remainingAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Paid From: ${sale.paidFrom}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ],
+                    Text(
+                      'Remaining: ${sale.remainingAmount.toStringAsFixed(2)}',
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    SizedBox(
+                        width: SizeConfig.sw(0.2),
+                        child: Text(
+                            'Paid: ${sale.paidAmount.toStringAsFixed(2)}')),
+                    SizedBox(
+                      width: SizeConfig.sw(0.05),
+                    ),
+                    Text(
+                      'Paid From: ${sale.paidFrom}',
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -298,8 +349,6 @@ class _SaleListPageState extends State<SaleListPage> {
 
     controller.discountController.text =
         (sale?.discountPercentage ?? 0).toString();
-    controller.vatController.text =
-        (sale?.vatPercentage ?? 13).toString(); // default 13%
 
     controller.updateTotals(); // recalc grand, net, remaining
 
@@ -307,245 +356,281 @@ class _SaleListPageState extends State<SaleListPage> {
       CustomFormDialog(
         title: isEdit ? 'Edit Sale' : 'Add Sale',
         isEditMode: isEdit,
-        width: 0.9,
+        width: 0.6,
         height: 0.9,
         content: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ---------- Bill No ----------
-              _buildTextField('Bill No', controller.billNoController),
+              SizedBox(
+                height: SizeConfig.sh(0.02),
+              ),
 
-              const SizedBox(height: 8),
-              // ---------- Customer ----------
-              _buildTextField(
-                  'Customer Name', controller.customerNameController),
-              const SizedBox(height: 8),
-              _buildTextField('Contact No', controller.contactNoController),
+              Row(
+                children: [
+                  SizedBox(
+                      width: SizeConfig.sw(0.1),
+                      child: _buildTextField(
+                          'Bill No', controller.billNoController)),
+                  SizedBox(
+                    width: SizeConfig.sw(0.02),
+                  ),
+                  SizedBox(
+                    width: SizeConfig.sw(0.2),
+                    child: _buildTextField(
+                        'Customer Name', controller.customerNameController),
+                  ),
+                  SizedBox(
+                    width: SizeConfig.sw(0.02),
+                  ),
+                  SizedBox(
+                    width: SizeConfig.sw(0.15),
+                    child: _buildTextField(
+                        'Contact No', controller.contactNoController),
+                  ),
+                ],
+              ),
 
-              const SizedBox(height: 8),
-              // ---------- Sale Date ----------
-              _datePickerField('Sale Date', controller.saleDate,
-                  required: true),
+              SizedBox(
+                height: SizeConfig.sh(0.02),
+              ),
 
-              const SizedBox(height: 8),
-              // ---------- Staff Dropdown ----------
-              Obx(() {
-                return DropdownButtonFormField<int>(
-                  value: staffSelected.value > 0 ? staffSelected.value : null,
-                  items: staffController.staffs
-                      .map((s) => DropdownMenuItem(
-                            value: s.id, // int
-                            child: Text(s.name),
-                          ))
-                      .toList(),
-                  onChanged: (v) => staffSelected.value = v ?? 0,
-                );
-              }),
+              Row(
+                children: [
+                  SizedBox(
+                    width: SizeConfig.sw(0.1),
+                    child: _datePickerField('Sale Date', controller.saleDate,
+                        required: true),
+                  ),
+                  SizedBox(
+                    width: SizeConfig.sw(0.02),
+                  ),
+                  SizedBox(
+                    width: SizeConfig.sw(0.15),
+                    child: Obx(() {
+                      if (staffController.staffs.isEmpty) {
+                        return const SizedBox();
+                      }
 
-              const SizedBox(height: 8),
-              // ---------- Servicing Switch ----------
-              Obx(() => SwitchListTile(
-                    title: const Text('Servicing Sale'),
-                    value: controller.isServicing.value,
-                    onChanged: (v) => controller.isServicing.value = v,
-                  )),
+                      // Auto-select first if not selected
+                      if (staffSelected.value == 0) {
+                        staffSelected.value = staffController.staffs.first.id!;
+                      }
 
-              const SizedBox(height: 8),
+                      return DropdownButtonFormField<int>(
+                        value: staffSelected.value,
+                        items: staffController.staffs
+                            .map((s) => DropdownMenuItem(
+                                  value: s.id,
+                                  child: Text(s.name),
+                                ))
+                            .toList(),
+                        onChanged: (v) => staffSelected.value = v ?? 0,
+                        decoration: const InputDecoration(
+                          labelText: "Staff",
+                          border: OutlineInputBorder(),
+                        ),
+                      );
+                    }),
+                  ),
+                  SizedBox(
+                    width: SizeConfig.sw(0.02),
+                  ),
+                  SizedBox(
+                    width: SizeConfig.sw(0.15),
+                    child: Obx(
+                      () => SwitchListTile(
+                        title: const Text('Servicing Sale'),
+                        value: controller.isServicing.value,
+                        onChanged: (v) => controller.isServicing.value = v,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(
+                height: SizeConfig.sh(0.02),
+              ),
 
               // ================= SERVICING SECTION =================
               Obx(() {
                 if (!controller.isServicing.value) return const SizedBox();
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Divider(),
-                    const Text(
-                      'Servicing Details',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                return Card(
+                  margin: const EdgeInsets.only(top: 16),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ---------- Header ----------
+                        Row(
+                          children: const [
+                            Icon(Icons.build, color: Colors.blue),
+                            SizedBox(width: 8),
+                            Text(
+                              'Servicing Details',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // ---------- Vehicle Info ----------
+                        _sectionTitle("Vehicle Information"),
+                        _twoColumnRow(
+                          _buildTextField('Vehicle Model',
+                              controller.vehicleModelController),
+                          _buildTextField('Vehicle Color',
+                              controller.vehicleColorController),
+                        ),
+                        const SizedBox(height: 8),
+                        _twoColumnRow(
+                          _buildTextField(
+                              'KM Driven', controller.kmDrivenController,
+                              keyboardType: TextInputType.number),
+                          _buildTextField('Bike Reg. No',
+                              controller.bikeRegistrationController),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // ---------- Job Info ----------
+                        _sectionTitle("Job Details"),
+                        _twoColumnRow(
+                          _buildTextField(
+                              'Job Card No', controller.jobCardNoController),
+                          _buildTextField('Technician',
+                              controller.technicianNameController),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildTextField('Job Done On Vehicle',
+                            controller.jobDoneOnVehicleController),
+
+                        const SizedBox(height: 16),
+
+                        // ---------- Charges & Dates ----------
+                        _sectionTitle("Charges & Dates"),
+                        _twoColumnRow(
+                          _buildTextField(
+                            'Labour Charge',
+                            controller.labourChargeController,
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => controller.updateTotals(),
+                          ),
+                          _datePickerField(
+                              'Received Date', controller.receivedDate),
+                        ),
+                        const SizedBox(height: 8),
+                        _twoColumnRow(
+                          _datePickerField(
+                            'Delivery Date',
+                            controller.deliveryDate,
+                            required: true,
+                          ),
+                          _readonlyDateField(
+                              'Follow Up Date', controller.followUpDate),
+                        ),
+                        const SizedBox(height: 8),
+                        _readonlyDateField('Post Service Feedback Date',
+                            controller.postServiceFeedbackDate),
+
+                        const SizedBox(height: 16),
+
+                        // ---------- Service Flags ----------
+                        _sectionTitle("Service Type"),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 4,
+                          children: [
+                            _serviceCheck(
+                              'Free Servicing',
+                              controller.isFreeServicing,
+                            ),
+                            _serviceCheck(
+                              'Repair Job',
+                              controller.isRepairJob,
+                            ),
+                            _serviceCheck(
+                              'Accident Case',
+                              controller.isAccident,
+                            ),
+                            _serviceCheck(
+                              'Warranty Job',
+                              controller.isWarrantyJob,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-
-                    _buildTextField(
-                        'Vehicle Model', controller.vehicleModelController),
-                    const SizedBox(height: 8),
-
-                    _buildTextField('KM Driven', controller.kmDrivenController,
-                        keyboardType: TextInputType.number),
-                    const SizedBox(height: 8),
-
-                    _buildTextField(
-                        'Job Card No', controller.jobCardNoController),
-                    const SizedBox(height: 8),
-
-                    _buildTextField('Bike Registration No',
-                        controller.bikeRegistrationController),
-                    const SizedBox(height: 8),
-
-                    _buildTextField(
-                        'Vehicle Color', controller.vehicleColorController),
-                    const SizedBox(height: 8),
-
-                    _buildTextField(
-                        'Technician Name', controller.technicianNameController),
-                    const SizedBox(height: 8),
-
-                    _buildTextField('Job Done On Vehicle',
-                        controller.jobDoneOnVehicleController),
-                    const SizedBox(height: 8),
-
-                    _buildTextField(
-                      'Labour Charge',
-                      controller.labourChargeController,
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => controller.updateTotals(),
-                    ),
-
-                    const SizedBox(height: 8),
-                    _datePickerField('Received Date', controller.receivedDate),
-                    const SizedBox(height: 8),
-                    _datePickerField(
-                      'Delivery Date',
-                      controller.deliveryDate,
-                      required: true,
-                    ),
-
-                    const SizedBox(height: 8),
-                    _readonlyDateField(
-                        'Follow Up Date', controller.followUpDate),
-                    const SizedBox(height: 8),
-                    _readonlyDateField('Post Service Feedback Date',
-                        controller.postServiceFeedbackDate),
-
-                    const SizedBox(height: 8),
-
-                    // ---------- Service Flags ----------
-                    Obx(() => CheckboxListTile(
-                          title: const Text('Free Servicing'),
-                          value: controller.isFreeServicing.value,
-                          onChanged: (v) =>
-                              controller.isFreeServicing.value = v ?? false,
-                        )),
-                    Obx(() => CheckboxListTile(
-                          title: const Text('Repair Job'),
-                          value: controller.isRepairJob.value,
-                          onChanged: (v) =>
-                              controller.isRepairJob.value = v ?? false,
-                        )),
-                    Obx(() => CheckboxListTile(
-                          title: const Text('Accident Case'),
-                          value: controller.isAccident.value,
-                          onChanged: (v) =>
-                              controller.isAccident.value = v ?? false,
-                        )),
-                    Obx(() => CheckboxListTile(
-                          title: const Text('Warranty Job'),
-                          value: controller.isWarrantyJob.value,
-                          onChanged: (v) =>
-                              controller.isWarrantyJob.value = v ?? false,
-                        )),
-                  ],
+                  ),
                 );
               }),
-              const SizedBox(height: 8),
-              // ---------- Items ----------
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Item'),
-                  onPressed: () async {
-                    final selectedStock = await _selectStock();
-                    if (selectedStock != null) {
-                      controller
-                          .addItem(SaleItemModel.fromStock(selectedStock));
-                      controller.updateTotals();
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-              Obx(() => Column(
-                    children: controller.selectedItems.map(_itemRow).toList(),
-                  )),
 
-              const SizedBox(height: 8),
-              // ---------- Discount & VAT ----------
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                        'Discount %', controller.discountController,
-                        keyboardType: TextInputType.number, onChanged: (_) {
-                      controller.updateTotals();
-                    }),
+              SizedBox(
+                height: SizeConfig.sh(0.02),
+              ),
+
+              Container(
+                height: SizeConfig.sh(0.3),
+                width: double.infinity,
+                padding: EdgeInsets.all(
+                    SizeConfig.sw(0.015)), // optional inner padding
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.grey.shade400, // border color
+                    width: 1, // border thickness
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildTextField('VAT %', controller.vatController,
-                        keyboardType: TextInputType.number, onChanged: (_) {
-                      controller.updateTotals();
-                    }),
+                  borderRadius: BorderRadius.circular(12), // rounded corners
+                ),
+                child: Obx(() => Column(
+                      children: controller.selectedItems.map(_itemRow).toList(),
+                    )),
+              ),
+
+              SizedBox(
+                height: SizeConfig.sh(0.02),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SizedBox(
+                    width: SizeConfig.sw(0.4),
+                    child: _buildTextField(
+                        'Remarks', controller.remarksController,
+                        keyboardType: TextInputType.text),
+                  ),
+                  // ---------- Items ----------
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Item'),
+                    onPressed: () async {
+                      final selectedStock = await _selectStock();
+                      if (selectedStock != null) {
+                        controller
+                            .addItem(SaleItemModel.fromStock(selectedStock));
+                        controller.updateTotals();
+                      }
+                    },
                   ),
                 ],
               ),
-
-              const SizedBox(height: 8),
-              // ---------- Paid From ----------
-              Obx(() {
-                return DropdownButtonFormField<String>(
-                  value: paidFromOptions.contains(paidFrom.value)
-                      ? paidFrom.value
-                      : null,
-                  items: paidFromOptions
-                      .map((p) => DropdownMenuItem(
-                            value: p,
-                            child: Text(p.toUpperCase()),
-                          ))
-                      .toList(),
-                  onChanged: (v) => paidFrom.value = v ?? 'cash',
-                  decoration: const InputDecoration(
-                    labelText: 'Paid From',
-                    border: OutlineInputBorder(),
-                  ),
-                );
-              }),
-
-              const SizedBox(height: 8),
-              // ---------- Paid Amount ----------
-              _buildTextField('Paid Amount', controller.paidAmountController,
-                  keyboardType: TextInputType.number, onChanged: (_) {
-                controller.updateTotals();
-              }),
-
-              const SizedBox(height: 8),
-              // ---------- Net / Remaining ----------
-              Obx(() => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                          'Grand Total: ${controller.totalAmount.toStringAsFixed(2)}'),
-                      Text(
-                          'Discount Amount: ${controller.discountAmount.toStringAsFixed(2)}'),
-                      Text(
-                          'VAT Amount: ${controller.vatAmount.toStringAsFixed(2)}'),
-                      Text(
-                          'Net Total: ${controller.netAmount.toStringAsFixed(2)}'),
-                      Text(
-                          'Remaining: ${controller.remainingAmount.toStringAsFixed(2)}'),
-                    ],
-                  )),
-
-              const SizedBox(height: 8),
-              // ---------- Remarks ----------
-              _buildTextField('Remarks', controller.remarksController,
-                  keyboardType: TextInputType.text),
+              SizedBox(
+                height: SizeConfig.sh(0.02),
+              ),
+              _buildSaleTotalsCard(),
             ],
           ),
         ),
         onSave: () async {
-          if (!_validateForm()) return;
+          if (controller.validateForm()) return;
 
           // Assign handled_by & paid_from to controller / model
           controller.handledBy.value = staffSelected.value;
@@ -569,21 +654,227 @@ class _SaleListPageState extends State<SaleListPage> {
     );
   }
 
-  // ---------- HELPERS ----------
-  bool _validateForm() {
-    if (controller.customerNameController.text.isEmpty) {
-      Get.snackbar('Error', 'Customer name is required');
-      return false;
-    }
-    if (controller.saleDate.value == null) {
-      Get.snackbar('Error', 'Sale date is required');
-      return false;
-    }
-    if (controller.selectedItems.isEmpty) {
-      Get.snackbar('Error', 'Please add at least one item');
-      return false;
-    }
-    return true;
+  Widget _buildSaleTotalsCard() {
+    final paidFromOptions = ['cash', 'online', 'bank'];
+    return Obx(
+      () => Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 4,
+        margin: EdgeInsets.symmetric(
+          vertical: SizeConfig.sh(0.01),
+          horizontal: SizeConfig.sw(0.015),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: SizeConfig.sh(0.015),
+            horizontal: SizeConfig.sw(0.015),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: double.maxFinite,
+              height: SizeConfig.sh(0.2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ---------- Top Row ----------
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Grand Total
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Grand Total',
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.01)),
+                          Text(
+                            controller.totalAmount.toStringAsFixed(2),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: SizeConfig.sw(0.05)),
+
+                      // Discount % + Amount
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Discount %',
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.005)),
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: SizeConfig.sw(0.05),
+                                height: SizeConfig.sh(0.06),
+                                child: TextField(
+                                  controller: controller.discountController,
+                                  keyboardType: TextInputType.number,
+                                  style: const TextStyle(fontSize: 14),
+                                  decoration:
+                                      const InputDecoration(isDense: true),
+                                  onChanged: (_) => controller.updateTotals(),
+                                ),
+                              ),
+                              SizedBox(width: SizeConfig.sw(0.02)),
+                              Text(
+                                '(${controller.discountAmount.toStringAsFixed(2)})',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: SizeConfig.sw(0.04)),
+
+                      // Net Total
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Net Total',
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.0)),
+                          Text(
+                            controller.netAmount.toStringAsFixed(2),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: SizeConfig.sw(0.04)),
+
+                      // Paid Amount
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Paid Amount',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.005)),
+                          SizedBox(
+                            width: SizeConfig.sw(0.1),
+                            height: SizeConfig.sh(0.06),
+                            child: TextField(
+                              controller: controller.paidAmountController,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(fontSize: 14),
+                              decoration: const InputDecoration(isDense: true),
+                              onChanged: (_) => controller.updateTotals(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: SizeConfig.sh(0.01)),
+
+                  // ---------- Bottom Row ----------
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Remaining
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Remaining',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.005)),
+                          Text(
+                            controller.remainingAmount.toStringAsFixed(2),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: SizeConfig.sw(0.04)),
+
+                      // Paid From Dropdown
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Paid From',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.005)),
+                          SizedBox(
+                            width: SizeConfig.sw(0.1),
+                            child: DropdownButtonFormField<String>(
+                              value: paidFromOptions
+                                      .contains(controller.paidFrom.value)
+                                  ? controller.paidFrom.value
+                                  : null,
+                              items: paidFromOptions
+                                  .map((p) => DropdownMenuItem(
+                                        value: p,
+                                        child: Text(p.toUpperCase()),
+                                      ))
+                                  .toList(),
+                              onChanged: (v) {
+                                controller.paidFrom.value = v ?? 'cash';
+                              },
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 10),
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(width: SizeConfig.sw(0.04)),
+
+                      // Status
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Status',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.005)),
+                          Text(
+                            controller.saleStatus.value
+                                .replaceAll("_", " ")
+                                .toUpperCase(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: controller.saleStatus.value == 'paid'
+                                  ? Colors.green
+                                  : controller.saleStatus.value == 'partial'
+                                      ? Colors.orange
+                                      : Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildTextField(String label, TextEditingController controller,
@@ -711,15 +1002,18 @@ class _SaleListPageState extends State<SaleListPage> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (_, setState) => AlertDialog(
-          title: const Text('Select Stock'),
+          title: const Text("Select Stock Item"),
           content: SizedBox(
-            width: 400,
-            height: 300,
+            width: SizeConfig.sw(0.4),
+            height: SizeConfig.sh(0.6),
             child: Column(
               children: [
                 TextField(
                   controller: searchCtrl,
-                  decoration: const InputDecoration(labelText: 'Search Stock'),
+                  decoration: const InputDecoration(
+                    labelText: 'Search Item',
+                    prefixIcon: Icon(Icons.search),
+                  ),
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 8),
@@ -730,14 +1024,69 @@ class _SaleListPageState extends State<SaleListPage> {
                             .toLowerCase()
                             .contains(searchCtrl.text.toLowerCase()))
                         .toList();
+                    if (filtered.isEmpty) {
+                      return const Center(child: Text('No items found'));
+                    }
                     return ListView.builder(
                       itemCount: filtered.length,
-                      itemBuilder: (_, i) {
-                        final s = filtered[i];
-                        return ListTile(
-                          title: Text(s.name),
-                          subtitle: Text('Available: ${s.stock}'),
-                          onTap: () => Navigator.pop(context, s),
+                      itemBuilder: (_, index) {
+                        final s = filtered[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                              vertical: 6, horizontal: 8),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => Navigator.pop(context, s),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  // ---------- Item Name ----------
+                                  Expanded(
+                                    flex: 3,
+                                    child: Text(
+                                      s.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16),
+                                    ),
+                                  ),
+
+                                  // ---------- Stock ----------
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(
+                                      "Stock: ${s.stock}",
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+
+                                  // ---------- Prices ----------
+                                  Expanded(
+                                    flex: 3,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          "Purchase: ${s.purchasePrice.toStringAsFixed(2)}",
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "Selling: ${s.salePrice.toStringAsFixed(2)}",
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         );
                       },
                     );
@@ -749,5 +1098,38 @@ class _SaleListPageState extends State<SaleListPage> {
         ),
       ),
     );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.grey,
+        ),
+      ),
+    );
+  }
+
+  Widget _twoColumnRow(Widget left, Widget right) {
+    return Row(
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 12),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  Widget _serviceCheck(String title, RxBool value) {
+    return Obx(() => FilterChip(
+          label: Text(title),
+          selected: value.value,
+          onSelected: (v) => value.value = v,
+          selectedColor: Colors.blue.shade100,
+        ));
   }
 }

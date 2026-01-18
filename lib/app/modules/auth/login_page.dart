@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/utils/constants.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../controllers/auth_controller.dart';
@@ -15,6 +16,12 @@ class _LoginPageState extends State<LoginPage> {
   final controller = Get.find<AuthController>();
 
   @override
+  void initState() {
+    super.initState();
+    controller.isPasswordHidden.value = true;
+  }
+
+  @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
 
@@ -22,7 +29,7 @@ class _LoginPageState extends State<LoginPage> {
       body: SingleChildScrollView(
         child: Container(
           color: Colors.grey.shade300,
-          height: SizeConfig.screenHeight,
+          // height: SizeConfig.screenHeight,
           child: Row(
             children: [
               // Left side - Logo / Illustration
@@ -64,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             SizedBox(height: SizeConfig.sh(0.005)),
                             Text(
-                              "Login to continue to vgsync_frontend",
+                              "Login to continue to VGSync",
                               style: TextStyle(
                                 fontSize: SizeConfig.res(5),
                                 color: Colors.black54,
@@ -73,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
                             SizedBox(height: SizeConfig.sh(0.03)),
 
                             // Username
-                            _buildTextField(
+                            buildTextField(
                               controller.usernameController,
                               "Username",
                               Icons.person,
@@ -81,12 +88,13 @@ class _LoginPageState extends State<LoginPage> {
                             SizedBox(height: SizeConfig.sh(0.02)),
 
                             // Password
-                            _buildTextField(
+                            buildTextField(
                               controller.passwordController,
                               "Password",
                               Icons.lock,
-                              obscureText: true,
+                              obscureToggle: controller.isPasswordHidden,
                             ),
+
                             SizedBox(height: SizeConfig.sh(0.04)),
 
                             // Login Button
@@ -125,35 +133,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  // ------------------ Helper ------------------
-  Widget _buildTextField(
-    TextEditingController controller,
-    String label,
-    IconData icon, {
-    bool obscureText = false,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      style: const TextStyle(color: Colors.black87),
-      decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.blue.shade700),
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.black54),
-        filled: true,
-        fillColor: Colors.grey.shade200,
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.blue.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
         ),
       ),
     );

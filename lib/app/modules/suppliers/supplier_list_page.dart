@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../data/models/supplier_model.dart';
 import 'supplier_controller.dart';
@@ -10,7 +11,6 @@ class SupplierListPage extends StatelessWidget {
   SupplierListPage({super.key});
 
   final SupplierController controller = Get.find<SupplierController>();
-  final searchController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -25,27 +25,25 @@ class SupplierListPage extends StatelessWidget {
             Row(
               children: [
                 SizedBox(
-                  width: SizeConfig.sw(0.6),
+                  width: SizeConfig.sw(0.45),
                   child: TextField(
-                    controller: searchController,
-                    onChanged: controller.updateSearch,
+                    controller: controller.searchController,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search),
-                      hintText: 'Search suppliers...',
+                      hintText: 'Search Suppliers...',
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(SizeConfig.sw(0.02)),
                       ),
                     ),
+                    onChanged: (_) => controller.suppliers.refresh(),
                   ),
                 ),
                 SizedBox(width: SizeConfig.sw(0.01)),
-                Flexible(
-                  child: ElevatedButton.icon(
-                    onPressed: controller.fetchSuppliers,
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    label: const Text("Refresh"),
-                  ),
+                actionButton(
+                  label: 'Refresh',
+                  icon: Icons.refresh,
+                  onPressed: controller.refreshSuppliers,
                 ),
               ],
             ),
@@ -75,14 +73,16 @@ class SupplierListPage extends StatelessWidget {
                         extentRatio: 0.35,
                         children: [
                           SlidableAction(
-                            onPressed: (_) => openEditDialog(c),
+                            onPressed: (_) => openSupplierDialog(supplier: c),
                             backgroundColor: Colors.orange,
                             foregroundColor: Colors.white,
                             icon: Icons.edit,
                             label: 'Edit',
                           ),
                           SlidableAction(
-                            onPressed: (_) => controller.deleteSupplier(c.id),
+                            onPressed: (_) {
+                              controller.deleteSupplier(c.id);
+                            },
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
                             icon: Icons.delete,
@@ -131,109 +131,74 @@ class SupplierListPage extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: openAddDialog,
+        onPressed: () => openSupplierDialog(supplier: null),
         icon: const Icon(Icons.add),
         label: const Text('Add Supplier'),
       ),
     );
   }
 
-  // ---------------- Add Supplier ----------------
-  void openAddDialog() {
-    controller.clearForm();
-    Get.dialog(CustomFormDialog(
-      title: "Add Supplier",
-      isEditMode: false,
-      width: 0.2,
-      height: 0.65,
-      content: Column(
-        children: [
-          TextField(
-              controller: controller.nameController,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                contentPadding: EdgeInsets.all(SizeConfig.sw(0.02)),
-              )),
-          SizedBox(
-            height: SizeConfig.sh(0.02),
-          ),
-          TextField(
-              controller: controller.contactController,
-              decoration: InputDecoration(
-                labelText: 'Contact',
-                contentPadding: EdgeInsets.all(SizeConfig.sw(0.02)),
-              )),
-          SizedBox(
-            height: SizeConfig.sh(0.02),
-          ),
-          TextField(
-              controller: controller.emailController,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                contentPadding: EdgeInsets.all(SizeConfig.sw(0.02)),
-              )),
-          SizedBox(
-            height: SizeConfig.sh(0.02),
-          ),
-          TextField(
-              controller: controller.addressController,
-              decoration: InputDecoration(
-                labelText: 'Address',
-                contentPadding: EdgeInsets.all(SizeConfig.sw(0.02)),
-              )),
-        ],
-      ),
-      onSave: () => controller.addSupplier(),
-    ));
-  }
+  void openSupplierDialog({SupplierModel? supplier}) {
+    final bool isEditMode = supplier != null;
 
-  // ---------------- Edit Supplier ----------------
-  void openEditDialog(SupplierModel supplier) {
-    controller.fillForm(supplier);
-    Get.dialog(CustomFormDialog(
-      title: "Edit Supplier",
-      isEditMode: true,
-      width: 0.25,
-      height: 0.65,
-      content: Column(
-        children: [
-          TextField(
-              controller: controller.nameController,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                contentPadding: EdgeInsets.all(SizeConfig.sw(0.02)),
-              )),
-          SizedBox(
-            height: SizeConfig.sh(0.02),
-          ),
-          TextField(
-              controller: controller.contactController,
-              decoration: InputDecoration(
-                labelText: 'Contact',
-                contentPadding: EdgeInsets.all(SizeConfig.sw(0.02)),
-              )),
-          SizedBox(
-            height: SizeConfig.sh(0.02),
-          ),
-          TextField(
-              controller: controller.emailController,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                contentPadding: EdgeInsets.all(SizeConfig.sw(0.02)),
-              )),
-          SizedBox(
-            height: SizeConfig.sh(0.02),
-          ),
-          TextField(
-              controller: controller.addressController,
-              decoration: InputDecoration(
-                labelText: 'Address',
-                contentPadding: EdgeInsets.all(SizeConfig.sw(0.02)),
-              )),
-        ],
+    if (isEditMode) {
+      controller.fillForm(supplier);
+    } else {
+      controller.clearForm();
+    }
+
+    Get.dialog(
+      CustomFormDialog(
+        title: isEditMode ? "Edit Supplier" : "Add Supplier",
+        isEditMode: isEditMode,
+        width: isEditMode ? 0.25 : 0.22,
+        height: 0.65,
+        content: Column(
+          children: [
+            buildTextField(
+              controller.nameController,
+              "Name",
+              Icons.person,
+              hintText: "Supplier name",
+            ),
+            SizedBox(height: SizeConfig.sh(0.02)),
+            buildTextField(
+              controller.contactController,
+              "Contact",
+              Icons.phone,
+              keyboardType: TextInputType.phone,
+              hintText: "Phone number",
+            ),
+            SizedBox(height: SizeConfig.sh(0.02)),
+            buildTextField(
+              controller.emailController,
+              "Email",
+              Icons.email,
+              keyboardType: TextInputType.emailAddress,
+              hintText: "example@mail.com",
+            ),
+            SizedBox(height: SizeConfig.sh(0.02)),
+            buildTextField(
+              controller.addressController,
+              "Address",
+              Icons.location_on,
+              hintText: "Supplier address",
+            ),
+          ],
+        ),
+        onSave: () {
+          if (isEditMode) {
+            controller.updateSupplier(supplier);
+          } else {
+            controller.addSupplier();
+          }
+        },
+        onDelete: isEditMode
+            ? () {
+                controller.deleteSupplier(supplier.id);
+              }
+            : null,
       ),
-      onSave: () => controller.updateSupplier(supplier),
-      onDelete: () => controller.deleteSupplier(supplier.id),
-    ));
+    );
   }
 }

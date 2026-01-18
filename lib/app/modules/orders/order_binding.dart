@@ -21,7 +21,8 @@ class OrderBinding extends Bindings {
     Get.lazyPut<OrderController>(
         () => OrderController(orderRepository: Get.find<OrderRepository>()));
 
-    Get.lazyPut<OrderFormController>(() => OrderFormController());
+    //order form
+    Get.lazyPut<OrderFormController>(() => OrderFormController(), fenix: true);
 
     //for stock/ item selection
     //binding stockController is important

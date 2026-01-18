@@ -8,7 +8,6 @@ class ExpenseService {
   Future<List<ExpenseModel>> getExpenses() async {
     final res = await _dio.get("/expenses/");
     final data = res.data;
-    print(data);
     if (data != null && data['results'] != null && data['results'] is List) {
       return (data['results'] as List)
           .map((e) => ExpenseModel.fromJson(e))

@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/data/models/order_model.dart';
 import 'package:vgsync_frontend/app/data/models/stock_model.dart';
 import 'package:vgsync_frontend/app/modules/orders/order_controller.dart';
+import 'package:vgsync_frontend/app/modules/orders/order_detail_page.dart';
 import 'package:vgsync_frontend/app/modules/orders/order_form_controller.dart';
 import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/common_date_picker.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
+import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../wigdets/custom_form_dialog.dart';
 
@@ -18,8 +24,9 @@ class OrderListPage extends StatefulWidget {
 
 class _OrderListPageState extends State<OrderListPage> {
   final OrderController controller = Get.find<OrderController>();
-  final searchController = TextEditingController();
+
   final ScrollController _itemScrollCtrl = ScrollController();
+  GlobalController globalCtrl = Get.find<GlobalController>();
 
   @override
   void initState() {
@@ -39,12 +46,14 @@ class _OrderListPageState extends State<OrderListPage> {
             // ---------------- Search + Refresh ----------------
             Row(
               children: [
-                Flexible(
+                Expanded(
+                  flex: 3,
                   child: TextField(
-                    controller: searchController,
+                    controller: controller.searchController,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search),
                       hintText: 'Search orders...',
+                      isDense: true,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(SizeConfig.sw(0.02)),
@@ -54,16 +63,33 @@ class _OrderListPageState extends State<OrderListPage> {
                   ),
                 ),
                 SizedBox(width: SizeConfig.sw(0.01)),
-                SizedBox(
-                  width: SizeConfig.sw(0.12),
-                  child: ElevatedButton.icon(
-                    onPressed: controller.fetchOrders,
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    label: const Text("Refresh"),
-                  ),
+                actionButton(
+                  label: 'Refresh',
+                  icon: Icons.refresh,
+                  onPressed: controller.refreshOrders,
                 ),
+                SizedBox(width: SizeConfig.sw(0.01)),
+                actionButton(
+                  label: 'Import',
+                  icon: Icons.upload_file,
+                  onPressed: () {
+                    FileUploadDialog.show(
+                      context: context,
+                      title: 'Import Orders (Excel)',
+                      endpoint: '/order-excel-upload/',
+                      fileKey: 'file',
+                      allowedExtensions: ['xls', 'xlsx'],
+                      onSuccess: () async {
+                        await controller.fetchOrders();
+                        globalCtrl.triggerRefresh(DashboardRefreshType.order);
+                      },
+                    );
+                  },
+                ),
+                SizedBox(width: SizeConfig.sw(0.01)),
               ],
             ),
+
             SizedBox(height: SizeConfig.sh(0.02)),
             // ---------------- Orders List ----------------
             Expanded(
@@ -72,7 +98,7 @@ class _OrderListPageState extends State<OrderListPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final query = searchController.text.toLowerCase();
+                final query = controller.searchController.text.toLowerCase();
                 final filtered = controller.searchOrders(query);
 
                 if (filtered.isEmpty) {
@@ -103,7 +129,7 @@ class _OrderListPageState extends State<OrderListPage> {
                             ),
                             SlidableAction(
                               onPressed: (_) =>
-                                  controller.deleteOrder(order.id),
+                                  controller.deleteOrder(context, order.id),
                               backgroundColor: Colors.red,
                               foregroundColor: Colors.white,
                               icon: Icons.delete,
@@ -142,6 +168,8 @@ class _OrderListPageState extends State<OrderListPage> {
                               'Vehicle: ${order.vehicleModel} | Total: ${order.totalAmount} | Remaining: ${order.remainingAmount}',
                               style: TextStyle(fontSize: SizeConfig.sw(0.008)),
                             ),
+                            onTap: () =>
+                                Get.to(() => OrderDetailPage(order: order)),
                           ),
                         ),
                       ),
@@ -176,8 +204,8 @@ class _OrderListPageState extends State<OrderListPage> {
       CustomFormDialog(
         title: isEditMode ? "Edit Order" : "Add Order",
         isEditMode: isEditMode,
-        width: 0.5,
-        height: 0.68,
+        width: 0.45,
+        height: 0.9,
         content: _buildDialogContent(formCtrl),
         onSave: () {
           final orderCtrl = Get.find<OrderController>();
@@ -185,196 +213,362 @@ class _OrderListPageState extends State<OrderListPage> {
 
           if (isEditMode) {
             orderCtrl.updateOrder(newOrder);
+
+            globalCtrl.triggerRefresh(DashboardRefreshType.order);
+            Get.back(closeOverlays: true);
+            DesktopToast.show(
+              "Order updated successfully.",
+              backgroundColor: Colors.greenAccent,
+            );
           } else {
             orderCtrl.addOrder(newOrder);
+            globalCtrl.triggerRefresh(DashboardRefreshType.order);
+            Get.back(closeOverlays: true);
+            DesktopToast.show(
+              "Order added successfully.",
+              backgroundColor: Colors.greenAccent,
+            );
           }
-
-          Get.back(); // CLOSE DIALOG FIRST
         },
         onDelete: isEditMode
             ? () {
-                controller.deleteOrder(order.id);
-                Get.back();
+                controller.deleteOrder(context, order.id);
+                Get.back(closeOverlays: true);
+                DesktopToast.show(
+                  "Order deleted successfully.",
+                  backgroundColor: Colors.greenAccent,
+                );
               }
             : null,
       ),
       barrierDismissible: false,
-    ).then((_) {
-      if (Get.isRegistered<OrderFormController>()) {
-        Get.delete<OrderFormController>(); // SAFE cleanup
-      }
-    });
+    );
   }
 
   Widget _buildDialogContent(OrderFormController formCtrl) {
     return SizedBox(
-      height: SizeConfig.sh(0.5),
+      height: SizeConfig.sh(0.72),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // --------- Order Date ---------
+          SizedBox(
+            width: SizeConfig.sw(0.3), // 👈 same as other fields
+            child: CommonDatePicker(
+              label: "Order Date",
+              selectedDate: formCtrl.orderDate,
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2100),
+            ),
+          ),
+
+          SizedBox(height: SizeConfig.sh(0.02)),
+
           // --------- Customer & Vehicle ---------
           Row(
             children: [
               SizedBox(
                 width: SizeConfig.sw(0.2),
-                child: TextField(
-                  controller: formCtrl.customerCtrl,
-                  decoration: const InputDecoration(labelText: 'Customer Name'),
-                ),
+                child: buildTextField(
+                    formCtrl.customerCtrl, 'Customer Name', Icons.person),
               ),
               SizedBox(width: SizeConfig.sw(0.02)),
               SizedBox(
                 width: SizeConfig.sw(0.2),
-                child: TextField(
-                  controller: formCtrl.contactCtrl,
-                  decoration: const InputDecoration(labelText: 'Contact No'),
-                ),
+                child: buildTextField(
+                    formCtrl.contactCtrl, 'Contact No', Icons.phone),
               ),
             ],
           ),
+
           SizedBox(height: SizeConfig.sh(0.02)),
+
+          // --------- Vehicle & Advance ---------
           Row(
             children: [
               SizedBox(
                 width: SizeConfig.sw(0.2),
-                child: TextField(
-                  controller: formCtrl.vehicleCtrl,
-                  decoration: const InputDecoration(labelText: 'Vehicle Model'),
-                ),
+                child: buildTextField(
+                    formCtrl.vehicleCtrl, 'Vehicle Model', Icons.bike_scooter),
               ),
               SizedBox(width: SizeConfig.sw(0.02)),
               SizedBox(
                 width: SizeConfig.sw(0.2),
-                child: TextField(
-                  controller: formCtrl.advanceCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration:
-                      const InputDecoration(labelText: 'Advance Amount'),
-                ),
+                child: buildTextField(
+                    formCtrl.advanceCtrl, 'Advance Amount', Icons.money,
+                    keyboardType: TextInputType.number),
               ),
             ],
           ),
+
           SizedBox(height: SizeConfig.sh(0.02)),
 
-          // --------- Items List ---------
-          Expanded(
-            child: Obx(() => Scrollbar(
-                  controller: _itemScrollCtrl,
-                  thumbVisibility: true,
-                  child: ListView.builder(
-                    controller: _itemScrollCtrl,
-                    itemCount: formCtrl.items.length,
-                    itemBuilder: (_, i) {
-                      final item = formCtrl.items[i];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                  child: Text(item.stock.name.isNotEmpty
-                                      ? item.stock.name
-                                      : "Item ${item.stock.id}")),
-                              SizedBox(
-                                width: SizeConfig.sw(0.06),
-                                child: TextField(
-                                  controller: item.qtyCtrl,
-                                  keyboardType: TextInputType.number,
-                                  decoration:
-                                      const InputDecoration(labelText: 'Qty'),
-                                  onChanged: (_) => formCtrl.items.refresh(),
-                                ),
-                              ),
-                              SizedBox(width: SizeConfig.sw(0.02)),
-                              SizedBox(
-                                width: SizeConfig.sw(0.06),
-                                child: TextField(
-                                  controller: item.rateCtrl,
-                                  keyboardType: TextInputType.number,
-                                  decoration:
-                                      const InputDecoration(labelText: 'Rate'),
-                                  onChanged: (_) => formCtrl.items.refresh(),
-                                ),
-                              ),
-                              SizedBox(width: SizeConfig.sw(0.02)),
-                              SizedBox(
-                                  width: SizeConfig.sw(0.06),
-                                  child: Text(item.total.toStringAsFixed(2))),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () => formCtrl.removeItem(i),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                )),
-          ),
+          // --------- Items Table ---------
+          _buildItemHeader(),
 
-          // --------- Add Item Button ---------
-          Align(
-            alignment: Alignment.bottomRight,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final stockCtrl = Get.find<StockController>();
-                final TextEditingController searchCtrl =
-                    TextEditingController();
-                Result? selected = await showDialog(
-                  context: context,
-                  builder: (_) => StatefulBuilder(
-                    builder: (_, setState) => AlertDialog(
-                      title: const Text("Select Stock"),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextField(
-                            controller: searchCtrl,
-                            decoration: const InputDecoration(
-                                labelText: "Search Stock"),
-                            onChanged: (_) => setState(() {}),
-                          ),
-                          SizedBox(
-                            height: 200,
-                            width: double.maxFinite,
-                            child: Obx(() {
-                              final filtered = stockCtrl.stocks
-                                  .where((s) => s.name
-                                      .toLowerCase()
-                                      .contains(searchCtrl.text.toLowerCase()))
-                                  .toList();
-                              return ListView.builder(
-                                itemCount: filtered.length,
-                                itemBuilder: (_, i) {
-                                  final s = filtered[i];
-                                  return ListTile(
-                                    title: Text(s.name),
-                                    subtitle: Text("Stock: ${s.stock}"),
-                                    onTap: () => Navigator.pop(context, s),
-                                  );
-                                },
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-                if (selected != null) formCtrl.addItem(selected);
-              },
-              icon: const Icon(Icons.add),
-              label: const Text("Add Item"),
+          SizedBox(
+            height: SizeConfig.sh(0.3), // 🔥 FIXED SPACE
+            child: Obx(
+              () => Scrollbar(
+                controller: _itemScrollCtrl,
+                thumbVisibility: true,
+                child: ListView.builder(
+                  controller: _itemScrollCtrl,
+                  itemCount: formCtrl.items.length,
+                  itemBuilder: (_, i) {
+                    final item = formCtrl.items[i];
+                    return buildItemRow(formCtrl, item, i);
+                  },
+                ),
+              ),
             ),
           ),
 
-          const SizedBox(height: 10),
+          // --------- Totals ---------
+          Row(
+            children: [
+              // 🔥 ADD ITEM BUTTON HERE
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text("Add Item"),
+                  onPressed: () => _openStockPicker(formCtrl),
+                ),
+              ),
+              SizedBox(width: SizeConfig.sw(0.02)),
+              Obx(() => Text(
+                    "Total: ${formCtrl.totalAmount.toStringAsFixed(2)} | "
+                    "Remaining: ${formCtrl.remainingAmount.toStringAsFixed(2)}",
+                  )),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-          // --------- Total & Remaining ---------
-          Obx(() => Text(
-              "Total: ${formCtrl.totalAmount.toStringAsFixed(2)} | Remaining: ${formCtrl.remainingAmount.toStringAsFixed(2)}")),
+  Widget _buildItemHeader() {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      color: Colors.grey.shade300,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // SN
+          SizedBox(
+            width: 40,
+            child: Text(
+              "SN",
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+
+          // Item
+          const Expanded(
+            child: Text(
+              "Item",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+
+          // Qty
+          SizedBox(
+            width: 70,
+            child: Text(
+              "Qty",
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Rate
+          SizedBox(
+            width: 90,
+            child: Text(
+              "Rate",
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Total
+          SizedBox(
+            width: 90,
+            child: Text(
+              "Total",
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+
+          // Delete space
+          const SizedBox(width: 36),
+        ],
+      ),
+    );
+  }
+
+  void _openStockPicker(OrderFormController formCtrl) async {
+    final stockCtrl = Get.find<StockController>();
+    final searchCtrl = TextEditingController();
+
+    final Result? selected = await showDialog<Result>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Select Stock"),
+        content: SizedBox(
+          width: 400,
+          height: 300,
+          child: Column(
+            children: [
+              TextField(
+                controller: searchCtrl,
+                decoration: const InputDecoration(
+                  hintText: "Search stock...",
+                  prefixIcon: Icon(Icons.search),
+                ),
+                onChanged: (_) {
+                  // rebuild dialog
+                  (context as Element).markNeedsBuild();
+                },
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: Obx(() {
+                  final filtered = stockCtrl.stocks
+                      .where((s) => s.name
+                          .toLowerCase()
+                          .contains(searchCtrl.text.toLowerCase()))
+                      .toList();
+
+                  if (filtered.isEmpty) {
+                    return const Center(child: Text("No stock found"));
+                  }
+
+                  return ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (_, i) {
+                      final s = filtered[i];
+                      return ListTile(
+                        title: Text(s.name),
+                        subtitle: Text("Available: ${s.stock}"),
+                        onTap: () => Navigator.pop(context, s),
+                      );
+                    },
+                  );
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (selected != null) {
+      formCtrl.addItem(selected); // 🔥 ITEM ADDED
+    }
+  }
+
+  Widget buildItemRow(
+    OrderFormController formCtrl,
+    OrderItemForm item,
+    int index,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: index.isEven ? Colors.grey.shade50 : Colors.white,
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.shade300),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 🔢 SN
+          SizedBox(
+            width: 40,
+            child: Text(
+              '${index + 1}.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+
+          // 📦 Item
+          Expanded(
+            child: Text(
+              item.stock.name,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+          // 🔢 Qty
+          SizedBox(
+            width: 70,
+            height: 36,
+            child: TextField(
+              controller: item.qtyCtrl,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(
+                isDense: true,
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => formCtrl.items.refresh(),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // 💰 Rate
+          SizedBox(
+            width: 90,
+            height: 36,
+            child: TextField(
+              controller: item.rateCtrl,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(
+                isDense: true,
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => formCtrl.items.refresh(),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // 🧮 Total
+          SizedBox(
+            width: 90,
+            height: 36,
+            child: Center(
+              child: Text(
+                item.total.toStringAsFixed(2),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+
+          // 🗑 Delete
+          SizedBox(
+            width: 36,
+            child: IconButton(
+              icon: const Icon(Icons.delete, size: 18),
+              onPressed: () => formCtrl.removeItem(index),
+            ),
+          ),
         ],
       ),
     );

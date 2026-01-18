@@ -1,3 +1,5 @@
+/* ======================================================== */
+
 class ExpenseResponse {
   final int count;
   final List<ExpenseModel> results;
@@ -11,9 +13,16 @@ class ExpenseResponse {
     return ExpenseResponse(
       count: json['count'] ?? 0,
       results: (json['results'] as List? ?? [])
-          .map((e) => ExpenseModel.fromJson(e))
+          .map((e) => ExpenseModel.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'count': count,
+      'results': results.map((e) => e.toJson()).toList(),
+    };
   }
 }
 
@@ -46,26 +55,31 @@ class ExpenseModel {
     required this.createdAt,
   });
 
-  /* ================= JSON ================= */
+  /* ================= JSON PARSING ================= */
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
     return ExpenseModel(
       id: json['id'] ?? 0,
-      expenseDate: DateTime.parse(json['expense_date']),
-      title: json['title'] ?? '',
-      expenseType: (json['expense_type'] ?? '').toString().toLowerCase(),
-      amount: (json['amount'] as num).toDouble(),
-      paymentMode: json['payment_mode'] ?? '',
-      referenceType: json['reference_type'],
-      referenceId: json['reference_id'],
-      note: json['note'],
-      spentBy: json['spent_by'],
-      createdAt: DateTime.parse(json['created_at']),
+      expenseDate: _parseDate(json['expense_date']),
+      title: (json['title'] ?? '').toString(),
+      expenseType: (json['expense_type'] ?? 'other').toString().toLowerCase(),
+      amount: (json['amount'] ?? 0).toDouble(),
+      paymentMode: (json['payment_mode'] ?? 'cash').toString(),
+      referenceType: json['reference_type']?.toString(),
+      referenceId: json['reference_id'] != null
+          ? int.tryParse(json['reference_id'].toString())
+          : null,
+      note: json['note']?.toString(),
+      spentBy: json['spent_by'] != null
+          ? int.tryParse(json['spent_by'].toString())
+          : null,
+      createdAt: _parseDate(json['created_at']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'expense_date': expenseDate.toIso8601String().split('T').first,
       'title': title,
       'expense_type': expenseType,
@@ -75,36 +89,16 @@ class ExpenseModel {
       'reference_id': referenceId,
       'note': note,
       'spent_by': spentBy,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 
-  /* ================= UI HELPERS ================= */
+  /* ================= HELPERS ================= */
 
-  /// ❌ salary / system generated expense
+  /// Editable if not salary & not system reference
   bool get isEditable => expenseType != 'salary' && referenceType == null;
 
   bool get isSalaryExpense => !isEditable;
-
-  /// 📅 single date filter
-  bool isSameDate(DateTime date) =>
-      expenseDate.year == date.year &&
-      expenseDate.month == date.month &&
-      expenseDate.day == date.day;
-
-  /// 🏷 expense type filter
-  bool matchExpenseType(String? type) {
-    if (type == null || type.isEmpty || type == 'all') return true;
-    return expenseType == type.toLowerCase();
-  }
-
-  /// 🔍 manual search
-  bool matchSearch(String query) {
-    if (query.isEmpty) return true;
-    final q = query.toLowerCase();
-    return title.toLowerCase().contains(q) ||
-        (note?.toLowerCase().contains(q) ?? false) ||
-        paymentMode.toLowerCase().contains(q);
-  }
 
   /* ================= COPY ================= */
 
@@ -132,5 +126,17 @@ class ExpenseModel {
       spentBy: spentBy ?? this.spentBy,
       createdAt: createdAt,
     );
+  }
+
+  /* ================= PRIVATE ================= */
+
+  static DateTime _parseDate(dynamic date) {
+    if (date == null) return DateTime.now();
+    if (date is DateTime) return date;
+    try {
+      return DateTime.parse(date.toString());
+    } catch (_) {
+      return DateTime.now();
+    }
   }
 }

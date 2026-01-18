@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
+import 'package:vgsync_frontend/app/modules/purchases/purchase_detail_page.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../data/models/purchase_model.dart';
 import '../../data/models/stock_model.dart';
@@ -23,10 +27,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
   final SupplierController supplierController = Get.find();
   final StaffController staffController = Get.find();
 
-  final searchController = TextEditingController();
+  final GlobalController globalController = Get.find();
+
   final ScrollController _itemScrollCtrl = ScrollController();
-  Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
-  RxString selectedStatus = 'all'.obs;
 
   @override
   void initState() {
@@ -37,14 +40,17 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 12),
-          _buildStatusFilter(),
-          const SizedBox(height: 8),
-          Expanded(child: _buildPurchaseList()),
-        ],
+      body: Container(
+        margin: EdgeInsets.all(SizeConfig.res(4)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: SizeConfig.sh(0.02)),
+            _buildHeader(),
+            SizedBox(height: SizeConfig.sh(0.02)),
+            Expanded(child: _buildPurchaseList()),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openAddDialog,
@@ -59,33 +65,70 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
-      margin: const EdgeInsets.all(12),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(SizeConfig.res(5)),
         child: Column(
           children: [
-            TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'Search by item name...',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onChanged: (_) => controller.purchases.refresh(),
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: controller.searchController,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: 'Search Purchases',
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onChanged: (_) => controller.purchases.refresh(),
+                  ),
+                ),
+                SizedBox(width: SizeConfig.sw(0.01)),
+                actionButton(
+                  label: 'Refresh',
+                  icon: Icons.refresh,
+                  onPressed: controller.refreshSales,
+                ),
+                SizedBox(width: SizeConfig.sw(0.01)),
+                actionButton(
+                  label: 'Import',
+                  icon: Icons.upload_file,
+                  onPressed: () {
+                    FileUploadDialog.show(
+                      context: context,
+                      title: 'Import Purchases (Excel)',
+                      endpoint: '/upload/purchase-excel/',
+                      fileKey: 'file',
+                      allowedExtensions: ['xls', 'xlsx'],
+                      onSuccess: () async {
+                        await controller.fetchPurchases();
+                        globalController
+                            .triggerRefresh(DashboardRefreshType.all);
+                      },
+                    );
+                  },
+                ),
+                SizedBox(width: SizeConfig.sw(0.01)),
+              ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: SizeConfig.sh(0.04)),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 SizedBox(
-                  width: SizeConfig.sw(0.2),
+                  width: SizeConfig.sw(0.15),
                   child: ElevatedButton.icon(
                     onPressed: _pickDate,
                     icon: const Icon(Icons.date_range),
-                    label: Obx(() => Text(selectedDate.value == null
-                        ? "Select Date"
-                        : selectedDate.value!.toIso8601String().split('T')[0])),
+                    label: Obx(() => Text(
+                        controller.filterSelectedDate.value == null
+                            ? "Select Date"
+                            : controller.filterSelectedDate.value!
+                                .toIso8601String()
+                                .split('T')[0])),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurple,
                       shape: RoundedRectangleBorder(
@@ -93,20 +136,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                     ),
                   ),
                 ),
-                SizedBox(
-                  width: SizeConfig.sw(0.15),
-                  height: SizeConfig.sh(0.045),
-                  child: ElevatedButton.icon(
-                    onPressed: controller.fetchPurchases,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Refresh'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurpleAccent,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                ),
+                _buildStatusFilter(),
               ],
             ),
           ],
@@ -133,11 +163,12 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ChoiceChip(
                       label: Text(s['label']!),
-                      selected: selectedStatus.value == s['value'],
-                      onSelected: (_) => selectedStatus.value = s['value']!,
+                      selected: controller.selectedStatus.value == s['value'],
+                      onSelected: (_) =>
+                          controller.selectedStatus.value = s['value']!,
                       selectedColor: Colors.deepPurple,
                       labelStyle: TextStyle(
-                        color: selectedStatus.value == s['value']
+                        color: controller.selectedStatus.value == s['value']
                             ? Colors.white
                             : Colors.black,
                       ),
@@ -152,11 +183,11 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: selectedDate.value ?? DateTime.now(),
+      initialDate: controller.filterSelectedDate.value ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (picked != null) selectedDate.value = picked;
+    if (picked != null) controller.filterSelectedDate.value = picked;
   }
 
   Widget _buildPurchaseList() {
@@ -166,21 +197,22 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
       }
 
       List<PurchaseModel> filtered = controller.filteredPurchases(
-        query: searchController.text.toLowerCase(),
+        query: controller.searchController.text.toLowerCase(),
       );
 
-      if (selectedDate.value != null) {
+      if (controller.filterSelectedDate.value != null) {
         filtered = filtered
             .where((p) =>
-                p.date.year == selectedDate.value!.year &&
-                p.date.month == selectedDate.value!.month &&
-                p.date.day == selectedDate.value!.day)
+                p.date.year == controller.filterSelectedDate.value!.year &&
+                p.date.month == controller.filterSelectedDate.value!.month &&
+                p.date.day == controller.filterSelectedDate.value!.day)
             .toList();
       }
 
-      if (selectedStatus.value != 'all') {
-        filtered =
-            filtered.where((p) => p.status == selectedStatus.value).toList();
+      if (controller.selectedStatus.value != 'all') {
+        filtered = filtered
+            .where((p) => p.status == controller.selectedStatus.value)
+            .toList();
       }
 
       if (filtered.isEmpty) {
@@ -188,7 +220,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
       }
 
       return ListView.builder(
-        padding: const EdgeInsets.only(bottom: 20, left: 12, right: 12),
+        padding: const EdgeInsets.only(bottom: 20, right: 12),
         itemCount: filtered.length,
         itemBuilder: (_, index) {
           final purchase = filtered[index];
@@ -209,7 +241,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                   ),
                   SlidableAction(
                     onPressed: (_) =>
-                        controller.deletePurchase(purchase.id ?? 0),
+                        controller.deletePurchase(context, purchase.id ?? 0),
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                     icon: Icons.delete,
@@ -217,63 +249,67 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                   ),
                 ],
               ),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-                shadowColor: Colors.grey.withOpacity(0.3),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Supplier: ${supplierController.suppliers.firstWhere(
-                                    (s) => s.id == purchase.supplier,
-                                  ).name}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  // Navigate to detail page
+                  Get.to(() => PurchaseDetailPage(purchase: purchase));
+                },
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 4,
+                  shadowColor: Colors.grey.withOpacity(0.3),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                                'Date: ${purchase.date.toIso8601String().split('T')[0]}'),
+                            Chip(
+                              label: Text(
+                                purchase.status
+                                    .replaceAll('_', ' ')
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 12),
                               ),
+                              backgroundColor: purchase.status == 'paid'
+                                  ? Colors.green
+                                  : purchase.status == 'partial'
+                                      ? Colors.orange
+                                      : Colors.red,
                             ),
+                          ],
+                        ),
+                        Text(
+                          'Supplier: ${supplierController.suppliers.firstWhere(
+                                (s) => s.id == purchase.supplier,
+                              ).name}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
-                          Chip(
-                            label: Text(
-                              purchase.status
-                                  .replaceAll('_', ' ')
-                                  .toUpperCase(),
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 12),
-                            ),
-                            backgroundColor: purchase.status == 'paid'
-                                ? Colors.green
-                                : purchase.status == 'partial'
-                                    ? Colors.orange
-                                    : Colors.red,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: SizeConfig.sh(0.01)),
-                      Text(
-                          'Date: ${purchase.date.toIso8601String().split('T')[0]}'),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text(
-                              'Total: ${purchase.netTotal.toStringAsFixed(2)}'),
-                          SizedBox(width: SizeConfig.sw(0.04)),
-                          Text(
-                              'Paid: ${purchase.paidAmount.toStringAsFixed(2)}'),
-                          SizedBox(width: SizeConfig.sw(0.04)),
-                          Text(
-                              'Remaining: ${(purchase.remainingAmount).toStringAsFixed(2)}'),
-                        ],
-                      ),
-                    ],
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                                'Total: ${purchase.netTotal.toStringAsFixed(2)}'),
+                            SizedBox(width: SizeConfig.sw(0.04)),
+                            Text(
+                                'Paid: ${purchase.paidAmount.toStringAsFixed(2)}'),
+                            SizedBox(width: SizeConfig.sw(0.04)),
+                            Text(
+                                'Remaining: ${(purchase.remainingAmount).toStringAsFixed(2)}'),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -306,103 +342,19 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
               children: [
                 // ---------- Header ----------
                 _buildFormHeader(),
-                const SizedBox(height: 12),
+                SizedBox(height: SizeConfig.sh(0.02)),
 
                 // ---------- Add Item Button ----------
                 _buildAddItemButton(),
-                const SizedBox(height: 8),
+                SizedBox(height: SizeConfig.sh(0.02)),
 
                 // ---------- Scrollable Item List ----------
                 _buildItemList(),
 
-                const SizedBox(height: 12),
+                SizedBox(height: SizeConfig.sh(0.02)),
 
-                // ---------- Totals, Discount, VAT, Paid ----------
-                Obx(() => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Grand Total: ${controller.grandTotal.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        SizedBox(height: SizeConfig.sh(0.02)),
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: SizeConfig.sw(0.1),
-                              child: TextField(
-                                controller: controller.discountController,
-                                decoration: const InputDecoration(
-                                    labelText: 'Discount %'),
-                                keyboardType: TextInputType.number,
-                                onChanged: (_) => controller.items.refresh(),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                                width: SizeConfig.sw(0.1),
-                                child: Text(
-                                    'Discount Amount: ${controller.discountAmount.toStringAsFixed(2)}')),
-                            const SizedBox(width: 25),
-                            SizedBox(
-                              width: SizeConfig.sw(0.1),
-                              child: TextField(
-                                controller: controller.vatController,
-                                decoration:
-                                    const InputDecoration(labelText: 'VAT %'),
-                                keyboardType: TextInputType.number,
-                                onChanged: (_) => controller.items.refresh(),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                                width: SizeConfig.sw(0.1),
-                                child: Text(
-                                    'VAT Amount:         ${controller.vatAmount.toStringAsFixed(2)}')),
-                          ],
-                        ),
-                        SizedBox(height: SizeConfig.sh(0.02)),
-                        SizedBox(
-                            width: SizeConfig.sw(0.1),
-                            child: Text(
-                                'Net Total: ${controller.netTotal.toStringAsFixed(2)}')),
-                        SizedBox(height: SizeConfig.sh(0.02)),
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: SizeConfig.sw(0.1),
-                              child: TextField(
-                                controller: controller.paidController,
-                                decoration: const InputDecoration(
-                                    labelText: 'Paid Amount'),
-                                keyboardType: TextInputType.number,
-                                onChanged: (_) => controller.items.refresh(),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Remaining Amount: ${controller.remaining.value.toStringAsFixed(2)}',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(width: 12),
-                          ],
-                        ),
-                        SizedBox(height: SizeConfig.sh(0.02)),
-                        Text(
-                          'Status: ${controller.purchaseStatus.value.replaceAll("_", " ").toUpperCase()}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: controller.purchaseStatus.value == 'paid'
-                                ? Colors.green
-                                : controller.purchaseStatus.value == 'partial'
-                                    ? Colors.orange
-                                    : Colors.red,
-                          ),
-                        ),
-                      ],
-                    )),
+                // ---------- Totals, Discount, Paid ----------
+                _buildTotalsCard()
               ],
             ),
           ),
@@ -412,16 +364,10 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
             } else {
               await controller.addPurchase();
             }
-
-            if (controller.message.value
-                .toLowerCase()
-                .contains('successfully')) {
-              Get.back();
-            }
           },
           onDelete: isEditMode
               ? () async {
-                  await controller.deletePurchase(purchase.id ?? 0);
+                  await controller.deletePurchase(context, purchase.id ?? 0);
                   Get.back();
                 }
               : null,
@@ -431,9 +377,194 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
     );
   }
 
+  Widget _buildTotalsCard() {
+    return Obx(
+      () => Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 4,
+        margin: EdgeInsets.symmetric(
+          vertical: SizeConfig.sh(0.005),
+          horizontal: SizeConfig.sw(0.015),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: SizeConfig.sh(0.015),
+            horizontal: SizeConfig.sw(0.015),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: double.maxFinite,
+              height: SizeConfig.sh(0.14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ---------- Top Row ----------
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Grand Total
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Grand Total',
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.01)),
+                          Text(
+                            controller.grandTotal.toStringAsFixed(2),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: SizeConfig.sw(0.05)),
+
+                      // Discount % + Discount Amount
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Discount %',
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.005)),
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: SizeConfig.sw(0.05),
+                                height: SizeConfig.sh(0.06),
+                                child: TextField(
+                                  controller: controller.discountController,
+                                  keyboardType: TextInputType.number,
+                                  style: const TextStyle(fontSize: 14),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                  ),
+                                  onChanged: (_) => controller.items.refresh(),
+                                ),
+                              ),
+                              SizedBox(width: SizeConfig.sw(0.02)),
+                              Text(
+                                '(${controller.discountAmount.toStringAsFixed(2)})',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: SizeConfig.sw(0.04)),
+
+                      // Net Total
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Net Total',
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.0)),
+                          Text(
+                            controller.netTotal.toStringAsFixed(2),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(width: SizeConfig.sw(0.04)),
+                      // Paid Amount
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Paid Amount',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.005)),
+                          SizedBox(
+                            width: SizeConfig.sw(0.1),
+                            height: SizeConfig.sh(0.06),
+                            child: TextField(
+                              controller: controller.paidController,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(fontSize: 14),
+                              decoration: InputDecoration(
+                                isDense: true,
+                              ),
+                              onChanged: (_) => controller.items.refresh(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // ---------- Bottom Row ----------
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Remaining Amount
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Remaining',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.005)),
+                          Text(
+                            controller.remaining.value.toStringAsFixed(2),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: SizeConfig.sw(0.04)),
+
+                      // Status
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Status',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          SizedBox(height: SizeConfig.sh(0.005)),
+                          Text(
+                            controller.purchaseStatus.value
+                                .replaceAll("_", " ")
+                                .toUpperCase(),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: controller.purchaseStatus.value == 'paid'
+                                    ? Colors.green
+                                    : controller.purchaseStatus.value ==
+                                            'partial'
+                                        ? Colors.orange
+                                        : Colors.red),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildItemList() {
     return SizedBox(
-      height: SizeConfig.sh(0.25), // Scrollable height for the item list
+      height: SizeConfig.sh(0.34), // Scrollable height for the item list
       child: Obx(() => Scrollbar(
             controller: _itemScrollCtrl,
             thumbVisibility: true,
@@ -450,7 +581,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                       children: [
                         Expanded(child: Text(item.itemName)),
                         SizedBox(
-                          width: SizeConfig.sw(0.08),
+                          width: SizeConfig.sw(0.05),
                           child: TextField(
                             controller: item.quantityController,
                             keyboardType: TextInputType.number,
@@ -458,9 +589,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                             onChanged: (_) => controller.items.refresh(),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: SizeConfig.sw(0.01)),
                         SizedBox(
-                          width: SizeConfig.sw(0.1),
+                          width: SizeConfig.sw(0.08),
                           child: TextField(
                             controller: item.priceController,
                             keyboardType: TextInputType.number,
@@ -469,7 +600,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                             onChanged: (_) => controller.items.refresh(),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: SizeConfig.sw(0.01)),
                         SizedBox(
                           width: SizeConfig.sw(0.12),
                           child: Obx(
@@ -496,6 +627,21 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
   Widget _buildFormHeader() {
     return Row(
       children: [
+        // ---------- Purchase Date ----------
+        SizedBox(
+          width: SizeConfig.sw(0.15),
+          child: TextField(
+            controller: controller.dateController,
+            readOnly: true,
+            decoration: const InputDecoration(
+              labelText: 'Purchase Date',
+              suffixIcon: Icon(Icons.calendar_today),
+            ),
+            onTap: () => controller.pickPurchaseDate(context),
+          ),
+        ),
+        SizedBox(width: SizeConfig.sw(0.01)),
+
         // ---------- Supplier Dropdown ----------
         Expanded(
           child: Obx(() {
@@ -520,7 +666,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
             );
           }),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: SizeConfig.sw(0.01)),
 
         // ---------- Staff Dropdown ----------
         Expanded(
@@ -590,12 +736,65 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                             itemCount: filtered.length,
                             itemBuilder: (_, index) {
                               final s = filtered[index];
-                              return ListTile(
-                                title: Text(s.name),
-                                subtitle: Text("Stock: ${s.stock}"),
-                                trailing: Text(
-                                    "Price: ${s.salePrice.toStringAsFixed(2)}"),
-                                onTap: () => Navigator.pop(context, s),
+                              return Card(
+                                margin: const EdgeInsets.symmetric(
+                                    vertical: 6, horizontal: 8),
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () => Navigator.pop(context, s),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      children: [
+                                        // ---------- Item Name ----------
+                                        Expanded(
+                                          flex: 3,
+                                          child: Text(
+                                            s.name,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16),
+                                          ),
+                                        ),
+
+                                        // ---------- Stock ----------
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            "Stock: ${s.stock}",
+                                            style:
+                                                const TextStyle(fontSize: 14),
+                                          ),
+                                        ),
+
+                                        // ---------- Prices ----------
+                                        Expanded(
+                                          flex: 3,
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                "Purchase: ${s.purchasePrice.toStringAsFixed(2)}",
+                                                style: const TextStyle(
+                                                    fontSize: 14),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                "Selling: ${s.salePrice.toStringAsFixed(2)}",
+                                                style: const TextStyle(
+                                                    fontSize: 14),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               );
                             },
                           );

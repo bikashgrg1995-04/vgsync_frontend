@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/models/stock_model.dart';
 import 'package:vgsync_frontend/app/data/repositories/stock_repository.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import '../../controllers/global_controller.dart';
 
 class StockController extends GetxController {
@@ -10,46 +12,83 @@ class StockController extends GetxController {
 
   StockController({required this.stockRepository});
 
+  // ================= CONFIG =================
+  static const double vatRate = 0.13;
+
+  // ================= STATE =================
   var stocks = <Result>[].obs;
   var isLoading = false.obs;
 
+  RxBool isImporting = false.obs;
+
+  // ================= CONTROLLERS =================
   late TextEditingController nameController;
   late TextEditingController groupController;
   late TextEditingController modelController;
   late TextEditingController stockQtyController;
   late TextEditingController purchasePriceController;
   late TextEditingController salePriceController;
-  late TextEditingController categoryController;
+  late TextEditingController categorySelectController;
   late TextEditingController itemNoController;
 
+  final searchController = TextEditingController();
+
+  // ================= LIFECYCLE =================
   @override
   void onReady() async {
     super.onReady();
+
     nameController = TextEditingController();
     groupController = TextEditingController();
     modelController = TextEditingController();
     stockQtyController = TextEditingController();
     purchasePriceController = TextEditingController();
     salePriceController = TextEditingController();
-    categoryController = TextEditingController();
+    categorySelectController = TextEditingController();
     itemNoController = TextEditingController();
+
+    // 🔥 Auto calculate sale price when purchase price changes
+    purchasePriceController.addListener(_calculateSalePrice);
 
     await fetchStocks();
   }
 
   @override
   void onClose() {
+    purchasePriceController.removeListener(_calculateSalePrice);
+
     nameController.dispose();
     groupController.dispose();
     modelController.dispose();
     stockQtyController.dispose();
     purchasePriceController.dispose();
     salePriceController.dispose();
-    categoryController.dispose();
+    categorySelectController.dispose();
     itemNoController.dispose();
+
     super.onClose();
   }
 
+  // ================= VAT CALCULATION =================
+  void _calculateSalePrice() {
+    final text = purchasePriceController.text;
+
+    if (text.isEmpty) {
+      salePriceController.text = '';
+      return;
+    }
+
+    final purchase = double.tryParse(text);
+    if (purchase == null) {
+      salePriceController.text = '';
+      return;
+    }
+
+    final salePrice = purchase + (purchase * vatRate);
+    salePriceController.text = salePrice.toStringAsFixed(2);
+  }
+
+  // ================= API =================
   Future<void> fetchStocks() async {
     try {
       isLoading.value = true;
@@ -71,16 +110,16 @@ class StockController extends GetxController {
       stock: int.tryParse(stockQtyController.text) ?? 0,
       purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
       salePrice: double.tryParse(salePriceController.text) ?? 0.0,
-      category: int.tryParse(categoryController.text) ?? 0,
+      category: int.tryParse(categorySelectController.text) ?? 0,
       image: null,
     );
 
     final newStock = await stockRepository.create(stock);
+
     stocks.add(newStock);
     globalController.triggerRefresh(DashboardRefreshType.stock);
 
     clearForm();
-    Get.back();
   }
 
   Future<void> updateStock(Result oldStock) async {
@@ -93,7 +132,7 @@ class StockController extends GetxController {
       stock: int.tryParse(stockQtyController.text) ?? 0,
       purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
       salePrice: double.tryParse(salePriceController.text) ?? 0.0,
-      category: int.tryParse(categoryController.text) ?? 0,
+      category: int.tryParse(categorySelectController.text) ?? 0,
       image: oldStock.image,
     );
 
@@ -103,24 +142,40 @@ class StockController extends GetxController {
     if (index != -1) stocks[index] = result;
 
     globalController.triggerRefresh(DashboardRefreshType.stock);
-    Get.back();
   }
 
-  Future<void> deleteStock(int id) async {
-    await stockRepository.delete(id);
-    stocks.removeWhere((s) => s.id == id);
+  Future<void> deleteStock(BuildContext context, int id) async {
+    ConfirmDialog.show(
+      context,
+      title: "Delete Stock",
+      message: "Are you sure you want to delete this stock item?",
+      onConfirm: () async {
+        await stockRepository.delete(id);
+        stocks.removeWhere((s) => s.id == id);
 
-    globalController.triggerRefresh(DashboardRefreshType.stock);
+        globalController.triggerRefresh(DashboardRefreshType.stock);
+        Get.back(closeOverlays: true);
+        DesktopToast.show(
+          "Stock item deleted successfully.",
+          backgroundColor: Colors.greenAccent,
+        );
+      },
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      snackbarColor: Colors.green,
+      snackbarIcon: Icons.check_circle,
+    );
   }
 
-  Result? findById(int id) {
+  Result? getStockById(int id) {
     try {
-      return stocks.firstWhere((e) => e.id == id);
+      return stocks.firstWhere((s) => s.id == id);
     } catch (_) {
       return null;
     }
   }
 
+  // ================= FORM =================
   void fillForm(Result stock) {
     nameController.text = stock.name;
     groupController.text = stock.group;
@@ -128,7 +183,7 @@ class StockController extends GetxController {
     stockQtyController.text = stock.stock.toString();
     purchasePriceController.text = stock.purchasePrice.toString();
     salePriceController.text = stock.salePrice.toString();
-    categoryController.text = stock.category.toString();
+    categorySelectController.text = stock.category.toString();
     itemNoController.text = stock.itemNo.toString();
   }
 
@@ -139,7 +194,12 @@ class StockController extends GetxController {
     stockQtyController.clear();
     purchasePriceController.clear();
     salePriceController.clear();
-    categoryController.clear();
+    categorySelectController.clear();
     itemNoController.clear();
+  }
+
+  Future<void> refreshStock() async {
+    searchController.clear();
+    await fetchStocks();
   }
 }

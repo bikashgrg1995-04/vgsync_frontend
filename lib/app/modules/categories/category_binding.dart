@@ -1,8 +1,11 @@
 // app/modules/dashboard/bindings/dashboard_binding.dart
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/repositories/category_repository.dart';
+import 'package:vgsync_frontend/app/data/repositories/stock_repository.dart';
 import 'package:vgsync_frontend/app/data/services/category_service.dart';
+import 'package:vgsync_frontend/app/data/services/stock_service.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_controller.dart';
+import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
 
 class CategoryBinding extends Bindings {
   @override
@@ -20,6 +23,23 @@ class CategoryBinding extends Bindings {
     Get.lazyPut<CategoryController>(
       () => CategoryController(
         categoryRepository: Get.find(),
+      ),
+    );
+
+    //stock
+    Get.lazyPut<StockService>(
+      () => StockService(),
+    );
+
+    Get.lazyPut<StockRepository>(
+      () => StockRepository(
+        stockService: Get.find(),
+      ),
+    );
+
+    Get.lazyPut<StockController>(
+      () => StockController(
+        stockRepository: Get.find(),
       ),
     );
   }

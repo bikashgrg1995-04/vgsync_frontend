@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import '../../data/models/followup_model.dart';
 import '../../data/repositories/followup_repository.dart';
 import '../../controllers/global_controller.dart';
@@ -45,40 +46,35 @@ class FollowUpController extends GetxController {
     }
   }
 
-  // ---------------- TERMINATE ----------------
-  Future<void> terminateFollowUp(int id) async {
+  Future<void> terminateFollowUp(int id, {String? reason}) async {
     try {
-      await followUpRepository.terminate(id);
+      await followUpRepository.terminate(
+        id,
+      );
 
       final index = followUps.indexWhere((f) => f.id == id);
       if (index != -1) {
         final old = followUps[index];
 
-        followUps[index] = FollowUpModel(
-          id: old.id,
-          saleId: old.saleId, // ✅ REQUIRED
-          sale: old.sale,
-          customerName: old.customerName,
-          contactNo: old.contactNo,
-          vehicle: old.vehicle,
-          deliveryDate: old.deliveryDate,
-          postServiceFeedbackDate: old.postServiceFeedbackDate,
-          followUpDate: old.followUpDate,
-          remarks: old.remarks,
-          assignedTo: old.assignedTo,
-          status: 'terminated', // 🔴 important
-          reason: old.reason,
-          createdAt: old.createdAt,
+        followUps[index] = old.copyWith(
+          status: 'terminated',
+          reason: reason ?? old.reason,
           updatedAt: DateTime.now(),
         );
       }
 
-      // 🔹 Trigger dashboard refresh (followups only)
-      globalController.triggerRefresh(DashboardRefreshType.followup);
-
-      Get.snackbar('Success', 'Follow-up terminated');
+      globalController.triggerRefresh(
+        DashboardRefreshType.followup,
+      );
+      DesktopToast.show(
+        'Follow-up terminated successfully',
+        backgroundColor: Colors.greenAccent,
+      );
     } catch (e) {
-      Get.snackbar('Error', e.toString());
+      DesktopToast.show(
+        'Failed to terminate follow-up',
+        backgroundColor: Colors.redAccent,
+      );
     }
   }
 

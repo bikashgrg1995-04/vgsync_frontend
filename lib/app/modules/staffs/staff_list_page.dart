@@ -3,6 +3,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_detail_page.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../data/models/staff_model.dart';
 import 'staff_controller.dart';
@@ -17,7 +18,7 @@ class StaffListPage extends StatefulWidget {
 
 class _StaffListPageState extends State<StaffListPage> {
   final StaffController controller = Get.find<StaffController>();
-  final searchController = TextEditingController();
+
   final globalController = Get.find<GlobalController>();
 
   final List<String> designations = [
@@ -43,9 +44,10 @@ class _StaffListPageState extends State<StaffListPage> {
             // Search + Refresh
             Row(
               children: [
-                Flexible(
+                SizedBox(
+                  width: SizeConfig.sw(0.45),
                   child: TextField(
-                    controller: searchController,
+                    controller: controller.searchController,
                     decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.search),
                         hintText: 'Search staff...',
@@ -56,13 +58,10 @@ class _StaffListPageState extends State<StaffListPage> {
                   ),
                 ),
                 SizedBox(width: SizeConfig.sw(0.01)),
-                SizedBox(
-                  width: SizeConfig.sw(0.12),
-                  child: ElevatedButton.icon(
-                    onPressed: controller.fetchStaff,
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    label: const Text("Refresh"),
-                  ),
+                actionButton(
+                  label: 'Refresh',
+                  icon: Icons.refresh,
+                  onPressed: controller.setStaffFilters,
                 ),
               ],
             ),
@@ -75,8 +74,8 @@ class _StaffListPageState extends State<StaffListPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final filtered =
-                    controller.filterStaffs(query: searchController.text);
+                final filtered = controller.filterStaffs(
+                    query: controller.searchController.text);
 
                 if (filtered.isEmpty) {
                   return const Center(child: Text('No staff found'));
@@ -118,19 +117,51 @@ class _StaffListPageState extends State<StaffListPage> {
                               borderRadius:
                                   BorderRadius.circular(SizeConfig.sw(0.01))),
                           elevation: 3,
-                          child: ListTile(
-                            onTap: () =>
-                                Get.to(() => StaffDetailPage(staff: staff)),
-                            contentPadding: EdgeInsets.all(SizeConfig.sw(0.02)),
-                            title: Text(
-                              staff.name,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            subtitle: Text(
-                              '${staff.designation} | ${staff.salaryMode} | ${staff.email}',
-                              style: const TextStyle(fontSize: 14),
-                            ),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: SizeConfig.sw(0.02),
+                              ),
+                              SizedBox(
+                                width: SizeConfig.sw(0.05),
+                                height: SizeConfig.sw(0.05),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColorLight,
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(SizeConfig.sw(0.04)),
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    size: SizeConfig.res(14),
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: SizeConfig.sw(0.01),
+                              ),
+                              Expanded(
+                                child: ListTile(
+                                  onTap: () => Get.to(
+                                      () => StaffDetailPage(staff: staff)),
+                                  contentPadding:
+                                      EdgeInsets.all(SizeConfig.sw(0.01)),
+                                  title: Text(
+                                    staff.name,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: SizeConfig.res(6)),
+                                  ),
+                                  subtitle: Text(
+                                    '${staff.designation.capitalizeFirst} | ${staff.salaryMode.capitalizeFirst} | ${staff.phone}',
+                                    style: TextStyle(
+                                        fontSize: SizeConfig.res(4.5)),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -156,12 +187,7 @@ class _StaffListPageState extends State<StaffListPage> {
     controller.clearControllers();
 
     if (isEdit) {
-      controller.nameController.text = staff.name;
-      controller.designationController.text = staff.designation;
-      controller.salaryModeController.text = staff.salaryMode;
-      controller.phoneController.text = staff.phone;
-      controller.emailController.text = staff.email;
-      controller.isActiveController.value = staff.isActive;
+      controller.fillStaffForm(staff);
     }
 
     Get.dialog(CustomFormDialog(
@@ -177,13 +203,14 @@ class _StaffListPageState extends State<StaffListPage> {
             Text('Personal Info',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             SizedBox(height: SizeConfig.sh(0.01)),
-            _buildTextField(controller.nameController, 'Full Name'),
+            buildTextField(
+                controller.nameController, 'Full Name', Icons.person),
             SizedBox(height: SizeConfig.sh(0.005)),
-            _buildTextField(controller.phoneController, 'Phone'),
+            buildTextField(controller.phoneController, 'Phone', Icons.phone),
             SizedBox(height: SizeConfig.sh(0.005)),
-            _buildTextField(controller.emailController, 'Email'),
+            buildTextField(controller.emailController, 'Email', Icons.email),
             SizedBox(height: SizeConfig.sh(0.005)),
-            _buildTextField(controller.addressController, 'Address'),
+            buildTextField(controller.addressController, 'Address', Icons.home),
             SizedBox(height: SizeConfig.sh(0.01)),
 
             // Employment Info
@@ -212,31 +239,12 @@ class _StaffListPageState extends State<StaffListPage> {
       onSave: () async {
         if (isEdit) {
           await controller.updateStaff(staff);
-          globalController.triggerRefresh(DashboardRefreshType.staff);
         } else {
           await controller.addStaff();
-          globalController.triggerRefresh(DashboardRefreshType.staff);
         }
       },
       onDelete: isEdit ? () => controller.deleteStaff(staff.id ?? 0) : null,
     ));
-  }
-
-  Widget _buildTextField(TextEditingController controller, String label) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.grey.shade100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: EdgeInsets.symmetric(
-            vertical: SizeConfig.sh(0.02), horizontal: SizeConfig.sw(0.02)),
-      ),
-    );
   }
 
   Widget _buildDropdown(

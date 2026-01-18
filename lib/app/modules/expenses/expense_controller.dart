@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/data/models/expense_model.dart';
 import 'package:vgsync_frontend/app/data/repositories/expense_repository.dart';
+import 'package:vgsync_frontend/app/modules/dashboard/dashboard_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 
 class ExpenseController extends GetxController {
   final ExpenseRepository expenseRepository;
@@ -12,30 +15,36 @@ class ExpenseController extends GetxController {
   /* ================= STATE ================= */
 
   final globalController = Get.find<GlobalController>();
+  final dashboardController = Get.find<DashboardController>();
 
   final expenses = <ExpenseModel>[].obs;
   final isLoading = false.obs;
 
   // Filters
+  final searchController = TextEditingController();
   final selectedDate = Rxn<DateTime>();
   final selectedExpenseType = 'All'.obs;
   final searchQuery = ''.obs;
+  final selectedPaymentMode = 'All'.obs;
 
   /* ================= FORM CONTROLLERS ================= */
 
   final titleCtrl = TextEditingController();
-  final expenseTypeCtrl = TextEditingController();
   final amountCtrl = TextEditingController();
-  final paymentModeCtrl = TextEditingController();
   final noteCtrl = TextEditingController();
   final spentByCtrl = TextEditingController();
-  final expenseDateCtrl = TextEditingController();
+  final saleDate = Rxn<DateTime>();
+
+  // Dropdown reactive values
+  final paymentModeRx = 'Cash'.obs;
+  final expenseTypeRx = 'All'.obs;
 
   /* ================= LIFECYCLE ================= */
 
   @override
   void onInit() {
     super.onInit();
+    setDefaultFilters();
     fetchExpenses();
     //setToday();
   }
@@ -43,49 +52,39 @@ class ExpenseController extends GetxController {
   @override
   void onClose() {
     titleCtrl.dispose();
-    expenseTypeCtrl.dispose();
     amountCtrl.dispose();
-    paymentModeCtrl.dispose();
     noteCtrl.dispose();
     spentByCtrl.dispose();
-    expenseDateCtrl.dispose();
     super.onClose();
   }
 
-  /* ================= QUICK DATE ================= */
-
-  void setToday() {
-    selectedDate.value = DateTime.now();
-  }
-
-  void setYesterday() {
-    selectedDate.value = DateTime.now().subtract(const Duration(days: 1));
-  }
-
-  void clearDateFilter() {
-    selectedDate.value = null;
-  }
-
   /* ================= FORM ================= */
-
   void clearForm() {
     titleCtrl.clear();
-    expenseTypeCtrl.clear();
     amountCtrl.clear();
-    paymentModeCtrl.clear();
     noteCtrl.clear();
     spentByCtrl.clear();
-    expenseDateCtrl.clear();
+    saleDate.value = DateTime.now(); // default today
+
+    // Reset dropdowns to default values
+    paymentModeRx.value = 'Cash';
+    expenseTypeRx.value = 'Other';
   }
 
   void fillForm(ExpenseModel e) {
     titleCtrl.text = e.title;
-    expenseTypeCtrl.text = e.expenseType;
     amountCtrl.text = e.amount.toString();
-    paymentModeCtrl.text = e.paymentMode;
     noteCtrl.text = e.note ?? '';
     spentByCtrl.text = e.spentBy?.toString() ?? '';
-    expenseDateCtrl.text = _formatDate(e.expenseDate);
+    saleDate.value = e.expenseDate; // <-- old date
+
+    // Set dropdowns
+    paymentModeRx.value = e.paymentMode.isEmpty
+        ? 'Cash'
+        : e.paymentMode.toString().capitalizeFirst!.trim();
+    expenseTypeRx.value = e.expenseType.isEmpty
+        ? 'Other'
+        : e.expenseType.toString().capitalizeFirst!.trim();
   }
 
   /* ================= FETCH ================= */
@@ -99,33 +98,36 @@ class ExpenseController extends GetxController {
     }
   }
 
-  /* ================= CREATE ================= */
-
   Future<void> addExpense() async {
     try {
       isLoading.value = true;
 
       final expense = ExpenseModel(
         id: 0,
-        title: titleCtrl.text.trim(),
-        expenseType: expenseTypeCtrl.text,
+        title:
+            titleCtrl.text.trim().isEmpty ? 'Untitled' : titleCtrl.text.trim(),
+        expenseType: (expenseTypeRx.value.isEmpty
+            ? 'other'
+            : expenseTypeRx.value.toLowerCase()),
         amount: double.tryParse(amountCtrl.text) ?? 0,
-        paymentMode: paymentModeCtrl.text,
-        note: noteCtrl.text.isEmpty ? null : noteCtrl.text,
-        spentBy: int.tryParse(spentByCtrl.text),
-        expenseDate: DateTime.parse(expenseDateCtrl.text),
+        paymentMode: (paymentModeRx.value.isEmpty
+            ? 'cash'
+            : paymentModeRx.value.toLowerCase()),
+        note: noteCtrl.text.isEmpty ? null : noteCtrl.text.trim(),
+        spentBy:
+            spentByCtrl.text.isEmpty ? null : int.tryParse(spentByCtrl.text),
+        expenseDate: saleDate.value ?? DateTime.now(), // <-- use saleDate
         createdAt: DateTime.now(),
       );
 
       final result = await expenseRepository.create(expense);
       expenses.add(result);
       clearForm();
+      await dashboardController.loadDashboardData();
     } finally {
       isLoading.value = false;
     }
   }
-
-  /* ================= UPDATE ================= */
 
   Future<void> updateExpense(ExpenseModel old) async {
     if (!old.isEditable) {
@@ -136,13 +138,20 @@ class ExpenseController extends GetxController {
       isLoading.value = true;
 
       final updated = old.copyWith(
-        title: titleCtrl.text.trim(),
-        expenseType: expenseTypeCtrl.text,
-        amount: double.tryParse(amountCtrl.text) ?? 0,
-        paymentMode: paymentModeCtrl.text,
-        note: noteCtrl.text.isEmpty ? null : noteCtrl.text,
-        spentBy: int.tryParse(spentByCtrl.text),
-        expenseDate: DateTime.parse(expenseDateCtrl.text),
+        title:
+            titleCtrl.text.trim().isEmpty ? old.title : titleCtrl.text.trim(),
+        expenseType: (expenseTypeRx.value.isEmpty
+            ? old.expenseType
+            : expenseTypeRx.value.toLowerCase()),
+        amount: double.tryParse(amountCtrl.text) ?? old.amount,
+        paymentMode: (paymentModeRx.value.isEmpty
+            ? old.paymentMode
+            : paymentModeRx.value.toLowerCase()),
+        note: noteCtrl.text.isEmpty ? old.note : noteCtrl.text.trim(),
+        spentBy: spentByCtrl.text.isEmpty
+            ? old.spentBy
+            : int.tryParse(spentByCtrl.text),
+        expenseDate: saleDate.value ?? DateTime.now(), // <-- use saleDate
       );
 
       final result = await expenseRepository.update(updated);
@@ -154,6 +163,7 @@ class ExpenseController extends GetxController {
       }
 
       clearForm();
+      await dashboardController.loadDashboardData();
     } finally {
       isLoading.value = false;
     }
@@ -166,14 +176,24 @@ class ExpenseController extends GetxController {
       throw Exception('Salary expense cannot be deleted');
     }
 
-    try {
-      isLoading.value = true;
-      await expenseRepository.delete(expense);
-      expenses.removeWhere((e) => e.id == expense.id);
-      globalController.triggerRefresh(DashboardRefreshType.all);
-    } finally {
-      isLoading.value = false;
-    }
+    ConfirmDialog.show(
+      Get.context!,
+      title: 'Delete Expense',
+      message: 'Are you sure you want to delete this expense?',
+      onConfirm: () async {
+        try {
+          isLoading.value = true;
+          await expenseRepository.delete(expense);
+          expenses.removeWhere((e) => e.id == expense.id);
+          globalController.triggerRefresh(DashboardRefreshType.all);
+          Get.back(closeOverlays: true);
+          DesktopToast.show('Expense deleted successfully',  backgroundColor: Colors.greenAccent,);
+         
+        } finally {
+          isLoading.value = false;
+        }
+      },
+    );
   }
 
   /* ================= FILTER ================= */
@@ -183,36 +203,31 @@ class ExpenseController extends GetxController {
       final matchSearch = searchQuery.value.isEmpty ||
           e.title.toLowerCase().contains(searchQuery.value.toLowerCase());
 
-      final matchType = selectedExpenseType.value == 'All' ||
-          e.expenseType == selectedExpenseType.value;
+      final matchType = selectedExpenseType.value.toLowerCase() == 'all' ||
+          e.expenseType.toLowerCase() ==
+              selectedExpenseType.value.toLowerCase();
 
       final matchDate = selectedDate.value == null ||
           _isSameDate(e.expenseDate, selectedDate.value!);
 
-      return matchSearch && matchType && matchDate;
+      final matchPayment = selectedPaymentMode.value.toLowerCase() == 'all' ||
+          e.paymentMode.toLowerCase() ==
+              selectedPaymentMode.value.toLowerCase();
+
+      return matchSearch && matchType && matchDate && matchPayment;
     }).toList();
   }
 
-  /* ================= DAILY SUMMARY ================= */
-
-  double get totalAmount => filteredExpenses.fold(0.0, (s, e) => s + e.amount);
-
-  double get cashTotal => filteredExpenses
-      .where((e) => e.paymentMode == 'cash')
-      .fold(0.0, (s, e) => s + e.amount);
-
-  double get onlineTotal => filteredExpenses
-      .where((e) => e.paymentMode == 'online')
-      .fold(0.0, (s, e) => s + e.amount);
+  void setDefaultFilters() {
+    selectedDate.value = null;
+    selectedExpenseType.value = 'All';
+    searchQuery.value = '';
+    searchController.clear();
+    selectedPaymentMode.value = 'All';
+  }
 
   /* ================= HELPERS ================= */
 
-  bool canEdit(ExpenseModel e) => e.isEditable;
-
   bool _isSameDate(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
-
-  String _formatDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
 }

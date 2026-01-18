@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/modules/expenses/expense_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import '../../data/models/staff_model.dart';
 import '../../data/repositories/staff_repository.dart';
 
@@ -14,6 +17,9 @@ class StaffController extends GetxController {
   var isLoading = false.obs;
 
   final ExpenseController expenseController = Get.find<ExpenseController>();
+  final globalController = Get.find<GlobalController>();
+
+  final searchController = TextEditingController();
 
   // Selected staff's salary trackers & transactions
   var salaryTrackers = <Map<String, dynamic>>[].obs;
@@ -35,14 +41,25 @@ class StaffController extends GetxController {
   final transactionNoteController = TextEditingController();
   final transactionAmountController = TextEditingController();
 
-  // Date filter controllers
-  final startDateController = TextEditingController();
-  final endDateController = TextEditingController();
-
   @override
   void onInit() {
     super.onInit();
     fetchStaff(); // ✅ SAFE
+  }
+
+  void setStaffFilters() {
+    searchController.clear();
+    fetchStaff();
+  }
+
+  void fillStaffForm(StaffModel e) {
+    nameController.text = e.name;
+    designationController.text = e.designation;
+    salaryModeController.text = e.salaryMode;
+    phoneController.text = e.phone;
+    emailController.text = e.email ?? "";
+    isActiveController.value = e.isActive;
+    addressController.text = e.address ?? "";
   }
 
   // ---------------- Fetch Staff ----------------
@@ -52,39 +69,52 @@ class StaffController extends GetxController {
       final result = await staffRepository.getStaffs();
       staffs.assignAll(result);
     } catch (e) {
-      //Get.snackbar('Error', 'Failed to fetch staff: $e');
+      DesktopToast.show(
+        'Failed to fetch staff: $e',
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
   }
 
   // ---------------- Add Staff ----------------
-  Future<StaffModel> addStaff({bool withSalaryTracker = false}) async {
-    if (!_validateStaffInputs()) return Future.error("Validation failed");
+  Future<void> addStaff({bool withSalaryTracker = false}) async {
+    if (!_validateStaffInputs()) return;
 
     try {
       isLoading.value = true;
       final newStaff = StaffModel(
         name: nameController.text,
         designation: designationController.text,
-        designationDisplay:
-            designationController.text, // same as designation by default
+        designationDisplay: designationController.text,
         salaryMode: salaryModeController.text,
-        salaryModeDisplay:
-            salaryModeController.text, // same as salary mode by default
+        salaryModeDisplay: salaryModeController.text,
         phone: phoneController.text,
-        email: emailController.text,
+        email: emailController.text.isEmpty ? null : emailController.text,
+        address: addressController.text.isEmpty ? null : addressController.text,
         isActive: isActiveController.value,
         joinedDate: DateTime.now(),
       );
 
       final added = await staffRepository.create(newStaff);
       staffs.add(added);
+      await fetchStaff();
+      globalController.triggerRefresh(DashboardRefreshType.staff);
 
-      clearControllers(); // Reset controllers after save
-      return added;
+      clearControllers();
+
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Staff created successfully',
+        backgroundColor: Colors.greenAccent,
+      );
     } catch (e) {
-      rethrow;
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        "Failed to add staff: $e",
+        backgroundColor: Colors.greenAccent,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -104,6 +134,7 @@ class StaffController extends GetxController {
         salaryModeDisplay: salaryModeController.text, // updated
         phone: phoneController.text,
         email: emailController.text,
+        address: addressController.text,
         isActive: isActiveController.value,
         joinedDate: staff.joinedDate,
       );
@@ -111,10 +142,22 @@ class StaffController extends GetxController {
       final updated = await staffRepository.update(updatedStaff);
       final index = staffs.indexWhere((s) => s.id == updated.id);
       if (index != -1) staffs[index] = updated;
-
+      await fetchStaff();
+      globalController.triggerRefresh(DashboardRefreshType.staff);
       clearControllers();
+
+      Get.back(closeOverlays: true);
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Staff updated successfully',
+        backgroundColor: Colors.greenAccent,
+      );
     } catch (e) {
-      print('Failed to update staff: $e');
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        "Error: ${e.toString()}",
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -122,16 +165,28 @@ class StaffController extends GetxController {
 
   // ---------------- Delete Staff ----------------
   Future<void> deleteStaff(int id) async {
-    try {
-      isLoading.value = true;
-      await staffRepository.delete(id);
-      staffs.removeWhere((s) => s.id == id);
-      // Get.snackbar('Success', 'Staff deleted successfully');
-    } catch (e) {
-      //   Get.snackbar('Error', 'Failed to delete staff: $e');
-    } finally {
-      isLoading.value = false;
-    }
+    ConfirmDialog.show(
+      Get.context!,
+      title: 'Delete Staff',
+      message: 'Are you sure you want to delete this staff?',
+      onConfirm: () async {
+        try {
+          isLoading.value = true;
+          await staffRepository.delete(id);
+          staffs.removeWhere((e) => e.id == id);
+          await fetchStaff();
+          globalController.triggerRefresh(DashboardRefreshType.staff);
+          Get.back(closeOverlays: true);
+          Get.back(closeOverlays: true);
+          DesktopToast.show(
+            'Staff deleted successfully',
+            backgroundColor: Colors.greenAccent,
+          );
+        } finally {
+          isLoading.value = false;
+        }
+      },
+    );
   }
 
   // ---------------- Salary Tracker ----------------
@@ -148,14 +203,15 @@ class StaffController extends GetxController {
       };
 
       await staffRepository.createSalaryTracker(trackerData);
-      // Get.snackbar('Success', 'Salary Tracker created successfully');
-
-      // Refresh list
-      await fetchSalaryTrackers(staffId);
+      await refreshStaffData(staffId); // Refresh data
 
       clearControllers(); // Reset controllers after save
     } catch (e) {
-      Get.snackbar('Error', 'Failed to create salary tracker: $e');
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Failed to create salary tracker: $e',
+        backgroundColor: Colors.redAccent,
+      );
     }
   }
 
@@ -171,23 +227,37 @@ class StaffController extends GetxController {
       };
 
       await staffRepository.editSalaryTracker(trackerId, trackerData);
-      //Get.snackbar('Success', 'Salary Tracker updated successfully');
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Salary Tracker updated successfully',
+        backgroundColor: Colors.greenAccent,
+      );
 
-      await fetchSalaryTrackers(staffId); // Refresh list
+      await refreshStaffData(staffId); // Refresh data
+
       clearControllers();
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update salary tracker: $e');
+      DesktopToast.show(
+        'Failed to update salary tracker: $e',
+        backgroundColor: Colors.redAccent,
+      );
     }
   }
 
   Future<void> deleteSalaryTracker(int trackerId, int staffId) async {
     try {
       await staffRepository.deleteSalaryTracker(trackerId);
-      //Get.snackbar('Success', 'Salary Tracker deleted successfully');
-
-      await fetchSalaryTrackers(staffId); // Refresh list
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Salary Tracker deleted successfully',
+        backgroundColor: Colors.greenAccent,
+      );
+      await refreshStaffData(staffId); // Refresh data
     } catch (e) {
-      //Get.snackbar('Error', 'Failed to delete salary tracker: $e');
+      DesktopToast.show(
+        'Failed to delete salary tracker: $e',
+        backgroundColor: Colors.redAccent,
+      );
     }
   }
 
@@ -197,55 +267,61 @@ class StaffController extends GetxController {
       final result = await staffRepository.getSalaryTrackers(staffId);
       salaryTrackers.assignAll(result);
     } catch (e) {
-      //Get.snackbar('Error', 'Failed to fetch salary trackers: $e');
-      print(e.toString());
+      DesktopToast.show(
+        'Failed to fetch salary trackers: $e',
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // ---------------- Salary trackers for current dialog ----------------
+  List<Map<String, dynamic>> get salaryTrackersForDialog {
+    return salaryTrackers.toList();
   }
 
   // ---------------- Salary Transaction ----------------
   Future<void> createSalaryTransaction(
       Map<String, dynamic> data, int staffId) async {
     try {
-      print(data);
       await staffRepository.createSalaryTransaction(data);
-      //Get.snackbar('Success', 'Salary transaction added');
+      DesktopToast.show(
+        'Salary transaction added successfully',
+        backgroundColor: Colors.greenAccent,
+      );
 
-      await fetchTransactions(staffId); // Refresh list
-      await fetchSalaryTrackers(staffId);
-
-      await expenseController.fetchExpenses();
+      await refreshStaffData(staffId); // Refresh data
     } catch (e) {
-      //Get.snackbar('Error', 'Failed to add salary transaction: $e');
+      DesktopToast.show(
+        'Failed to add salary transaction: $e',
+        backgroundColor: Colors.redAccent,
+      );
     }
   }
 
   Future<void> updateSalaryTransaction(
       int id, Map<String, dynamic> data, int staffId) async {
     try {
-      print(data);
-      print(id);
       await staffRepository.editSalaryTransaction(id, data);
-      // Get.snackbar('Success', 'Salary transaction updated');
-
-      await fetchTransactions(staffId); // Refresh list
-      await fetchSalaryTrackers(staffId);
+      await refreshStaffData(staffId); // Refresh data
     } catch (e) {
-      // Get.snackbar('Error', 'Failed to update salary transaction: $e');
+      DesktopToast.show(
+        'Failed to update salary transaction: $e',
+        backgroundColor: Colors.redAccent,
+      );
     }
   }
 
   Future<void> deleteSalaryTransaction(int id, int staffId) async {
     try {
       await staffRepository.deleteSalaryTransaction(id);
-      // Get.snackbar('Success', 'Salary transaction deleted');
-
-      await fetchTransactions(staffId); // Refresh list
-      await fetchSalaryTrackers(staffId);
-      await expenseController.fetchExpenses();
+      await refreshStaffData(staffId); // Refresh data
     } catch (e) {
-      // Get.snackbar('Error', 'Failed to delete salary transaction: $e');
+      DesktopToast.show(
+        'Failed to delete salary transaction: $e',
+        backgroundColor: Colors.redAccent,
+      );
     }
   }
 
@@ -255,8 +331,10 @@ class StaffController extends GetxController {
       final result = await staffRepository.getTransactions(staffId);
       transactions.assignAll(result);
     } catch (e) {
-      // Get.snackbar('Error', 'Failed to fetch transactions: $e');
-      print('Error: Failed to fetch transactions: $e');
+      DesktopToast.show(
+        'Failed to fetch transactions: $e',
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -270,32 +348,19 @@ class StaffController extends GetxController {
     if (q.isNotEmpty) {
       filtered = filtered.where((s) {
         return s.name.toLowerCase().contains(q) ||
-            s.designation.toLowerCase().contains(q) ||
-            s.designationDisplay.toLowerCase().contains(q) || // new
-            s.salaryMode.toLowerCase().contains(q) ||
-            s.salaryModeDisplay.toLowerCase().contains(q) || // new
-            s.email.toLowerCase().contains(q);
+            s.designation.toLowerCase().contains(q);
       }).toList();
     }
 
-    if (startDateController.text.isNotEmpty) {
-      final start = DateTime.parse(startDateController.text);
-      filtered = filtered
-          .where((s) =>
-              s.joinedDate.isAfter(start) ||
-              s.joinedDate.isAtSameMomentAs(start))
-          .toList();
-    }
-
-    if (endDateController.text.isNotEmpty) {
-      final end = DateTime.parse(endDateController.text);
-      filtered = filtered
-          .where((s) =>
-              s.joinedDate.isBefore(end) || s.joinedDate.isAtSameMomentAs(end))
-          .toList();
-    }
-
     return filtered;
+  }
+
+  Future<void> refreshStaffData(int staffId) async {
+    await fetchSalaryTrackers(staffId);
+    await fetchTransactions(staffId);
+    await expenseController.fetchExpenses();
+
+    globalController.triggerRefresh(DashboardRefreshType.staff);
   }
 
   // ---------------- Clear Controllers ----------------
@@ -318,15 +383,31 @@ class StaffController extends GetxController {
   // ---------------- Validation ----------------
   bool _validateStaffInputs() {
     if (nameController.text.isEmpty) {
-      //   Get.snackbar('Error', 'Name is required');
+      DesktopToast.show(
+        "Name is required",
+        backgroundColor: Colors.redAccent,
+      );
       return false;
     }
     if (designationController.text.isEmpty) {
-      // Get.snackbar('Error', 'Designation is required');
+      DesktopToast.show(
+        "Designation is required",
+        backgroundColor: Colors.redAccent,
+      );
+      return false;
+    }
+    if (phoneController.text.isEmpty) {
+      DesktopToast.show(
+        "Contact is required",
+        backgroundColor: Colors.redAccent,
+      );
       return false;
     }
     if (salaryModeController.text.isEmpty) {
-      //Get.snackbar('Error', 'Salary mode is required');
+      DesktopToast.show(
+        "Salary Mode is required",
+        backgroundColor: Colors.redAccent,
+      );
       return false;
     }
     return true;
@@ -335,15 +416,24 @@ class StaffController extends GetxController {
   bool _validateSalaryInputs() {
     if (totalSalaryController.text.isEmpty ||
         double.tryParse(totalSalaryController.text) == null) {
-      // Get.snackbar('Error', 'Valid total salary is required');
+      DesktopToast.show(
+        'Valid total salary is required',
+        backgroundColor: Colors.redAccent,
+      );
       return false;
     }
     if (paymentDateController.text.isEmpty) {
-      //Get.snackbar('Error', 'Payment date is required');
+      DesktopToast.show(
+        'Payment date is required',
+        backgroundColor: Colors.redAccent,
+      );
       return false;
     }
     if (paymentModeController.text.isEmpty) {
-      //Get.snackbar('Error', 'Payment mode is required');
+      DesktopToast.show(
+        'Payment mode is required',
+        backgroundColor: Colors.redAccent,
+      );
       return false;
     }
     return true;

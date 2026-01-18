@@ -1,6 +1,9 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
+
 import '../../data/models/supplier_model.dart';
 import '../../data/repositories/supplier_repository.dart';
 
@@ -11,16 +14,17 @@ class SupplierController extends GetxController {
   SupplierController({required this.supplierRepository});
 
   // ---------------- Reactive State ----------------
-  var suppliers = <SupplierModel>[].obs; // Full list
-  var filteredSuppliers = <SupplierModel>[].obs; // Filtered for search
-  var isLoading = false.obs;
-  var searchQuery = ''.obs;
+  final suppliers = <SupplierModel>[].obs; // Full list
+  final filteredSuppliers = <SupplierModel>[].obs; // Filtered list
+  final isLoading = false.obs;
+  final searchQuery = ''.obs;
 
   // ---------------- Form Controllers ----------------
   final nameController = TextEditingController();
   final contactController = TextEditingController();
   final emailController = TextEditingController();
   final addressController = TextEditingController();
+  final searchController = TextEditingController();
 
   @override
   void onReady() {
@@ -36,25 +40,28 @@ class SupplierController extends GetxController {
       suppliers.assignAll(result);
       applyFilter();
     } catch (e) {
-      Get.snackbar('Error', 'Failed to fetch suppliers');
+          DesktopToast.show(
+        'Failed to fetch suppliers',
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ---------------- Filter/Search ----------------
   void applyFilter() {
-    final query = searchQuery.value.toLowerCase();
+    final query = searchQuery.value.trim().toLowerCase();
+
     if (query.isEmpty) {
       filteredSuppliers.assignAll(suppliers);
-    } else {
-      filteredSuppliers.assignAll(
-        suppliers.where((s) =>
-            s.name.toLowerCase().contains(query) ||
-            s.contact.toLowerCase().contains(query) ||
-            s.email.toLowerCase().contains(query)),
-      );
+      return;
     }
+
+    filteredSuppliers.assignAll(
+      suppliers
+          .where((s) => s.name.toLowerCase().contains(query))
+          .toList(), // ✅ THIS IS REQUIRED
+    );
   }
 
   void updateSearch(String query) {
@@ -62,49 +69,63 @@ class SupplierController extends GetxController {
     applyFilter();
   }
 
-  // ---------------- CRUD Operations ----------------
+  // ---------------- Add Supplier ----------------
   Future<void> addSupplier() async {
     final name = nameController.text.trim();
     final contact = contactController.text.trim();
     final email = emailController.text.trim();
     final address = addressController.text.trim();
 
-    if ([name, contact, email, address].any((e) => e.isEmpty)) {
-      Get.snackbar('Error', 'All fields are required');
+    if ([name, contact].any((e) => e.isEmpty)) {
+          DesktopToast.show(
+        'Name and Contact are required',
+        backgroundColor: Colors.redAccent,
+      );
       return;
     }
 
     try {
       isLoading.value = true;
+
       final newSupplier = SupplierModel(
-        id: suppliers.isEmpty ? 1 : suppliers.last.id + 1, // temporary
+        id: suppliers.isEmpty ? 1 : suppliers.last.id + 1, // temp id
         name: name,
         contact: contact,
-        email: email,
-        address: address,
+        email: email.isEmpty ? null : email,
+        address: address.isEmpty ? null : address,
       );
 
       await supplierRepository.addSupplier(newSupplier);
       await fetchSuppliers();
-
       clearForm();
-      Get.back();
-      Get.snackbar('Success', 'Supplier added successfully');
+
+      Get.back(closeOverlays: true);
+          DesktopToast.show(
+        "Supplier added",
+        backgroundColor: Colors.greenAccent,
+      );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to add supplier');
+          DesktopToast.show(
+        'Failed to add supplier',
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
   }
 
+  // ---------------- Update Supplier ----------------
   Future<void> updateSupplier(SupplierModel supplier) async {
     final name = nameController.text.trim();
     final contact = contactController.text.trim();
     final email = emailController.text.trim();
     final address = addressController.text.trim();
 
-    if ([name, contact, email, address].any((e) => e.isEmpty)) {
-      Get.snackbar('Error', 'All fields are required');
+    if ([name, contact].any((e) => e.isEmpty)) {
+          DesktopToast.show(
+        'Name and Contact are required',
+        backgroundColor: Colors.redAccent,
+      );
       return;
     }
 
@@ -112,11 +133,11 @@ class SupplierController extends GetxController {
       isLoading.value = true;
 
       final updatedSupplier = SupplierModel(
-        id: supplier.id, // keep the same id
+        id: supplier.id,
         name: name,
         contact: contact,
-        email: email,
-        address: address,
+        email: email.isEmpty ? null : email,
+        address: address.isEmpty ? null : address,
       );
 
       final updated = await supplierRepository.updateSupplier(updatedSupplier);
@@ -125,30 +146,48 @@ class SupplierController extends GetxController {
       if (index != -1) suppliers[index] = updated;
 
       applyFilter();
+      clearForm();
 
-      Get.back();
-      Get.snackbar('Success', 'Supplier updated successfully');
+      Get.back(closeOverlays: true);
+          DesktopToast.show(
+        "Supplier updated",
+        backgroundColor: Colors.redAccent,
+      );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update supplier');
+      Get.back(closeOverlays: true);
+          DesktopToast.show(
+        'Failed to update supplier',
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
   }
 
+  // ---------------- Delete Supplier ----------------
   Future<void> deleteSupplier(int id) async {
-    try {
-      isLoading.value = true;
-      await supplierRepository.deleteSupplier(id);
-      suppliers.removeWhere((s) => s.id == id);
+    ConfirmDialog.show(
+      Get.context!,
+      title: "Delete Supplier",
+      message: "Are you sure you want to delete this supplier?",
+      onConfirm: () async {
+        await supplierRepository.deleteSupplier(id);
+        suppliers.removeWhere((s) => s.id == id);
 
-      applyFilter();
+        applyFilter();
+        globalController.triggerRefresh(DashboardRefreshType.stock);
 
-      Get.snackbar('Success', 'Supplier deleted successfully');
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to delete supplier');
-    } finally {
-      isLoading.value = false;
-    }
+        Get.back(closeOverlays: true);
+            DesktopToast.show(
+        "Supplier deleted successfully",
+        backgroundColor: Colors.greenAccent,
+      );
+      },
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      snackbarColor: Colors.green,
+      snackbarIcon: Icons.check_circle,
+    );
   }
 
   // ---------------- Form Helpers ----------------
@@ -162,7 +201,14 @@ class SupplierController extends GetxController {
   void fillForm(SupplierModel supplier) {
     nameController.text = supplier.name;
     contactController.text = supplier.contact;
-    emailController.text = supplier.email;
-    addressController.text = supplier.address;
+    emailController.text = supplier.email ?? '';
+    addressController.text = supplier.address ?? '';
+  }
+
+  // ---------------- Refresh ----------------
+  Future<void> refreshSuppliers() async {
+    searchController.clear();
+    searchQuery.value = '';
+    await fetchSuppliers();
   }
 }

@@ -4,7 +4,10 @@ import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/data/models/expense_model.dart';
 import 'package:vgsync_frontend/app/modules/expenses/expense_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/common_date_picker.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_form_dialog.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 
 class ExpenseListPage extends StatefulWidget {
@@ -18,14 +21,6 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
   final ExpenseController controller =
       Get.put(ExpenseController(expenseRepository: Get.find()));
   final globalController = Get.find<GlobalController>();
-
-  final searchController = TextEditingController();
-
-  /// all | salary | operational | other
-  String selectedExpenseType = 'all';
-
-  /// single date filter
-  DateTime? selectedDate;
 
   @override
   void initState() {
@@ -46,13 +41,10 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         child: Column(
           children: [
             _topActions(),
-            const SizedBox(height: 10),
-            _buildSearch(),
-            const SizedBox(height: 10),
+            SizedBox(height: SizeConfig.sh(0.02)),
             _filtersRow(),
-            const SizedBox(height: 10),
             _buildSummary(),
-            const SizedBox(height: 10),
+            SizedBox(height: SizeConfig.sh(0.02)),
             Expanded(child: _buildExpenseList()),
           ],
         ),
@@ -70,54 +62,30 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
   Widget _topActions() {
     return Row(
       children: [
-        const Text(
-          'Expenses',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        SizedBox(
+          width: SizeConfig.sw(0.45),
+          child: TextField(
+            controller: controller.searchController,
+            onChanged: (v) => controller.searchQuery.value = v,
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              hintText: 'Search expenses...',
+              filled: true,
+              fillColor: Colors.white,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
-        const Spacer(),
-        ElevatedButton(
-            onPressed: () {
-              setState(() {
-                selectedDate = null;
-                selectedExpenseType = 'all';
-                searchController.clear();
-              });
-              controller.searchQuery.value = '';
-              controller.fetchExpenses();
-            },
-            child: Row(
-              children: [
-                Icon(
-                  Icons.refresh,
-                  color: Colors.white,
-                ),
-                SizedBox(
-                  width: 5,
-                ),
-                Text("Refresh")
-              ],
-            ))
+        SizedBox(width: SizeConfig.sw(0.02)),
+        actionButton(
+          label: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: controller.setDefaultFilters,
+        ),
       ],
     );
   }
-
-  /* ================= SEARCH ================= */
-
-  Widget _buildSearch() {
-    return TextField(
-      controller: searchController,
-      onChanged: (v) => controller.searchQuery.value = v,
-      decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.search),
-        hintText: 'Search expenses...',
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  /* ================= FILTER ROW ================= */
 
   Widget _filtersRow() {
     return SizedBox(
@@ -125,100 +93,102 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Expanded(child: _dateFilter()),
-          const SizedBox(width: 8),
-          Expanded(child: _buildTypeFilter()),
+          Expanded(
+            flex: 3, // Date = bigger
+            child: CommonDatePicker(
+              label: 'Date Filter',
+              selectedDate: controller.selectedDate,
+            ),
+          ),
+          SizedBox(width: SizeConfig.sw(0.01)),
+          Expanded(
+            flex: 2,
+            child: _buildTypeFilter(),
+          ),
+          SizedBox(width: SizeConfig.sw(0.01)),
+          Expanded(
+            flex: 2,
+            child: _buildPaymentFilter(),
+          ),
         ],
       ),
     );
   }
 
-  /* ================= DATE FILTER ================= */
-
-  Widget _dateFilter() {
-    return Column(
-      children: [
-        Text(
-          "Date Filter",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        SizedBox(
-          height: 8,
-        ),
-        InkWell(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: selectedDate ?? DateTime.now(),
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-            );
-            if (picked != null) {
-              setState(() => selectedDate = picked);
-            }
-          },
-          child: Container(
-            height: SizeConfig.sh(0.075),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  selectedDate == null
-                      ? 'Select date'
-                      : selectedDate!.toIso8601String().split('T').first,
-                ),
-              ],
+  /* ================= TYPE FILTER ================= */
+  Widget _buildTypeFilter() {
+    return Obx(() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Expense Type Filter",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            value: controller.selectedExpenseType.value,
+            items: const [
+              DropdownMenuItem(value: 'All', child: Text('All')),
+              DropdownMenuItem(value: 'Salary', child: Text('Salary')),
+              DropdownMenuItem(
+                  value: 'Operational', child: Text('Operational')),
+              DropdownMenuItem(value: 'Other', child: Text('Other')),
+            ],
+            onChanged: (v) {
+              controller.selectedExpenseType.value = v ?? 'All';
+            },
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 
-  /* ================= TYPE FILTER ================= */
-
-  Widget _buildTypeFilter() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Expense Type Filter",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        SizedBox(
-          height: 8,
-        ),
-        DropdownButtonFormField<String>(
-          value: selectedExpenseType,
-          items: const [
-            DropdownMenuItem(value: 'all', child: Text('All')),
-            DropdownMenuItem(value: 'salary', child: Text('Salary')),
-            DropdownMenuItem(value: 'operational', child: Text('Operational')),
-            DropdownMenuItem(value: 'other', child: Text('Other')),
-          ],
-          onChanged: (v) => setState(() => selectedExpenseType = v ?? 'all'),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+/* ================= PAYMENT FILTER ================= */
+  Widget _buildPaymentFilter() {
+    return Obx(() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Payment Mode Filter",
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-        ),
-      ],
-    );
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: controller.selectedPaymentMode.value,
+            items: const [
+              DropdownMenuItem(value: 'All', child: Text('All')),
+              DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+              DropdownMenuItem(value: 'Online', child: Text('Online')),
+            ],
+            onChanged: (v) {
+              controller.selectedPaymentMode.value = v ?? 'All';
+            },
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   /* ================= SUMMARY ================= */
 
   Widget _buildSummary() {
     return Obx(() {
-      final list = _filteredList();
+      final list = controller.filteredExpenses;
 
       final total = list.fold<double>(0, (sum, e) => sum + e.amount);
       final cash = list
@@ -242,15 +212,21 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
     return Expanded(
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           child: Column(
             children: [
-              Text(title, style: TextStyle(color: color)),
-              const SizedBox(height: 4),
+              Text(title,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: SizeConfig.res(5),
+                      fontWeight: FontWeight.bold)),
+              SizedBox(height: SizeConfig.sh(0.01)),
               Text(
                 value.toStringAsFixed(2),
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: SizeConfig.res(6),
+                ),
               ),
             ],
           ),
@@ -259,24 +235,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
     );
   }
 
-  /* ================= FILTER LOGIC ================= */
-
-  List<ExpenseModel> _filteredList() {
-    return controller.filteredExpenses.where((e) {
-      if (selectedExpenseType != 'all' &&
-          e.expenseType != selectedExpenseType) {
-        return false;
-      }
-
-      if (selectedDate != null && !e.isSameDate(selectedDate!)) {
-        return false;
-      }
-
-      return true;
-    }).toList();
-  }
-
-  /* ================= LIST ================= */
+/* ================= LIST ================= */
 
   Widget _buildExpenseList() {
     return Obx(() {
@@ -284,7 +243,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         return const Center(child: CircularProgressIndicator());
       }
 
-      final list = _filteredList();
+      // Reverse the list so last expense appears first
+      final list = controller.filteredExpenses.reversed.toList();
 
       if (list.isEmpty) {
         return const Center(child: Text('No expenses found'));
@@ -344,8 +304,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
       controller.fillForm(expense);
     } else {
       controller.clearForm();
-      controller.expenseDateCtrl.text =
-          DateTime.now().toIso8601String().split('T')[0];
+      controller.saleDate.value = DateTime.now(); // default today
     }
 
     Get.dialog(
@@ -356,15 +315,22 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         onSave: () async {
           if (isEdit) {
             await controller.updateExpense(expense);
-            globalController.triggerRefresh(DashboardRefreshType.all);
+            Get.back(closeOverlays: true);
+            DesktopToast.show(
+              'Expense updated successfully',
+              backgroundColor: Colors.greenAccent,
+            );
           } else {
             await controller.addExpense();
-            globalController.triggerRefresh(DashboardRefreshType.all);
+            Get.back(closeOverlays: true);
+            DesktopToast.show(
+              'Expense added successfully',
+              backgroundColor: Colors.greenAccent,
+            );
           }
-          Get.back();
         },
-        height: 10,
-        width: 10,
+        height: 0.65,
+        width: 0.25,
       ),
     );
   }
@@ -372,41 +338,43 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
   Widget _expenseForm() {
     return Column(
       children: [
-        _text(controller.titleCtrl, 'Title'),
-        _dropdown(
-            controller.paymentModeCtrl, 'Payment Mode', ['cash', 'online']),
-        _dropdown(controller.expenseTypeCtrl, 'Expense Type',
-            ['salary', 'operational', 'other']),
-        _text(controller.amountCtrl, 'Amount', keyboard: TextInputType.number),
-        _text(controller.noteCtrl, 'Note', maxLines: 2),
+        // <-- Sale/Expense Date Picker
+        CommonDatePicker(
+          label: 'Expense Date',
+          selectedDate: controller.saleDate,
+        ),
+        SizedBox(height: SizeConfig.sh(0.02)),
+        buildTextField(
+          controller.titleCtrl,
+          'Title',
+          Icons.title,
+        ),
+        SizedBox(height: SizeConfig.sh(0.02)),
+        commonDropdown(
+          controller.paymentModeRx,
+          'Payment Mode',
+          const ['Cash', 'Online'],
+        ),
+        SizedBox(height: SizeConfig.sh(0.02)),
+        commonDropdown(
+          controller.expenseTypeRx,
+          'Expense Type',
+          const ['All', 'Salary', 'Operational', 'Other'],
+        ),
+        SizedBox(height: SizeConfig.sh(0.02)),
+        buildTextField(
+          controller.amountCtrl,
+          'Amount',
+          Icons.currency_rupee,
+          keyboardType: TextInputType.number,
+        ),
+        SizedBox(height: SizeConfig.sh(0.02)),
+        buildTextField(
+          controller.noteCtrl,
+          'Note',
+          Icons.note,
+        ),
       ],
-    );
-  }
-
-  Widget _text(TextEditingController c, String label,
-      {TextInputType keyboard = TextInputType.text, int maxLines = 1}) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: TextField(
-        controller: c,
-        keyboardType: keyboard,
-        maxLines: maxLines,
-        decoration: InputDecoration(labelText: label),
-      ),
-    );
-  }
-
-  Widget _dropdown(TextEditingController c, String label, List<String> items) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: DropdownButtonFormField<String>(
-        value: c.text.isEmpty ? null : c.text,
-        items: items
-            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-            .toList(),
-        onChanged: (v) => c.text = v ?? '',
-        decoration: InputDecoration(labelText: label),
-      ),
     );
   }
 }

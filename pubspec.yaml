@@ -56,6 +56,11 @@ dependencies:
 
   dropdown_search: ^6.0.2
 
+  printing:
+  pdf:
+
+  file_picker: ^10.3.8
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

@@ -6,6 +6,7 @@ import 'package:vgsync_frontend/app/data/repositories/sale_repository.dart';
 import 'package:vgsync_frontend/app/modules/followups/followup_controller.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 
 class SalesController extends GetxController {
   final SaleRepository saleRepository;
@@ -64,8 +65,6 @@ class SalesController extends GetxController {
   // ---------------- TOTALS ----------------
   final itemsTotal = 0.0.obs;
   final labourCharge = 0.0.obs;
-  final vatPercent = 13.0.obs;
-  final vatAmount = 0.0.obs;
   final discountPercent = 0.0.obs;
   final discountAmount = 0.0.obs;
   final totalAmount = 0.0.obs;
@@ -76,7 +75,6 @@ class SalesController extends GetxController {
   final saleStatus = 'not_paid'.obs;
 
   late TextEditingController discountController;
-  late TextEditingController vatController;
 
   // ---------------- LIFECYCLE ----------------
   @override
@@ -105,10 +103,8 @@ class SalesController extends GetxController {
     paidAmountController.addListener(updateTotals);
 
     discountController = TextEditingController();
-    vatController = TextEditingController();
 
     discountController.addListener(updateTotals);
-    vatController.addListener(updateTotals);
   }
 
   @override
@@ -127,7 +123,6 @@ class SalesController extends GetxController {
     labourChargeController.dispose();
     paidAmountController.dispose();
     discountController.dispose();
-    vatController.dispose();
     for (final i in selectedItems) {
       i.dispose();
     }
@@ -162,18 +157,9 @@ class SalesController extends GetxController {
     discountAmount.value =
         (itemsTotal.value + labourCharge.value) * discount / 100;
 
-    // ---------- VAT ----------
-    double vat = double.tryParse(vatController.text) ?? vatPercent.value;
-    vatPercent.value = vat;
-
-    double subTotal =
-        itemsTotal.value + labourCharge.value - discountAmount.value;
-    vatAmount.value = subTotal * vat / 100;
-
     // ---------- TOTAL & NET ----------
-    netAmount.value = subTotal + vatAmount.value;
-    totalAmount.value =
-        itemsTotal.value + labourCharge.value; // optional display if needed
+    totalAmount.value = itemsTotal.value + labourCharge.value; // optional
+    netAmount.value = totalAmount.value - discountAmount.value;
 
     // ---------- PAID & REMAINING ----------
     double paid = double.tryParse(paidAmountController.text) ?? 0;
@@ -200,7 +186,10 @@ class SalesController extends GetxController {
   // ---------------- ITEM HANDLING ----------------
   void addItem(SaleItemModel item) {
     if (selectedItems.any((e) => e.itemId == item.itemId)) {
-      Get.snackbar('Info', 'Item already added');
+      DesktopToast.show(
+        'Item already added',
+        backgroundColor: Colors.redAccent,
+      );
       return;
     }
 
@@ -210,6 +199,38 @@ class SalesController extends GetxController {
     updateTotals();
   }
 
+  void openEditFromDetail(SaleModel sale) {
+    fillForEdit(sale);
+    Get.find<GlobalController>().triggerRefresh(DashboardRefreshType.all);
+  }
+
+  // ---------- HELPERS ----------
+  // bool validateForm() {
+  //   if (customerNameController.text.isEmpty) {
+  //       DesktopToast.show(
+  //             'Customer name is required',
+  //             backgroundColor: Colors.redAccent,
+  //           );
+
+  //     return false;
+  //   }
+  //   if (saleDate.value == null) {
+  //       DesktopToast.show(
+  //           'Sale date is required',
+  //             backgroundColor: Colors.redAccent,
+  //           );
+  //     return false;
+  //   }
+  //   if (selectedItems.isEmpty) {
+  //       DesktopToast.show(
+  //         'Please add at least one item',
+  //             backgroundColor: Colors.redAccent,
+  //           );
+  //     return false;
+  //   }
+  //   return true;
+  // }
+
   void removeItem(SaleItemModel item) {
     selectedItems.remove(item);
     item.dispose();
@@ -218,7 +239,7 @@ class SalesController extends GetxController {
 
   // ---------------- ADD SALE ----------------
   Future<void> addSale() async {
-    if (!_validateForm()) return;
+    if (!validateForm()) return;
 
     final sale = _buildSale();
 
@@ -237,8 +258,11 @@ class SalesController extends GetxController {
       sales.add(created);
       _postRefresh();
       clearForm();
-      Get.back();
-      Get.snackbar('Success', 'Sale added');
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Sale added successfully',
+        backgroundColor: Colors.greenAccent,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -246,7 +270,7 @@ class SalesController extends GetxController {
 
   // ---------------- UPDATE SALE ----------------
   Future<void> updateSale(int saleId) async {
-    if (!_validateForm()) return;
+    if (!validateForm()) return;
 
     final index = sales.indexWhere((e) => e.id == saleId);
     if (index == -1) return;
@@ -259,8 +283,11 @@ class SalesController extends GetxController {
       sales[index] = result;
       _postRefresh();
       clearForm();
-      Get.back();
-      Get.snackbar('Success', 'Sale updated');
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Sale updated successfully',
+        backgroundColor: Colors.greenAccent,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -276,7 +303,11 @@ class SalesController extends GetxController {
       await saleRepository.deleteSale(saleId);
       sales.removeAt(index);
       _postRefresh();
-      Get.snackbar('Success', 'Sale deleted');
+      Get.back(closeOverlays: true);
+      DesktopToast.show(
+        'Purchase deleted successfully',
+        backgroundColor: Colors.greenAccent,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -337,8 +368,6 @@ class SalesController extends GetxController {
     final paid = double.tryParse(paidAmountController.text) ?? 0;
     final discount = discountPercent.value;
     final discountAmt = discountAmount.value;
-    final vat = vatPercent.value;
-    final vatAmt = vatAmount.value;
     final net = netAmount.value;
     final remaining = remainingAmount.value;
 
@@ -359,8 +388,6 @@ class SalesController extends GetxController {
       grandTotal: itemsTotal.value + labourCharge.value,
       discountPercentage: discount,
       discountAmount: discountAmt,
-      vatPercentage: vat,
-      vatAmount: vatAmt,
       netTotal: net,
       paidAmount: paid,
       remainingAmount: remaining,
@@ -414,7 +441,6 @@ class SalesController extends GetxController {
     selectedItems.clear();
 
     itemsTotal.value = 0;
-    vatAmount.value = 0;
     totalAmount.value = 0;
     remainingAmount.value = 0;
   }
@@ -427,25 +453,42 @@ class SalesController extends GetxController {
   }
 
   // ---------------- VALIDATION ----------------
-  bool _validateForm() {
+  bool validateForm() {
     if (customerNameController.text.isEmpty) {
-      Get.snackbar('Error', 'Customer name required');
+      DesktopToast.show(
+        'Customer name required',
+        backgroundColor: Colors.redAccent,
+      );
       return false;
     }
     if (saleDate.value == null) {
-      Get.snackbar('Error', 'Sale date required');
+      DesktopToast.show(
+        'Sale date required',
+        backgroundColor: Colors.redAccent,
+      );
+
       return false;
     }
     if (handledBy.value == 0) {
-      Get.snackbar('Error', 'Select staff');
+      DesktopToast.show(
+        'Select staff',
+        backgroundColor: Colors.redAccent,
+      );
       return false;
     }
     if (selectedItems.isEmpty) {
-      Get.snackbar('Error', 'Add at least one item');
+      DesktopToast.show(
+        'Add at least one item',
+        backgroundColor: Colors.redAccent,
+      );
+
       return false;
     }
     if (isServicing.value == true && deliveryDate.value == null) {
-      Get.snackbar('Error', 'Delivery date is required for servicing');
+      DesktopToast.show(
+        'Delivery date is required for servicing',
+        backgroundColor: Colors.redAccent,
+      );
       return false;
     }
     return true;

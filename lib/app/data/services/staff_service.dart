@@ -58,7 +58,6 @@ class StaffService {
 
   // ---------------- Salary Transaction CRUD ----------------
   Future<void> createSalaryTransaction(Map<String, dynamic> payload) async {
-    print(payload);
     await _dio.post("/salarytransactions/", data: payload);
   }
 

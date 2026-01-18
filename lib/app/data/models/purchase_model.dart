@@ -8,7 +8,6 @@ class PurchaseModel {
   final List<PurchaseItemModel> items;
 
   final double discountAmount;
-  final double vatAmount;
   final double netTotal;
   final double grandTotal;
 
@@ -24,7 +23,6 @@ class PurchaseModel {
     required this.date,
     required this.items,
     this.discountAmount = 0.0,
-    this.vatAmount = 0.0,
     this.netTotal = 0.0,
     this.grandTotal = 0.0,
     this.paidAmount = 0.0,
@@ -44,7 +42,6 @@ class PurchaseModel {
           .map((e) => PurchaseItemModel.fromJson(e))
           .toList(),
       discountAmount: (json['discount_amount'] as num?)?.toDouble() ?? 0.0,
-      vatAmount: (json['vat_amount'] as num?)?.toDouble() ?? 0.0,
       netTotal: (json['net_total'] as num?)?.toDouble() ?? 0.0,
       grandTotal: (json['grand_total'] as num?)?.toDouble() ?? 0.0,
       paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
@@ -63,7 +60,6 @@ class PurchaseModel {
       'date': date.toIso8601String(),
       'items': items.map((e) => e.toJsonForApi()).toList(),
       'discount_amount': discountAmount,
-      'vat_amount': vatAmount,
       'net_total': netTotal,
       'grand_total': grandTotal,
       'paid_amount': paidAmount,
@@ -80,9 +76,41 @@ class PurchaseModel {
   double get subTotal =>
       items.fold<double>(0.0, (sum, i) => sum + i.totalPrice);
 
-  double get calculatedNetTotal => subTotal - discountAmount + vatAmount;
+  double get calculatedNetTotal => subTotal - discountAmount;
 
   bool get isPaid => remainingAmount <= 0;
+}
+
+extension PurchaseModelCopy on PurchaseModel {
+  PurchaseModel copyWith({
+    int? id,
+    int? supplier,
+    DateTime? date,
+    List<PurchaseItemModel>? items,
+    double? discountAmount,
+    double? netTotal,
+    double? grandTotal,
+    double? paidAmount,
+    double? remainingAmount,
+    String? status,
+    bool? isMigrated,
+    int? createdBy,
+  }) {
+    return PurchaseModel(
+      id: id ?? this.id,
+      supplier: supplier ?? this.supplier,
+      date: date ?? this.date,
+      items: items ?? this.items,
+      discountAmount: discountAmount ?? this.discountAmount,
+      netTotal: netTotal ?? this.netTotal,
+      grandTotal: grandTotal ?? this.grandTotal,
+      paidAmount: paidAmount ?? this.paidAmount,
+      remainingAmount: remainingAmount ?? this.remainingAmount,
+      status: status ?? this.status,
+      isMigrated: isMigrated ?? this.isMigrated,
+      createdBy: createdBy ?? this.createdBy,
+    );
+  }
 }
 
 /// ===============================

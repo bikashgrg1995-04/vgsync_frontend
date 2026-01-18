@@ -2,16 +2,16 @@ class SupplierModel {
   final int id;
   final String name;
   final String contact;
-  final String email;
-  final String address;
+  final String? email;
+  final String? address;
   final String? image;
 
   SupplierModel({
     required this.id,
     required this.name,
     required this.contact,
-    required this.email,
-    required this.address,
+    this.email,
+    this.address,
     this.image,
   });
 
@@ -20,8 +20,8 @@ class SupplierModel {
       id: json['id'],
       name: json['name'] ?? '',
       contact: json['contact'] ?? '',
-      email: json['email'] ?? '',
-      address: json['address'] ?? '',
+      email: json['email'], // nullable
+      address: json['address'], // nullable
       image: json['image'],
     );
   }

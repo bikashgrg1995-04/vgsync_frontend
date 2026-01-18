@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/models/order_model.dart';
 import 'package:vgsync_frontend/app/data/repositories/order_repository.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 
 class OrderController extends GetxController {
   final OrderRepository orderRepository;
@@ -11,6 +14,8 @@ class OrderController extends GetxController {
   var orders = <OrderModel>[].obs;
   var isLoading = false.obs;
 
+  final searchController = TextEditingController();
+
   // ---------------- Fetch Orders ----------------
   Future<void> fetchOrders() async {
     try {
@@ -18,7 +23,8 @@ class OrderController extends GetxController {
       final result = await orderRepository.getOrders();
       orders.assignAll(result);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to fetch orders: $e');
+       DesktopToast.show("Failed to fetch orders.",  backgroundColor: Colors.redAccent,);
+      
     } finally {
       isLoading.value = false;
     }
@@ -30,10 +36,11 @@ class OrderController extends GetxController {
       isLoading.value = true;
       final newOrder = await orderRepository.create(order);
       orders.add(newOrder);
-      Get.back(); // close dialog/page
-      Get.snackbar('Success', 'Order added successfully');
     } catch (e) {
-      Get.snackbar('Error', 'Failed to add order: $e');
+      DesktopToast.show(
+        "Failed to add order.",
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -46,27 +53,35 @@ class OrderController extends GetxController {
       final updatedOrder = await orderRepository.update(order);
       final index = orders.indexWhere((o) => o.id == updatedOrder.id);
       if (index != -1) orders[index] = updatedOrder;
-      Get.back();
-      Get.snackbar('Success', 'Order updated successfully');
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update order: $e');
+      DesktopToast.show(
+        "Failed to update order.",
+        backgroundColor: Colors.redAccent,
+      );
     } finally {
       isLoading.value = false;
     }
   }
 
   // ---------------- Delete Order ----------------
-  Future<void> deleteOrder(int id) async {
-    try {
-      isLoading.value = true;
-      await orderRepository.delete(id);
-      orders.removeWhere((o) => o.id == id);
-      Get.snackbar('Success', 'Order deleted successfully');
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to delete order: $e');
-    } finally {
-      isLoading.value = false;
-    }
+  Future<void> deleteOrder(BuildContext context, int id) async {
+    ConfirmDialog.show(context,
+        title: "Delete Order",
+        message: "Are you sure you want to delete this order?",
+        onConfirm: () async {
+      try {
+        isLoading.value = true;
+        await orderRepository.delete(id);
+        orders.removeWhere((o) => o.id == id);
+      } catch (e) {
+        DesktopToast.show(
+          "Failed to delete order.",
+          backgroundColor: Colors.redAccent,
+        );
+      } finally {
+        isLoading.value = false;
+      }
+    });
   }
 
   // ---------------- Search Orders ----------------
@@ -78,5 +93,13 @@ class OrderController extends GetxController {
           o.contactNo.toLowerCase().contains(q) ||
           o.vehicleModel.toLowerCase().contains(q);
     }).toList();
+  }
+
+  Future<void> refreshOrders() async {
+    // 🔥 RESET FILTERS
+
+    searchController.clear();
+
+    await fetchOrders();
   }
 }

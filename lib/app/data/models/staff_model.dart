@@ -3,7 +3,8 @@ class StaffModel {
   final int? id;
   final String name;
   final String phone;
-  final String email;
+  final String? email;
+  final String? address; // ✅ nullable
   final String designation;
   final String designationDisplay;
   final String salaryMode;
@@ -15,7 +16,8 @@ class StaffModel {
     this.id,
     required this.name,
     required this.phone,
-    required this.email,
+    this.email,
+    this.address,
     required this.designation,
     required this.designationDisplay,
     required this.salaryMode,
@@ -24,24 +26,28 @@ class StaffModel {
     required this.isActive,
   });
 
-  factory StaffModel.fromJson(Map<String, dynamic> json) => StaffModel(
-        id: json['id'],
-        name: json['name'],
-        phone: json['phone'],
-        email: json['email'],
-        designation: json['designation'],
-        designationDisplay: json['designation_display'],
-        salaryMode: json['salary_mode'],
-        salaryModeDisplay: json['salary_mode_display'],
-        joinedDate: DateTime.parse(json['joined_date']),
-        isActive: json['is_active'],
-      );
+  factory StaffModel.fromJson(Map<String, dynamic> json) {
+    return StaffModel(
+      id: json['id'],
+      name: json['name'] ?? '',
+      phone: json['phone'] ?? '',
+      email: json['email'] ?? '',
+      address: json['address'], // null-safe
+      designation: json['designation'] ?? '',
+      designationDisplay: json['designation_display'] ?? '',
+      salaryMode: json['salary_mode'] ?? '',
+      salaryModeDisplay: json['salary_mode_display'] ?? '',
+      joinedDate: DateTime.parse(json['joined_date']),
+      isActive: json['is_active'] ?? false,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
         'phone': phone,
         'email': email,
+        'address': address,
         'designation': designation,
         'designation_display': designationDisplay,
         'salary_mode': salaryMode,

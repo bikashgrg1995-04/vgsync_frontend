@@ -7,11 +7,25 @@ import 'dashboard_controller.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-class DashboardPage extends StatelessWidget {
-  DashboardPage({super.key});
+class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
 
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
   final DashboardController controller = Get.find<DashboardController>();
+
   final dateFormatter = DateFormat('yyyy-MM-dd');
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.loadDashboardData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +44,7 @@ class DashboardPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SizedBox(height: SizeConfig.sh(0.03)),
               _summaryCardsSection(),
               SizedBox(height: SizeConfig.sh(0.03)),
               _chartsSection(), // charts directly after summary cards
@@ -74,7 +89,7 @@ class DashboardPage extends StatelessWidget {
   Widget _summaryCard(String title, String value, Color color) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6),
-      width: SizeConfig.sw(0.12),
+      width: SizeConfig.sw(0.1),
       height: SizeConfig.sh(0.12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.85),
@@ -372,7 +387,7 @@ class DashboardPage extends StatelessWidget {
             if (lowItems.isEmpty)
               const Center(child: Text("All items are well stocked")),
             if (lowItems.isNotEmpty)
-              ...lowItems.map((item) => _lowStockTile(item)).toList(),
+              ...lowItems.map((item) => _lowStockTile(item)),
           ],
         ),
       ),
@@ -420,29 +435,27 @@ class DashboardPage extends StatelessWidget {
             if (followups.isEmpty)
               const Center(child: Text("No upcoming follow-ups")),
             if (followups.isNotEmpty)
-              ...followups
-                  .map((f) => ListTile(
-                        title: Text(f.customerName),
-                        subtitle: Text(
-                            "Follow-up: ${f.followUpDate}\nRemarks: ${f.remarks}"),
-                        leading: Icon(Icons.follow_the_signs,
-                            color: f.statusColor.toLowerCase() == 'orange'
-                                ? Colors.orange
-                                : Colors.green),
-                        trailing: f.isNearest
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                    color: Colors.blueAccent,
-                                    borderRadius: BorderRadius.circular(6)),
-                                child: const Text("Nearest",
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 12)),
-                              )
-                            : null,
-                      ))
-                  .toList(),
+              ...followups.map((f) => ListTile(
+                    title: Text(f.customerName),
+                    subtitle: Text(
+                        "Follow-up: ${f.followUpDate}\nRemarks: ${f.remarks}"),
+                    leading: Icon(Icons.follow_the_signs,
+                        color: f.statusColor.toLowerCase() == 'orange'
+                            ? Colors.orange
+                            : Colors.green),
+                    trailing: f.isNearest
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                                color: Colors.blueAccent,
+                                borderRadius: BorderRadius.circular(6)),
+                            child: const Text("Nearest",
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 12)),
+                          )
+                        : null,
+                  )),
           ],
         ),
       ),

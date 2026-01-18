@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import 'followup_controller.dart';
 
@@ -63,6 +64,14 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchFollowUps();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
 
@@ -76,7 +85,8 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
             // ---------------- Search + Refresh ----------------
             Row(
               children: [
-                Flexible(
+                SizedBox(
+                  width: SizeConfig.sw(0.45),
                   child: TextField(
                     controller: searchController,
                     decoration: InputDecoration(
@@ -91,16 +101,13 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                   ),
                 ),
                 SizedBox(width: SizeConfig.sw(0.01)),
-                SizedBox(
-                  width: SizeConfig.sw(0.12),
-                  child: Obx(
-                    () => ElevatedButton.icon(
-                      onPressed: controller.isLoading.value
-                          ? null
-                          : controller.fetchFollowUps,
-                      icon: const Icon(Icons.refresh, color: Colors.white),
-                      label: const Text("Refresh"),
-                    ),
+                Obx(
+                  () => actionButton(
+                    label: 'Refresh',
+                    icon: Icons.refresh,
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : controller.fetchFollowUps,
                   ),
                 ),
               ],
@@ -162,8 +169,7 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                                 extentRatio: 0.35,
                                 children: [
                                   SlidableAction(
-                                    onPressed: (_) => controller
-                                        .terminateFollowUp(followUp.id),
+                                    onPressed: (_) => _showTerminateDialog(followUp.id),
                                     backgroundColor: Colors.red,
                                     foregroundColor: Colors.white,
                                     icon: Icons.cancel,
@@ -285,6 +291,52 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showTerminateDialog(int followUpId) {
+    final TextEditingController reasonController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Terminate Follow-up"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Are you sure you want to terminate this follow-up?",
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: "Reason (optional)",
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () async {
+              Get.back();
+              await controller.terminateFollowUp(
+                followUpId,
+                reason: reasonController.text.trim(),
+              );
+            },
+            child: const Text("Terminate"),
+          ),
+        ],
       ),
     );
   }
