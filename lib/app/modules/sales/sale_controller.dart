@@ -1,3 +1,4 @@
+// app/modules/sales/sale_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
@@ -78,11 +79,22 @@ class SalesController extends GetxController {
 
   // ---------------- LIFECYCLE ----------------
   @override
-  void onReady() {
-    super.onReady();
-    _initControllers();
-    fetchSales();
+void onReady() {
+  super.onReady();
+  _initControllers();
+  fetchSales();
+
+  // Set default handledBy if none selected
+  if (handledBy.value == 0 && staffController.staffs.isNotEmpty) {
+    handledBy.value = staffController.staffs.first.id!;
   }
+
+  // Default paidFrom
+  if (!['cash', 'online', 'bank'].contains(paidFrom.value)) {
+    paidFrom.value = 'cash';
+  }
+}
+
 
   void _initControllers() {
     customerNameController = TextEditingController();

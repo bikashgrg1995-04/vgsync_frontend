@@ -1,3 +1,4 @@
+// app/modules/sales/sale_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/models/sale_model.dart';
@@ -15,6 +16,8 @@ class SaleDetailPage extends StatelessWidget {
   final SalesController controller = Get.find();
   final StaffController staffController = Get.find<StaffController>();
   final StockController stockController = Get.find<StockController>();
+
+  
 
   @override
   Widget build(BuildContext context) {

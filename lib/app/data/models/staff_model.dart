@@ -1,3 +1,4 @@
+// app/data/models/staff_model.dart
 // ---------------- Staff Model ----------------
 class StaffModel {
   final int? id;
@@ -9,7 +10,7 @@ class StaffModel {
   final String designationDisplay;
   final String salaryMode;
   final String salaryModeDisplay;
-  final DateTime joinedDate;
+  final DateTime? joinedDate;
   final bool isActive;
 
   StaffModel({
@@ -22,7 +23,7 @@ class StaffModel {
     required this.designationDisplay,
     required this.salaryMode,
     required this.salaryModeDisplay,
-    required this.joinedDate,
+    this.joinedDate,
     required this.isActive,
   });
 
@@ -37,7 +38,9 @@ class StaffModel {
       designationDisplay: json['designation_display'] ?? '',
       salaryMode: json['salary_mode'] ?? '',
       salaryModeDisplay: json['salary_mode_display'] ?? '',
-      joinedDate: DateTime.parse(json['joined_date']),
+      joinedDate: json['joined_date'] != null && json['joined_date'] != ''
+        ? DateTime.tryParse(json['joined_date'])
+        : null,
       isActive: json['is_active'] ?? false,
     );
   }
@@ -52,7 +55,7 @@ class StaffModel {
         'designation_display': designationDisplay,
         'salary_mode': salaryMode,
         'salary_mode_display': salaryModeDisplay,
-        'joined_date': joinedDate.toIso8601String().split('T')[0],
+        'joined_date': joinedDate?.toIso8601String().split('T')[0],
         'is_active': isActive,
       };
 }

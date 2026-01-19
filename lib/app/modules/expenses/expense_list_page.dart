@@ -1,3 +1,4 @@
+// app/modules/expenses/expense_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
@@ -329,7 +330,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
             );
           }
         },
-        height: 0.65,
+        height: 0.75,
         width: 0.25,
       ),
     );

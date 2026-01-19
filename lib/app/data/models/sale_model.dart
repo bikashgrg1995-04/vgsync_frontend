@@ -1,3 +1,4 @@
+// app/data/models/sale_model.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/models/stock_model.dart';

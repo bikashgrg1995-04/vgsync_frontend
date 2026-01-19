@@ -1,3 +1,5 @@
+// app/modules/stock/stock_list_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
@@ -20,21 +22,27 @@ class StockListPage extends StatefulWidget {
 
 class _StockListPageState extends State<StockListPage> {
   final StockController stockController = Get.find<StockController>();
-  final CategoryController categoryController = Get.find<CategoryController>();
+  late final CategoryController categoryController;
   final GlobalController globalController = Get.find<GlobalController>();
 
   @override
   void initState() {
     super.initState();
+    categoryController = Get.find<CategoryController>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       stockController.fetchStocks();
+      categoryController.fetchCategories();
     });
   }
 
   @override
-  Widget build(BuildContext context) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     SizeConfig.init(context);
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
         padding: EdgeInsets.all(SizeConfig.sw(0.03)),

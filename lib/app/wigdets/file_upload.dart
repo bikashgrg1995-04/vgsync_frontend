@@ -1,3 +1,4 @@
+// app/wigdets/file_upload.dart
 import 'dart:io';
 
 import 'package:dio/dio.dart' as dio;
@@ -105,7 +106,7 @@ class FileUploadDialog {
                     ),
                     SizedBox(height: SizeConfig.sh(0.02)),
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.upload_file),
+                      icon: Icon(Icons.upload_file, color: Colors.white),
                       label: Text(
                           selectedFile?.path.split('/').last ?? 'Select File'),
                       onPressed: isUploading

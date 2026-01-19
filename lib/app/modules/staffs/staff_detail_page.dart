@@ -1,3 +1,4 @@
+// app/modules/staffs/staff_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -460,7 +461,7 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
       CustomFormDialog(
         title: tx == null ? "Add Salary Transaction" : "Edit Transaction",
         width: 0.45,
-        height: 0.5,
+        height: 0.6,
         content: Column(
           children: [
             CommonDatePicker(
