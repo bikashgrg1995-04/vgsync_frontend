@@ -1,3 +1,4 @@
+// main.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -22,7 +23,6 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
 
-      // ✅ ONLY here
       initialBinding: InitialBinding(),
 
       initialRoute: AppPages.pages.first.title,

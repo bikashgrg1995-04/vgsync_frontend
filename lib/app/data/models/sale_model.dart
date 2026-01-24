@@ -1,25 +1,15 @@
-// app/data/models/sale_model.dart
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/models/stock_model.dart';
 
 /// ================= SALE ITEM =================
+// app/data/models/sale_model.dart
 class SaleItemModel {
-  int? id;
-  int itemId;
-  String itemName;
-  String? categoryName;
+  final int? id;
+  final int itemId;
+  final String itemName;
+  final String? categoryName;
 
-  int quantity;
-  double salePrice;
-
-  // ---------- REACTIVE ----------
-  late RxInt quantityRx;
-  late RxDouble priceRx;
-  late RxDouble totalPrice;
-
-  TextEditingController? quantityController;
-  TextEditingController? priceController;
+  final int quantity;
+  final double salePrice;
 
   SaleItemModel({
     this.id,
@@ -28,60 +18,33 @@ class SaleItemModel {
     this.categoryName,
     required this.quantity,
     required this.salePrice,
-  }) {
-    initControllerIfNull();
+  });
+
+  /// Factory to create from stock
+  factory SaleItemModel.fromStock(Result stock) {
+    return SaleItemModel(
+      id: null,
+      itemId: stock.id ?? 0,
+      itemName: stock.name,
+      categoryName: stock.categoryName,
+      quantity: stock.stock, // initial stock
+      salePrice: stock.salePrice,
+    );
   }
 
-  void initControllerIfNull() {
-    quantityRx = quantity.obs;
-    priceRx = salePrice.obs;
-    totalPrice = (quantity * salePrice).obs;
-
-    quantityController = TextEditingController(text: quantity.toString());
-    priceController = TextEditingController(text: salePrice.toStringAsFixed(2));
-
-    quantityController!.addListener(_recalculate);
-    priceController!.addListener(_recalculate);
-  }
-
-  void _recalculate() {
-    quantity = int.tryParse(quantityController!.text) ?? 1;
-    salePrice = double.tryParse(priceController!.text) ?? 0;
-
-    if (quantity < 1) quantity = 1;
-    if (salePrice < 0) salePrice = 0;
-
-    quantityRx.value = quantity;
-    priceRx.value = salePrice;
-    totalPrice.value = quantity * salePrice;
-  }
-
-  SaleItemModel.fromStock(Result stock)
-      : id = null,
-        itemId = stock.id ?? 0,
-        itemName = stock.name,
-        categoryName = stock.categoryName,
-        quantity = 1,
-        salePrice = stock.salePrice {
-    initControllerIfNull();
-  }
-
-  SaleItemModel copy() {
+  /// Copy with optional reset quantity
+  SaleItemModel copy({bool resetQuantity = false}) {
     return SaleItemModel(
       id: id,
       itemId: itemId,
       itemName: itemName,
       categoryName: categoryName,
-      quantity: quantity,
+      quantity: resetQuantity ? 1 : quantity, // reset when adding
       salePrice: salePrice,
     );
   }
 
-  void dispose() {
-    quantityController?.dispose();
-    priceController?.dispose();
-  }
-
+  /// From JSON
   factory SaleItemModel.fromJson(Map<String, dynamic> json) {
     int? parseInt(dynamic value) {
       if (value == null) return null;
@@ -103,6 +66,7 @@ class SaleItemModel {
     );
   }
 
+  /// For backend API
   Map<String, dynamic> toBackendJson() {
     return {
       'item': itemId,

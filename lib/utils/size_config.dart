@@ -1,3 +1,4 @@
+// utils/size_config.dart
 import 'package:flutter/widgets.dart';
 
 class SizeConfig {

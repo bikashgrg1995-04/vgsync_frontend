@@ -7,7 +7,6 @@ import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_controller.dart';
 import 'package:vgsync_frontend/app/modules/stock/item_detail_page.dart';
 import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
-import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../data/models/stock_model.dart';
@@ -30,8 +29,8 @@ class _StockListPageState extends State<StockListPage> {
     super.initState();
     categoryController = Get.find<CategoryController>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      stockController.fetchStocks();
       categoryController.fetchCategories();
+      stockController.fetchStocks();
     });
   }
 
@@ -80,7 +79,7 @@ class _StockListPageState extends State<StockListPage> {
                     FileUploadDialog.show(
                       context: context,
                       title: 'Import Stock Excel',
-                      endpoint: '/stock/excel-upload/',
+                      endpoint: '/upload/stock-excel/',
                       fileKey: 'file',
                       allowedExtensions: ['xls', 'xlsx'],
                       onSuccess: () async {
@@ -299,7 +298,6 @@ class _StockListPageState extends State<StockListPage> {
                               stockController.deleteStock(
                                   context, stock.id ?? 0);
                             }
-                            Get.back();
                           },
                           child: const Text('Delete',
                               style: TextStyle(color: Colors.red)),
@@ -309,18 +307,8 @@ class _StockListPageState extends State<StockListPage> {
                         onPressed: () async {
                           if (isEditMode && stock != null) {
                             await stockController.updateStock(stock);
-                            Get.back(closeOverlays: true);
-                            DesktopToast.show(
-                              'Stock updated successfully',
-                              backgroundColor: Colors.greenAccent,
-                            );
                           } else {
                             await stockController.addStock();
-                            Get.back(closeOverlays: true);
-                            DesktopToast.show(
-                              'Stock added successfully',
-                              backgroundColor: Colors.greenAccent,
-                            );
                           }
                         },
                         child: const Text('Save'),

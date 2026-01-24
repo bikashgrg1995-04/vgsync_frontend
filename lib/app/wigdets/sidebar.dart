@@ -177,25 +177,24 @@ class Sidebar extends StatelessWidget {
           /// Logout (Pinned Bottom)
           const Divider(color: Colors.white24),
           // Example: Logout button in Sidebar
-          _menuItem(
-            icon: Icons.logout,
-            title: 'Logout',
-            onTap: () {
-              ConfirmDialog.show(
-                context,
-                title: "Logout",
-                message: "Are you sure you want to logout?",
-                onConfirm: () {
-                  authController.logout();
-                  globalController.changeMenu('Dashboard');
-                },
-                showSnackbarAfter: true, // show snackbar after confirmation
-                snackbarMessage: "Logged out successfully",
-                snackbarColor: Colors.orange,
-                snackbarIcon: Icons.logout,
-              );
-            },
-          ),
+        _menuItem(
+  icon: Icons.logout,
+  title: 'Logout',
+  onTap: () {
+    ConfirmDialog.show(
+      context,
+      title: "Logout",
+      message: "Are you sure you want to logout?",
+      confirmText: "Logout",
+      cancelText: "Cancel",
+      onConfirm: () {
+        authController.logout();
+        globalController.changeMenu('Dashboard');
+      },
+    );
+  },
+),
+
 
           const SizedBox(height: 12),
         ],

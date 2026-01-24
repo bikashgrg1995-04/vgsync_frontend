@@ -17,8 +17,6 @@ class SaleDetailPage extends StatelessWidget {
   final StaffController staffController = Get.find<StaffController>();
   final StockController stockController = Get.find<StockController>();
 
-  
-
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
@@ -35,7 +33,7 @@ class SaleDetailPage extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: () => _confirmDelete(),
+            onPressed: () => controller.deleteSale(context, sale.id!),
           ),
         ],
       ),
@@ -111,7 +109,7 @@ class SaleDetailPage extends StatelessWidget {
     );
   }
 
-  // ---------------- ITEMS ----------------
+// ---------------- ITEMS ----------------
   Widget _itemsCard() {
     return Card(
       elevation: 2,
@@ -132,7 +130,7 @@ class SaleDetailPage extends StatelessWidget {
                 subtitle: Text(
                     'Qty: ${i.quantity} × ${i.salePrice.toStringAsFixed(2)}'),
                 trailing: Text(
-                  i.totalPrice.toStringAsFixed(2),
+                  (i.quantity * i.salePrice).toStringAsFixed(2),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -174,30 +172,30 @@ class SaleDetailPage extends StatelessWidget {
     );
   }
 
-  // ---------------- DELETE ----------------
-  void _confirmDelete() {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Delete Sale'),
-        content: const Text('Are you sure you want to delete this sale?'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              await controller.deleteSale(sale.id!);
-              Get.back(); // dialog
-              Get.back(); // page
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
+  // // ---------------- DELETE ----------------
+  // void _confirmDelete() {
+  //   Get.dialog(
+  //     AlertDialog(
+  //       title: const Text('Delete Sale'),
+  //       content: const Text('Are you sure you want to delete this sale?'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Get.back(),
+  //           child: const Text('Cancel'),
+  //         ),
+  //         ElevatedButton(
+  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+  //           onPressed: () async {
+  //             await controller.deleteSale(sale.id!);
+  //             Get.back(); // dialog
+  //             Get.back(); // page
+  //           },
+  //           child: const Text('Delete'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // ---------------- HELPERS ----------------
   Widget _row(String label, String value, {Color? color}) {
@@ -490,9 +488,13 @@ class SaleDetailPage extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(12), // rounded corners
                 ),
-                child: Obx(() => Column(
-                      children: controller.selectedItems.map(_itemRow).toList(),
-                    )),
+                child: Obx(
+                  () => Column(
+                    children: controller.selectedItems
+                        .map((c) => _itemRow(c))
+                        .toList(),
+                  ),
+                ),
               ),
 
               SizedBox(
@@ -545,7 +547,7 @@ class SaleDetailPage extends StatelessWidget {
         },
         onDelete: isEdit
             ? () async {
-                await controller.deleteSale(sale.id!);
+                await controller.deleteSale(context, sale.id!);
                 Get.back();
               }
             : null,
@@ -989,8 +991,9 @@ class SaleDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _itemRow(SaleItemModel item) {
-    item.initControllerIfNull();
+  Widget _itemRow(SaleItemController controller) {
+    final item = controller.item;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Padding(
@@ -1001,32 +1004,34 @@ class SaleDetailPage extends StatelessWidget {
             Expanded(
               flex: 2,
               child: TextField(
-                controller: item.quantityController,
+                controller: controller.quantityController,
                 keyboardType: TextInputType.number,
                 decoration:
                     const InputDecoration(labelText: 'Qty', isDense: true),
-                onChanged: (_) => controller.updateTotals(),
+                onChanged: (_) => controller.parentController.updateTotals(),
               ),
             ),
             Expanded(
               flex: 2,
               child: TextField(
-                controller: item.priceController,
+                controller: controller.priceController,
                 keyboardType: TextInputType.number,
                 decoration:
                     const InputDecoration(labelText: 'Rate', isDense: true),
-                onChanged: (_) => controller.updateTotals(),
+                onChanged: (_) => controller.parentController.updateTotals(),
               ),
             ),
             Expanded(
-                flex: 2,
-                child: Obx(() => Text(
-                      'Total: ${item.totalPrice.value.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ))),
+              flex: 2,
+              child: Obx(() => Text(
+                    'Total: ${controller.totalPrice.value.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  )),
+            ),
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => controller.removeItem(item),
+              onPressed: () =>
+                  controller.parentController.removeItem(controller),
             ),
           ],
         ),

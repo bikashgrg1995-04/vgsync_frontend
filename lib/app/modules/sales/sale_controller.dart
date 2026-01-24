@@ -8,6 +8,62 @@ import 'package:vgsync_frontend/app/modules/followups/followup_controller.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
+import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
+
+class SaleItemController {
+  final SaleItemModel item;
+  final SalesController parentController; // 🔥 add reference
+
+  final quantity = 1.obs;
+  final price = 0.0.obs;
+  final totalPrice = 0.0.obs;
+
+  late TextEditingController quantityController;
+  late TextEditingController priceController;
+
+  SaleItemController({
+    required this.item,
+    required this.parentController, // 🔥 required
+  }) {
+    quantity.value = item.quantity;
+    price.value = item.salePrice;
+    totalPrice.value = item.quantity * item.salePrice;
+
+    quantityController = TextEditingController(text: item.quantity.toString());
+    priceController =
+        TextEditingController(text: item.salePrice.toStringAsFixed(2));
+
+    quantityController.addListener(_recalculate);
+    priceController.addListener(_recalculate);
+  }
+
+  void _recalculate() {
+    final q = int.tryParse(quantityController.text) ?? 1;
+    final p = double.tryParse(priceController.text) ?? 0;
+
+    quantity.value = q < 1 ? 1 : q;
+    price.value = p < 0 ? 0 : p;
+    totalPrice.value = quantity.value * price.value;
+
+    parentController.updateTotals(); // 🔥 notify parent controller
+  }
+
+  SaleItemModel toModel() {
+    return SaleItemModel(
+      id: item.id,
+      itemId: item.itemId,
+      itemName: item.itemName,
+      categoryName: item.categoryName,
+      quantity: quantity.value,
+      salePrice: price.value,
+    );
+  }
+
+  void dispose() {
+    quantityController.dispose();
+    priceController.dispose();
+  }
+}
 
 class SalesController extends GetxController {
   final SaleRepository saleRepository;
@@ -61,7 +117,7 @@ class SalesController extends GetxController {
   final postServiceFeedbackDate = Rx<DateTime?>(null); // 3 days after delivery
 
   // ---------------- ITEMS ----------------
-  final selectedItems = <SaleItemModel>[].obs;
+  final selectedItems = <SaleItemController>[].obs;
 
   // ---------------- TOTALS ----------------
   final itemsTotal = 0.0.obs;
@@ -79,22 +135,21 @@ class SalesController extends GetxController {
 
   // ---------------- LIFECYCLE ----------------
   @override
-void onReady() {
-  super.onReady();
-  _initControllers();
-  fetchSales();
+  void onReady() {
+    super.onReady();
+    _initControllers();
+    fetchSales();
 
-  // Set default handledBy if none selected
-  if (handledBy.value == 0 && staffController.staffs.isNotEmpty) {
-    handledBy.value = staffController.staffs.first.id!;
+    // Set default handledBy if none selected
+    if (handledBy.value == 0 && staffController.staffs.isNotEmpty) {
+      handledBy.value = staffController.staffs.first.id!;
+    }
+
+    // Default paidFrom
+    if (!['cash', 'online', 'bank'].contains(paidFrom.value)) {
+      paidFrom.value = 'cash';
+    }
   }
-
-  // Default paidFrom
-  if (!['cash', 'online', 'bank'].contains(paidFrom.value)) {
-    paidFrom.value = 'cash';
-  }
-}
-
 
   void _initControllers() {
     customerNameController = TextEditingController();
@@ -121,6 +176,7 @@ void onReady() {
 
   @override
   void onClose() {
+    // Dispose form controllers
     customerNameController.dispose();
     contactNoController.dispose();
     vehicleModelController.dispose();
@@ -135,9 +191,13 @@ void onReady() {
     labourChargeController.dispose();
     paidAmountController.dispose();
     discountController.dispose();
-    for (final i in selectedItems) {
-      i.dispose();
+
+    // Dispose all selected item controllers
+    for (final itemController in selectedItems) {
+      itemController.dispose();
     }
+    selectedItems.clear();
+
     super.onClose();
   }
 
@@ -170,7 +230,7 @@ void onReady() {
         (itemsTotal.value + labourCharge.value) * discount / 100;
 
     // ---------- TOTAL & NET ----------
-    totalAmount.value = itemsTotal.value + labourCharge.value; // optional
+    totalAmount.value = itemsTotal.value + labourCharge.value;
     netAmount.value = totalAmount.value - discountAmount.value;
 
     // ---------- PAID & REMAINING ----------
@@ -197,7 +257,7 @@ void onReady() {
 
   // ---------------- ITEM HANDLING ----------------
   void addItem(SaleItemModel item) {
-    if (selectedItems.any((e) => e.itemId == item.itemId)) {
+    if (selectedItems.any((e) => e.item.itemId == item.itemId)) {
       DesktopToast.show(
         'Item already added',
         backgroundColor: Colors.redAccent,
@@ -205,53 +265,31 @@ void onReady() {
       return;
     }
 
-    final copy = item.copy();
-    copy.initControllerIfNull();
-    selectedItems.add(copy);
+    if (item.quantity == 0) {
+      DesktopToast.show(
+        'This item is Out of Stock',
+        backgroundColor: Colors.redAccent,
+      );
+      return;
+    }
+
+    final controller = SaleItemController(
+      item: item.copy(resetQuantity: true), // quantity starts at 1
+      parentController: this,
+    );
+    selectedItems.add(controller);
     updateTotals();
   }
 
-  void openEditFromDetail(SaleModel sale) {
-    fillForEdit(sale);
-    Get.find<GlobalController>().triggerRefresh(DashboardRefreshType.all);
-  }
-
-  // ---------- HELPERS ----------
-  // bool validateForm() {
-  //   if (customerNameController.text.isEmpty) {
-  //       DesktopToast.show(
-  //             'Customer name is required',
-  //             backgroundColor: Colors.redAccent,
-  //           );
-
-  //     return false;
-  //   }
-  //   if (saleDate.value == null) {
-  //       DesktopToast.show(
-  //           'Sale date is required',
-  //             backgroundColor: Colors.redAccent,
-  //           );
-  //     return false;
-  //   }
-  //   if (selectedItems.isEmpty) {
-  //       DesktopToast.show(
-  //         'Please add at least one item',
-  //             backgroundColor: Colors.redAccent,
-  //           );
-  //     return false;
-  //   }
-  //   return true;
-  // }
-
-  void removeItem(SaleItemModel item) {
-    selectedItems.remove(item);
-    item.dispose();
+  void removeItem(SaleItemController itemController) {
+    selectedItems.remove(itemController);
+    itemController.dispose();
     updateTotals();
   }
 
   // ---------------- ADD SALE ----------------
-  Future<void> addSale() async {
-    if (!validateForm()) return;
+  Future<bool> addSale() async {
+    if (!validateForm()) return false; // <- return bool
 
     final sale = _buildSale();
 
@@ -269,23 +307,18 @@ void onReady() {
 
       sales.add(created);
       _postRefresh();
-      clearForm();
-      Get.back(closeOverlays: true);
-      DesktopToast.show(
-        'Sale added successfully',
-        backgroundColor: Colors.greenAccent,
-      );
+      return true; // success
     } finally {
       isLoading.value = false;
     }
   }
 
   // ---------------- UPDATE SALE ----------------
-  Future<void> updateSale(int saleId) async {
-    if (!validateForm()) return;
+  Future<bool> updateSale(int saleId) async {
+    if (!validateForm()) return false;
 
     final index = sales.indexWhere((e) => e.id == saleId);
-    if (index == -1) return;
+    if (index == -1) return false;
 
     final updated = _buildSale(id: saleId);
 
@@ -294,35 +327,50 @@ void onReady() {
       final result = await saleRepository.updateSale(updated);
       sales[index] = result;
       _postRefresh();
-      clearForm();
-      Get.back(closeOverlays: true);
-      DesktopToast.show(
-        'Sale updated successfully',
-        backgroundColor: Colors.greenAccent,
-      );
+      return true;
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ---------------- DELETE SALE ----------------
-  Future<void> deleteSale(int saleId) async {
-    final index = sales.indexWhere((e) => e.id == saleId);
-    if (index == -1) return;
+// ---------------- DELETE SALE WITH CONFIRM DIALOG ----------------
+  Future<void> deleteSale(BuildContext context, int saleId) async {
+    ConfirmDialog.show(
+      context,
+      title: "Delete Sale",
+      message: "Are you sure you want to delete this Sale?",
+      onConfirm: () async {
+        final index = sales.indexWhere((e) => e.id == saleId);
+        if (index == -1) {
+          DesktopToast.show(
+            "Sale not found",
+            backgroundColor: Colors.redAccent,
+          );
+          return;
+        }
 
-    try {
-      isLoading.value = true;
-      await saleRepository.deleteSale(saleId);
-      sales.removeAt(index);
-      _postRefresh();
-      Get.back(closeOverlays: true);
-      DesktopToast.show(
-        'Purchase deleted successfully',
-        backgroundColor: Colors.greenAccent,
-      );
-    } finally {
-      isLoading.value = false;
-    }
+        try {
+          isLoading.value = true;
+          await saleRepository.deleteSale(saleId);
+          sales.removeAt(index);
+          _postRefresh();
+          globalController.triggerRefresh(DashboardRefreshType.all);
+
+          Get.back(closeOverlays: true); // close confirm dialog
+          DesktopToast.show(
+            "Sale deleted successfully",
+            backgroundColor: Colors.greenAccent,
+          );
+        } catch (e) {
+          DesktopToast.show(
+            "Failed to delete sale: $e",
+            backgroundColor: Colors.redAccent,
+          );
+        } finally {
+          isLoading.value = false;
+        }
+      },
+    );
   }
 
   Future<void> refreshSales() async {
@@ -366,9 +414,11 @@ void onReady() {
     // ---------------- FILL ITEMS ----------------
     selectedItems.clear();
     for (var item in sale.items) {
-      final copy = item.copy();
-      copy.initControllerIfNull();
-      selectedItems.add(copy);
+      final controller = SaleItemController(
+        item: item.copy(), // uses actual quantity
+        parentController: this,
+      );
+      selectedItems.add(controller);
     }
 
     // ---------------- UPDATE TOTALS ----------------
@@ -394,7 +444,7 @@ void onReady() {
       isServicing: isServicing.value,
 
       // ---------- ITEMS ----------
-      items: selectedItems.map((e) => e.copy()).toList(),
+      items: selectedItems.map((e) => e.toModel()).toList(),
 
       // ---------- TOTALS ----------
       grandTotal: itemsTotal.value + labourCharge.value,
@@ -481,13 +531,13 @@ void onReady() {
 
       return false;
     }
-    if (handledBy.value == 0) {
-      DesktopToast.show(
-        'Select staff',
-        backgroundColor: Colors.redAccent,
-      );
-      return false;
-    }
+    // if (handledBy.value == 0) {
+    //   DesktopToast.show(
+    //     'Select staff',
+    //     backgroundColor: Colors.redAccent,
+    //   );
+    //   return false;
+    // }
     if (selectedItems.isEmpty) {
       DesktopToast.show(
         'Add at least one item',

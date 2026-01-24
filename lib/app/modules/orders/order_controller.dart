@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/data/models/order_model.dart';
 import 'package:vgsync_frontend/app/data/repositories/order_repository.dart';
 import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
@@ -15,6 +16,7 @@ class OrderController extends GetxController {
   var isLoading = false.obs;
 
   final searchController = TextEditingController();
+  final GlobalController globalController = Get.find<GlobalController>();
 
   // ---------------- Fetch Orders ----------------
   Future<void> fetchOrders() async {
@@ -36,6 +38,7 @@ class OrderController extends GetxController {
       isLoading.value = true;
       final newOrder = await orderRepository.create(order);
       orders.add(newOrder);
+      globalController.triggerRefresh(DashboardRefreshType.order);
     } catch (e) {
       DesktopToast.show(
         "Failed to add order.",
@@ -53,6 +56,7 @@ class OrderController extends GetxController {
       final updatedOrder = await orderRepository.update(order);
       final index = orders.indexWhere((o) => o.id == updatedOrder.id);
       if (index != -1) orders[index] = updatedOrder;
+ globalController.triggerRefresh(DashboardRefreshType.order);
     } catch (e) {
       DesktopToast.show(
         "Failed to update order.",
@@ -73,6 +77,7 @@ class OrderController extends GetxController {
         isLoading.value = true;
         await orderRepository.delete(id);
         orders.removeWhere((o) => o.id == id);
+         globalController.triggerRefresh(DashboardRefreshType.order);
       } catch (e) {
         DesktopToast.show(
           "Failed to delete order.",

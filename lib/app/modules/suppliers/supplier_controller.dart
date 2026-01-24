@@ -151,7 +151,7 @@ class SupplierController extends GetxController {
       Get.back(closeOverlays: true);
           DesktopToast.show(
         "Supplier updated",
-        backgroundColor: Colors.redAccent,
+        backgroundColor: Colors.greenAccent,
       );
     } catch (e) {
       Get.back(closeOverlays: true);

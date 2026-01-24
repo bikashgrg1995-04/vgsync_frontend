@@ -1,3 +1,4 @@
+// app/modules/purchases/purchase_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
@@ -335,7 +336,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
           title: isEditMode ? "Edit Purchase" : "Add Purchase",
           isEditMode: isEditMode,
           width: 0.5,
-          height: 0.85,
+          height: double.infinity,
           content: SizedBox(
             height: 550, // total height for the content
             child: Column(

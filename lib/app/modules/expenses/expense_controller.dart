@@ -1,3 +1,4 @@
+// app/modules/expenses/expense_controllerr.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
@@ -123,7 +124,7 @@ class ExpenseController extends GetxController {
       final result = await expenseRepository.create(expense);
       expenses.add(result);
       clearForm();
-      await dashboardController.loadDashboardData();
+      globalController.triggerRefresh(DashboardRefreshType.charts);
     } finally {
       isLoading.value = false;
     }
@@ -163,7 +164,7 @@ class ExpenseController extends GetxController {
       }
 
       clearForm();
-      await dashboardController.loadDashboardData();
+      globalController.triggerRefresh(DashboardRefreshType.charts);
     } finally {
       isLoading.value = false;
     }
@@ -185,7 +186,7 @@ class ExpenseController extends GetxController {
           isLoading.value = true;
           await expenseRepository.delete(expense);
           expenses.removeWhere((e) => e.id == expense.id);
-          globalController.triggerRefresh(DashboardRefreshType.all);
+          globalController.triggerRefresh(DashboardRefreshType.charts);
           Get.back(closeOverlays: true);
           DesktopToast.show('Expense deleted successfully',  backgroundColor: Colors.greenAccent,);
          

@@ -76,7 +76,7 @@ class _OrderListPageState extends State<OrderListPage> {
                     FileUploadDialog.show(
                       context: context,
                       title: 'Import Orders (Excel)',
-                      endpoint: '/order-excel-upload/',
+                      endpoint: '/upload/order-excel/',
                       fileKey: 'file',
                       allowedExtensions: ['xls', 'xlsx'],
                       onSuccess: () async {
@@ -204,7 +204,7 @@ class _OrderListPageState extends State<OrderListPage> {
       CustomFormDialog(
         title: isEditMode ? "Edit Order" : "Add Order",
         isEditMode: isEditMode,
-        width: 0.45,
+        width: 0.6,
         height: 0.9,
         content: _buildDialogContent(formCtrl),
         onSave: () {
@@ -213,8 +213,6 @@ class _OrderListPageState extends State<OrderListPage> {
 
           if (isEditMode) {
             orderCtrl.updateOrder(newOrder);
-
-            globalCtrl.triggerRefresh(DashboardRefreshType.order);
             Get.back(closeOverlays: true);
             DesktopToast.show(
               "Order updated successfully.",
@@ -222,7 +220,6 @@ class _OrderListPageState extends State<OrderListPage> {
             );
           } else {
             orderCtrl.addOrder(newOrder);
-            globalCtrl.triggerRefresh(DashboardRefreshType.order);
             Get.back(closeOverlays: true);
             DesktopToast.show(
               "Order added successfully.",

@@ -177,6 +177,7 @@ class PurchaseController extends GetxController {
       );
       return;
     }
+
     items.add(
       PurchaseItemController(
         item: PurchaseItemModel(

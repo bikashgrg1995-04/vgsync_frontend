@@ -1,21 +1,21 @@
+// app/controllers/global_controller.dart
 import 'package:get/get.dart';
 
 /// Types of dashboard refresh events
 enum DashboardRefreshType {
-  all,
-  stock,
-  income, // पुरानो 'sale' को सट्टा
-  expense,
-  staff,
-  order,
-  followup,
-  profitLoss, // पुरानो 'charts' को सट्टा
+  all, // refresh everything
+  stock, // low stock table
+  charts,
+  credit,
+  staff, // staff salary table
+  order, // orders table
+  followup, // follow-up table
 }
 
 class GlobalController extends GetxController {
   // ---------------- Dashboard Refresh ----------------
   /// Holds all sections that need refresh
-  var refreshTriggers = <DashboardRefreshType>[].obs;
+   RxList<DashboardRefreshType> refreshTriggers = <DashboardRefreshType>[].obs;
 
   /// Trigger dashboard refresh for a specific type
   void triggerRefresh(DashboardRefreshType type) {

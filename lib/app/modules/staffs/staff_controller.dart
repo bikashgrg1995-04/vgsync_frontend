@@ -286,6 +286,8 @@ class StaffController extends GetxController {
       Map<String, dynamic> data, int staffId) async {
     try {
       await staffRepository.createSalaryTransaction(data);
+      globalController.triggerRefresh(DashboardRefreshType.staff);
+
       DesktopToast.show(
         'Salary transaction added successfully',
         backgroundColor: Colors.greenAccent,
@@ -305,6 +307,7 @@ class StaffController extends GetxController {
     try {
       await staffRepository.editSalaryTransaction(id, data);
       await refreshStaffData(staffId); // Refresh data
+      globalController.triggerRefresh(DashboardRefreshType.staff);
     } catch (e) {
       DesktopToast.show(
         'Failed to update salary transaction: $e',
@@ -317,6 +320,7 @@ class StaffController extends GetxController {
     try {
       await staffRepository.deleteSalaryTransaction(id);
       await refreshStaffData(staffId); // Refresh data
+      globalController.triggerRefresh(DashboardRefreshType.staff);
     } catch (e) {
       DesktopToast.show(
         'Failed to delete salary transaction: $e',

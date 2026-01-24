@@ -11,6 +11,7 @@ import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_form_dialog.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 
@@ -51,12 +52,12 @@ class _SaleListPageState extends State<SaleListPage> {
           children: [
             _buildHeader(),
             SizedBox(height: SizeConfig.sh(0.005)),
-            Expanded(child: _buildSaleList()),
+            Expanded(child: _buildSaleList(context)),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openSaleDialog(),
+        onPressed: () => _openSaleDialog(context),
         icon: const Icon(Icons.add),
         label: const Text('Add Sale'),
       ),
@@ -207,7 +208,7 @@ class _SaleListPageState extends State<SaleListPage> {
   }
 
   // ---------------- SALE LIST ----------------
-  Widget _buildSaleList() {
+  Widget _buildSaleList(BuildContext context) {
     return Obx(() {
       if (controller.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
@@ -220,7 +221,7 @@ class _SaleListPageState extends State<SaleListPage> {
         padding: EdgeInsets.symmetric(
             horizontal: SizeConfig.sw(0.01), vertical: SizeConfig.sh(0.01)),
         itemCount: list.length,
-        itemBuilder: (_, i) => _saleTile(list[i]),
+        itemBuilder: (_, i) => _saleTile(context, list[i]),
       );
     });
   }
@@ -231,7 +232,7 @@ class _SaleListPageState extends State<SaleListPage> {
     return Colors.red;
   }
 
-  Widget _saleTile(SaleModel sale) {
+  Widget _saleTile(BuildContext context, SaleModel sale) {
     return Slidable(
       key: ValueKey(sale.id),
       endActionPane: ActionPane(
@@ -241,13 +242,13 @@ class _SaleListPageState extends State<SaleListPage> {
             icon: Icons.edit,
             backgroundColor: Colors.orange,
             label: 'Edit',
-            onPressed: (_) => _openSaleDialog(sale: sale),
+            onPressed: (_) => _openSaleDialog(context, sale: sale),
           ),
           SlidableAction(
             icon: Icons.delete,
             backgroundColor: Colors.red,
             label: 'Delete',
-            onPressed: (_) => controller.deleteSale(sale.id ?? 0),
+            onPressed: (_) => controller.deleteSale(context, sale.id ?? 0),
           ),
         ],
       ),
@@ -329,7 +330,7 @@ class _SaleListPageState extends State<SaleListPage> {
   }
 
   // ---------------- ADD / EDIT SALE ----------------
-  void _openSaleDialog({SaleModel? sale}) {
+  void _openSaleDialog(BuildContext context, {SaleModel? sale}) {
     final isEdit = sale != null;
 
     controller.clearForm();
@@ -582,17 +583,16 @@ class _SaleListPageState extends State<SaleListPage> {
               Container(
                 height: SizeConfig.sh(0.3),
                 width: double.infinity,
-                padding: EdgeInsets.all(
-                    SizeConfig.sw(0.015)), // optional inner padding
+                padding: EdgeInsets.all(SizeConfig.sw(0.015)),
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.grey.shade400, // border color
-                    width: 1, // border thickness
-                  ),
-                  borderRadius: BorderRadius.circular(12), // rounded corners
+                  border: Border.all(color: Colors.grey.shade400, width: 1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Obx(() => Column(
-                      children: controller.selectedItems.map(_itemRow).toList(),
+                      children: controller.selectedItems
+                          .map<Widget>(
+                              (c) => _itemRow(c)) // pass SaleItemController
+                          .toList(),
                     )),
               ),
 
@@ -631,23 +631,36 @@ class _SaleListPageState extends State<SaleListPage> {
           ),
         ),
         onSave: () async {
-          if (controller.validateForm()) return;
+          if (!controller.validateForm()) return; // ✅ fix inversion
 
-          // Assign handled_by & paid_from to controller / model
+          // Update observables
           controller.handledBy.value = staffSelected.value;
           controller.paidFrom.value = paidFrom.value;
+          controller.updateTotals(); // recalc totals & status
 
           if (isEdit) {
-            await controller.updateSale(sale.id!);
+            final success = await controller.updateSale(sale.id!);
+            if (!success) return;
+            controller.clearForm();
+            Get.back(closeOverlays: true);
+            DesktopToast.show(
+              'Sale updated successfully',
+              backgroundColor: Colors.greenAccent,
+            );
           } else {
-            await controller.addSale();
+            final success = await controller.addSale();
+            if (!success) return;
+            controller.clearForm();
+            Get.back(closeOverlays: true);
+            DesktopToast.show(
+              'Sale added successfully',
+              backgroundColor: Colors.greenAccent,
+            );
           }
-          Get.back();
         },
         onDelete: isEdit
             ? () async {
-                await controller.deleteSale(sale.id!);
-                Get.back();
+                await controller.deleteSale(context, sale.id!);
               }
             : null,
       ),
@@ -950,52 +963,52 @@ class _SaleListPageState extends State<SaleListPage> {
             ],
           ),
         ));
-  }
+  }Widget _itemRow(SaleItemController controller) {
+  final item = controller.item;
 
-  Widget _itemRow(SaleItemModel item) {
-    item.initControllerIfNull();
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          children: [
-            Expanded(flex: 3, child: Text(item.itemName)),
-            Expanded(
-              flex: 2,
-              child: TextField(
-                controller: item.quantityController,
-                keyboardType: TextInputType.number,
-                decoration:
-                    const InputDecoration(labelText: 'Qty', isDense: true),
-                onChanged: (_) => controller.updateTotals(),
-              ),
+  return Card(
+    margin: const EdgeInsets.symmetric(vertical: 4),
+    child: Padding(
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: Text(item.itemName)),
+          Expanded(
+            flex: 2,
+            child: TextField(
+              controller: controller.quantityController,
+              keyboardType: TextInputType.number,
+              decoration:
+                  const InputDecoration(labelText: 'Qty', isDense: true),
+              onChanged: (_) => controller.parentController.updateTotals(),
             ),
-            Expanded(
-              flex: 2,
-              child: TextField(
-                controller: item.priceController,
-                keyboardType: TextInputType.number,
-                decoration:
-                    const InputDecoration(labelText: 'Rate', isDense: true),
-                onChanged: (_) => controller.updateTotals(),
-              ),
+          ),
+          Expanded(
+            flex: 2,
+            child: TextField(
+              controller: controller.priceController,
+              keyboardType: TextInputType.number,
+              decoration:
+                  const InputDecoration(labelText: 'Rate', isDense: true),
+              onChanged: (_) => controller.parentController.updateTotals(),
             ),
-            Expanded(
-                flex: 2,
-                child: Obx(() => Text(
-                      'Total: ${item.totalPrice.value.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ))),
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => controller.removeItem(item),
-            ),
-          ],
-        ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Obx(() => Text(
+                  'Total: ${controller.totalPrice.value.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                )),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () => controller.parentController.removeItem(controller),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Future<dynamic> _selectStock() async {
     final searchCtrl = TextEditingController();
