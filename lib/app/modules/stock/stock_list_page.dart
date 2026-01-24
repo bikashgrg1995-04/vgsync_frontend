@@ -166,7 +166,7 @@ class _StockListPageState extends State<StockListPage> {
                             ),
                           ),
                           subtitle: Text(
-                            'Item No: ${stock.itemNo} | Stock: ${stock.stock} | Selling Price: Rs. ${stock.salePrice}',
+                            'Item No: ${stock.itemNo} | Stock: ${stock.stock} | Selling Price: Rs. ${stock.salePrice} | Location: ${stock.block}',
                             style: TextStyle(fontSize: SizeConfig.sw(0.008)),
                           ),
                           onTap: () {
@@ -283,6 +283,9 @@ class _StockListPageState extends State<StockListPage> {
                     readOnly: true,
                   ),
                   SizedBox(height: SizeConfig.sh(0.015)),
+                  buildTextField(stockController.blockController, "Block",
+                      Icons.label),
+                   SizedBox(height: SizeConfig.sh(0.015)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [

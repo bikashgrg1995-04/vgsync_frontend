@@ -46,6 +46,7 @@ class Result {
   int stock;
   double purchasePrice;
   double salePrice;
+  String? block;
   dynamic image;
 
   Result({
@@ -58,11 +59,13 @@ class Result {
     required this.stock,
     required this.purchasePrice,
     required this.salePrice,
+    this.block,
     this.image,
   });
 
   // GETTER to show category as string (for UI)
   String get categoryName => category.toString(); // or map int->name
+  String get displayBlock => block ?? 'N/A';
 
   factory Result.fromJson(Map<String, dynamic> json) => Result(
         id: json["id"] is int
@@ -77,6 +80,7 @@ class Result {
         purchasePrice:
             double.tryParse(json["purchase_price"].toString()) ?? 0.0,
         salePrice: double.tryParse(json["sale_price"].toString()) ?? 0.0,
+        block: json["block"], 
         image: json["image"],
       );
 
@@ -90,6 +94,7 @@ class Result {
         "stock": stock,
         "purchase_price": purchasePrice,
         "sale_price": salePrice,
+        "block": block,
         "image": image,
       };
 }

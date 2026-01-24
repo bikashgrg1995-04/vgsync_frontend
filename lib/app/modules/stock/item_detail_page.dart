@@ -52,6 +52,7 @@ class StockDetailPage extends StatelessWidget {
                   _infoRow("Name", stock.name),
                   _infoRow("Group", stock.group),
                   _infoRow("Model", stock.model),
+                  _infoRow("Location", stock.block??""),
 
                   const Divider(height: 32),
 

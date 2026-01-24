@@ -31,6 +31,7 @@ class StockController extends GetxController {
   late TextEditingController salePriceController;
   late TextEditingController categorySelectController;
   late TextEditingController itemNoController;
+  late TextEditingController blockController;
 
   // ================= LIFECYCLE =================
   @override
@@ -45,6 +46,7 @@ class StockController extends GetxController {
     salePriceController = TextEditingController();
     categorySelectController = TextEditingController();
     itemNoController = TextEditingController();
+    blockController = TextEditingController();
 
     purchasePriceController.addListener(_calculateSalePrice);
 
@@ -63,6 +65,7 @@ class StockController extends GetxController {
     salePriceController.dispose();
     categorySelectController.dispose();
     itemNoController.dispose();
+    blockController.dispose();
 
     super.onClose();
   }
@@ -103,6 +106,7 @@ class StockController extends GetxController {
       purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
       salePrice: double.tryParse(salePriceController.text) ?? 0.0,
       category: int.tryParse(categorySelectController.text) ?? 0,
+      block: blockController.text,
       image: null,
     );
 
@@ -150,6 +154,7 @@ class StockController extends GetxController {
       purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
       salePrice: double.tryParse(salePriceController.text) ?? 0.0,
       category: int.tryParse(categorySelectController.text) ?? 0,
+      block: blockController.text,
       image: oldStock.image,
     );
 
@@ -259,6 +264,7 @@ class StockController extends GetxController {
     purchasePriceController.text = stock.purchasePrice.toString();
     salePriceController.text = stock.salePrice.toString();
     categorySelectController.text = stock.category.toString();
+    blockController.text = stock.block.toString();
   }
 
   void clearForm() {
@@ -270,6 +276,7 @@ class StockController extends GetxController {
     purchasePriceController.clear();
     salePriceController.clear();
     categorySelectController.clear();
+    blockController.clear();
   }
 
   void updateSearch(String query) {
