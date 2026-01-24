@@ -12,6 +12,7 @@ class OrderItem {
   double totalAmount;
   double advance;
   double remainingAmount;
+  String status;
 
   OrderItem({
     required this.id,
@@ -22,6 +23,7 @@ class OrderItem {
     required this.totalAmount,
     required this.advance,
     required this.remainingAmount,
+    required this.status,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,7 @@ class OrderItem {
       totalAmount: (json['total_amount'] ?? 0).toDouble(),
       advance: (json['advance'] ?? 0).toDouble(),
       remainingAmount: (json['remaining_amount'] ?? 0).toDouble(),
+      status: json['status'] ?? 'pending',
     );
   }
 

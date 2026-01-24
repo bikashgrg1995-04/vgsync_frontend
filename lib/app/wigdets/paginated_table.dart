@@ -41,11 +41,15 @@ class ModernTable<T> extends StatelessWidget {
       case "date":
       case "order date":
         return 110;
+      case "remaining":
+        return 100;
 
       case "followup date":
       case "customer":
       case "staff":
         return 130;
+       case "status":
+        return 70;
 
       case "total":
       case "salary":

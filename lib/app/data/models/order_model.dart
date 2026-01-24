@@ -1,9 +1,10 @@
 class OrderItemModel {
   final int? id;
-  final int item; // reference to stock/item id
+  final int item;
   final int quantity;
   final double rate;
   final double totalPrice;
+
 
   OrderItemModel({
     this.id,
@@ -11,6 +12,7 @@ class OrderItemModel {
     required this.quantity,
     required this.rate,
     required this.totalPrice,
+    
   });
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class OrderItemModel {
       quantity: json['quantity'],
       rate: (json['rate'] as num).toDouble(),
       totalPrice: (json['total_price'] as num).toDouble(),
+      
     );
   }
 
@@ -30,6 +33,7 @@ class OrderItemModel {
       'quantity': quantity,
       'rate': rate,
       'total_price': totalPrice,
+      
     };
   }
 }
@@ -44,6 +48,7 @@ class OrderModel {
   final double totalAmount;
   final double advance;
   final double remainingAmount;
+    final String status;
 
   OrderModel({
     required this.id,
@@ -55,6 +60,7 @@ class OrderModel {
     required this.totalAmount,
     required this.advance,
     required this.remainingAmount,
+    required this.status,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -70,6 +76,7 @@ class OrderModel {
       totalAmount: (json['total_amount'] as num).toDouble(),
       advance: (json['advance'] as num).toDouble(),
       remainingAmount: (json['remaining_amount'] as num).toDouble(),
+      status: json['status'] ?? 'pending',
     );
   }
 
@@ -84,6 +91,7 @@ class OrderModel {
       'total_amount': totalAmount,
       'advance': advance,
       'remaining_amount': remainingAmount,
+      'status': status,
     };
   }
 }

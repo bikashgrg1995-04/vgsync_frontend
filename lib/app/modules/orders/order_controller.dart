@@ -15,6 +15,8 @@ class OrderController extends GetxController {
   var orders = <OrderModel>[].obs;
   var isLoading = false.obs;
 
+  final RxString selectedStatus = 'all'.obs;
+
   final searchController = TextEditingController();
   final GlobalController globalController = Get.find<GlobalController>();
 

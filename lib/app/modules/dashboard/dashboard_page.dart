@@ -255,7 +255,7 @@ class _DashboardPageState extends State<DashboardPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-                width: SizeConfig.sw(0.44),
+                width: SizeConfig.sw(0.48),
                 height: SizeConfig.sh(0.48),
                 child: _ordersCard()),
             SizedBox(width: SizeConfig.res(1)),
@@ -334,7 +334,8 @@ class _DashboardPageState extends State<DashboardPage> {
           "Customer",
           "Contact",
           "Total",
-          "Remaining"
+          "Remaining",
+          "Status"
         ],
         cellBuilders: [
           (i, idx) => Text(
@@ -344,6 +345,7 @@ class _DashboardPageState extends State<DashboardPage> {
           (i, _) => Text(i.contactNo),
           (i, _) => Text(i.totalAmount.toStringAsFixed(0)),
           (i, _) => Text(i.remainingAmount.toStringAsFixed(0)),
+          (i, _) => Text(i.status),
         ],
       );
     });

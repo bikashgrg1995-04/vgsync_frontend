@@ -68,6 +68,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 "Order Date: ${widget.order.orderDate.toLocal().toString().split(' ')[0]}",
                 style: TextStyle(fontSize: SizeConfig.sw(0.012))),
             SizedBox(height: SizeConfig.sh(0.02)),
+             Text(
+                "Status: ${widget.order.status.capitalizeFirst}",
+                style: TextStyle(fontSize: SizeConfig.sw(0.012))),
+            SizedBox(height: SizeConfig.sh(0.02)),
 
             // Add Item Button
             Row(

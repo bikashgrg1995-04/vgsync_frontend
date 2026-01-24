@@ -46,6 +46,7 @@ class OrderFormController extends GetxController {
   final contactCtrl = TextEditingController();
   final vehicleCtrl = TextEditingController();
   final advanceCtrl = TextEditingController();
+  RxString status = 'pending'.obs;
 
   final items = <OrderItemForm>[].obs;
 
@@ -79,6 +80,10 @@ class OrderFormController extends GetxController {
 
   double get remainingAmount =>
       totalAmount - (double.tryParse(advanceCtrl.text) ?? 0);
+
+  bool get isPending => status.value == 'pending';
+  bool get isReceived => status.value == 'received';
+  bool get isCompleted => status.value == 'completed';
 
   // ---------------- Item Ops ----------------
   void addItem(Result stock) {
@@ -122,6 +127,7 @@ class OrderFormController extends GetxController {
     contactCtrl.clear();
     vehicleCtrl.clear();
     advanceCtrl.clear();
+    status.value = 'pending';
     for (final i in items) {
       i.dispose();
     }
@@ -136,6 +142,7 @@ class OrderFormController extends GetxController {
       customerName: customerCtrl.text,
       contactNo: contactCtrl.text,
       vehicleModel: vehicleCtrl.text,
+      status: status.value,
       items: items
           .map(
             (i) => OrderItemModel(
@@ -161,6 +168,7 @@ class OrderFormController extends GetxController {
     contactCtrl.text = order.contactNo;
     vehicleCtrl.text = order.vehicleModel;
     advanceCtrl.text = order.advance.toString();
+    status.value = order.status;
 
     items.clear();
 
