@@ -6,8 +6,25 @@ class FollowUpRepository {
 
   FollowUpRepository({required this.followUpService});
 
-  Future<List<FollowUpModel>> getFollowUps() =>
-      followUpService.fetchFollowUps();
+  // ---------------- FETCH ----------------
+  Future<List<FollowUpModel>> getFollowUps({
+    int page = 1,
+    int pageSize = 10,
+  }) {
+    return followUpService.fetchFollowUps(
+      page: page,
+      pageSize: pageSize,
+    );
+  }
 
-  Future<void> terminate(int id) => followUpService.terminateFollowUp(id);
+  // ---------------- TERMINATE ----------------
+  Future<void> terminate(
+    int id, {
+    String? reason,
+  }) {
+    return followUpService.terminateFollowUp(
+      id,
+      reason: reason,
+    );
+  }
 }

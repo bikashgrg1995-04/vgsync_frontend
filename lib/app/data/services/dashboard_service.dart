@@ -50,6 +50,28 @@ class DashboardService {
     }
   }
 
+  // // =======================================================
+  // // 💳 EMI CREDIT — PAGINATED
+  // // =======================================================
+  // Future<Map<String, dynamic>> fetchEMICredit({
+  //   int page = 1,
+  //   int pageSize = 5,
+  // }) async {
+  //   try {
+  //     final response = await _dio.get(
+  //       '/dashboard/credit/emi/', // <-- new EMI endpoint
+  //       queryParameters: {
+  //         'page': page,
+  //         'page_size': pageSize,
+  //       },
+  //     );
+  //     return response.data as Map<String, dynamic>;
+  //   } on DioException catch (e) {
+  //     print('EMI Credit error: ${e.response?.data}');
+  //     rethrow;
+  //   }
+  // }
+
   // =======================================================
   // 📞 FOLLOWUPS TABLE — PAGINATED
   // =======================================================

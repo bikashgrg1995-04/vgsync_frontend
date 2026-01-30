@@ -17,12 +17,10 @@ class SaleRepository {
   /// - Manual UI
   /// - Excel import
   Future<SaleModel> createStockSale(
-    SaleModel sale, {
-    required int handledBy,
-  }) {
+    SaleModel sale) {
     sale
-      ..isServicing = false
-      ..handledBy = handledBy;
+      ..isServicing = false;
+     
 
     return saleService.createSale(sale);
   }
@@ -31,12 +29,9 @@ class SaleRepository {
   /// - Manual UI
   /// - Excel import
   Future<SaleModel> createServicingSale(
-    SaleModel sale, {
-    required int handledBy,
-  }) {
+    SaleModel sale) {
     sale
-      ..isServicing = true
-      ..handledBy = handledBy;
+      ..isServicing = true;
 
     return saleService.createSale(sale);
   }
@@ -48,18 +43,12 @@ class SaleRepository {
   /// - Excel re-import
   Future<SaleModel> updateSale(
     SaleModel sale, {
-    bool? isServicingOverride,
-    int? handledBy,
+    bool? isServicingOverride
   }) {
     // 🔒 prevent accidental change
     if (isServicingOverride != null) {
       sale.isServicing = isServicingOverride;
     }
-
-    if (handledBy != null) {
-      sale.handledBy = handledBy;
-    }
-
     return saleService.updateSale(sale);
   }
 

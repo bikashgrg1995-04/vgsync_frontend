@@ -1,33 +1,35 @@
 import 'package:vgsync_frontend/app/data/models/sale_model.dart';
 
 class FollowUpModel {
+  // ------------------ BASIC ------------------
   final int id;
 
-  // -------- SALE --------
-  final int saleId;
-  final SaleModel? sale; // optional full sale object
+  // ------------------ SALE ------------------
+  final int? saleId;
+  final SaleModel? sale;
 
+  // ------------------ CUSTOMER ------------------
   final String customerName;
   final String? contactNo;
   final String? vehicle;
 
+  // ------------------ DATES ------------------
   final DateTime? deliveryDate;
   final DateTime? postServiceFeedbackDate;
   final DateTime? followUpDate;
 
+  // ------------------ META ------------------
   final String? remarks;
-
-  // -------- ASSIGNMENT --------
-  final String? assignedTo;
   final String? status;
+  final String? assignedTo;
   final String? reason;
 
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   FollowUpModel({
     required this.id,
-    required this.saleId,
+    this.saleId,
     this.sale,
     required this.customerName,
     this.contactNo,
@@ -36,30 +38,28 @@ class FollowUpModel {
     this.postServiceFeedbackDate,
     this.followUpDate,
     this.remarks,
-    this.assignedTo,
     this.status,
+    this.assignedTo,
     this.reason,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
-  /// ---------------- FROM JSON ----------------
+  // ------------------ FROM JSON ------------------
   factory FollowUpModel.fromJson(Map<String, dynamic> json) {
     final dynamic saleJson = json['sale'];
 
-    int resolvedSaleId = 0;
+    int? resolvedSaleId;
     SaleModel? resolvedSale;
 
-    // 🔥 LOGIC MAINTAINED
     if (saleJson is Map) {
-      final Map<String, dynamic> saleMap = Map<String, dynamic>.from(saleJson);
-
-      resolvedSaleId = saleMap['id'] ?? 0;
+      final saleMap = Map<String, dynamic>.from(saleJson);
+      resolvedSaleId = saleMap['id'];
       resolvedSale = SaleModel.fromJson(saleMap);
     } else if (saleJson is int) {
       resolvedSaleId = saleJson;
     } else if (saleJson is String) {
-      resolvedSaleId = int.tryParse(saleJson) ?? 0;
+      resolvedSaleId = int.tryParse(saleJson);
     }
 
     return FollowUpModel(
@@ -70,24 +70,26 @@ class FollowUpModel {
       contactNo: json['contact_no']?.toString(),
       vehicle: json['vehicle'],
       deliveryDate: _parseDate(json['delivery_date']),
-      postServiceFeedbackDate: _parseDate(json['post_service_feedback_date']),
+      postServiceFeedbackDate:
+          _parseDate(json['post_service_feedback_date']),
       followUpDate: _parseDate(json['follow_up_date']),
       remarks: json['remarks'],
-      assignedTo: json['assigned_to'],
       status: json['status'],
+      assignedTo: json['assigned_to'],
       reason: json['reason'],
-      createdAt: _parseDate(json['created_at']) ?? DateTime.now(),
-      updatedAt: _parseDate(json['updated_at']) ?? DateTime.now(),
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: _parseDate(json['updated_at']),
     );
   }
 
-  /// ---------------- DATE PARSER ----------------
+  // ------------------ DATE PARSER ------------------
   static DateTime? _parseDate(dynamic value) {
     if (value == null) return null;
     if (value is DateTime) return value;
     return DateTime.tryParse(value.toString());
   }
 
+  // ------------------ COPY WITH ------------------
   FollowUpModel copyWith({
     int? id,
     int? saleId,
@@ -99,8 +101,8 @@ class FollowUpModel {
     DateTime? postServiceFeedbackDate,
     DateTime? followUpDate,
     String? remarks,
-    String? assignedTo,
     String? status,
+    String? assignedTo,
     String? reason,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -117,8 +119,8 @@ class FollowUpModel {
           postServiceFeedbackDate ?? this.postServiceFeedbackDate,
       followUpDate: followUpDate ?? this.followUpDate,
       remarks: remarks ?? this.remarks,
-      assignedTo: assignedTo ?? this.assignedTo,
       status: status ?? this.status,
+      assignedTo: assignedTo ?? this.assignedTo,
       reason: reason ?? this.reason,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

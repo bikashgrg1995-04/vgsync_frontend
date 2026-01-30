@@ -111,7 +111,6 @@ class SalesController extends GetxController {
   final saleDate = Rx<DateTime?>(null);
   final receivedDate = Rx<DateTime?>(null);
   final deliveryDate = Rx<DateTime?>(null);
-  final handledBy = 0.obs;
 
   final followUpDate = Rx<DateTime?>(null); // 30 days after delivery
   final postServiceFeedbackDate = Rx<DateTime?>(null); // 3 days after delivery
@@ -139,11 +138,6 @@ class SalesController extends GetxController {
     super.onReady();
     _initControllers();
     fetchSales();
-
-    // Set default handledBy if none selected
-    if (handledBy.value == 0 && staffController.staffs.isNotEmpty) {
-      handledBy.value = staffController.staffs.first.id!;
-    }
 
     // Default paidFrom
     if (!['cash', 'online', 'bank'].contains(paidFrom.value)) {
@@ -297,12 +291,10 @@ class SalesController extends GetxController {
       isLoading.value = true;
       final created = isServicing.value
           ? await saleRepository.createServicingSale(
-              sale,
-              handledBy: handledBy.value,
+              sale
             )
           : await saleRepository.createStockSale(
-              sale,
-              handledBy: handledBy.value,
+              sale
             );
 
       sales.add(created);
@@ -409,7 +401,6 @@ class SalesController extends GetxController {
     saleDate.value = sale.saleDate;
     receivedDate.value = sale.receivedDate;
     deliveryDate.value = sale.deliveryDate;
-    handledBy.value = sale.handledBy ?? 0;
 
     // ---------------- FILL ITEMS ----------------
     selectedItems.clear();
@@ -438,7 +429,6 @@ class SalesController extends GetxController {
       saleDate: saleDate.value ?? DateTime.now(),
       customerName: customerNameController.text,
       contactNo: contactNoController.text,
-      handledBy: handledBy.value,
       billNo: billNoController.text,
       remarks: remarksController.text,
       isServicing: isServicing.value,
@@ -495,7 +485,6 @@ class SalesController extends GetxController {
     saleDate.value = null;
     receivedDate.value = null;
     deliveryDate.value = null;
-    handledBy.value = 0;
 
     for (final i in selectedItems) {
       i.dispose();

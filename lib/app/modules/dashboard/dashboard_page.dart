@@ -88,8 +88,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _chartToggle() {
-    final labels = ['Income', 'Expense'];
-    final keys = ['income', 'expense'];
+    final labels = ['Income', 'Expense', 'Installments'];
+    final keys = ['income', 'expense', 'emi'];
 
     return Obx(() => ToggleButtons(
           isSelected:
@@ -151,11 +151,13 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             Expanded(
                 flex: 4,
-                child: SizedBox(height: SizeConfig.sh(0.4), child: DashboardCharts())),
+                child: SizedBox(
+                    height: SizeConfig.sh(0.4), child: DashboardCharts())),
             const SizedBox(width: 16),
             Expanded(
                 flex: 6,
-                child: SizedBox(height: SizeConfig.sh(0.4), child: _creditTable())),
+                child: SizedBox(
+                    height: SizeConfig.sh(0.4), child: _creditTable())),
           ],
         );
       },
@@ -168,6 +170,36 @@ class _DashboardPageState extends State<DashboardPage> {
         return const Center(child: CircularProgressIndicator());
       }
 
+      // --------------- EMI / Installments ----------------
+      if (controller.selectedChart.value == 'emi') {
+        return ModernTable<credit_model.CreditItem>(
+          title: "EMI / Installments",
+          rows: controller.pagedCreditItems,
+          currentPage: controller.creditCurrentPageBackend - 1,
+          totalPages: controller.creditTotalPages,
+          onPageChanged: (page) => controller.fetchCredits(page: page),
+          columnTitles: const [
+            "S/N",
+            "Amount",
+            "Due Date",
+            "Customer",
+            "Contact",
+            "Status",
+          ],
+          cellBuilders: [
+            (i, idx) => Text(
+                  '${idx + 1 + (controller.creditCurrentPageBackend - 1) * controller.credit.emi.pagination.pageSize}',
+                ),
+            (i, _) => Text(i.remainingAmount.toStringAsFixed(0)),
+            (i, _) => Text(i.dueDate?.split("T").first ?? "-"),
+            (i, _) => Text(i.customerName ?? "-"),
+            (i, _) => Text(i.contactNo ?? "-"),
+            (i, _) => Text(i.status),
+          ],
+        );
+      }
+
+      // --------------- Income / Expense Credits ----------------
       return ModernTable<credit_model.CreditItem>(
         title: controller.selectedChart.value == 'income'
             ? "Income Credits : Sales"
@@ -182,17 +214,17 @@ class _DashboardPageState extends State<DashboardPage> {
           "Name",
           "Total",
           "Remaining",
-          "Credit Days"
+          "Credit Days",
         ],
         cellBuilders: [
           (i, idx) {
             final serial = idx +
                 1 +
                 ((controller.creditCurrentPageBackend - 1) *
-                    controller.creditData.value.sale.pagination.pageSize);
+                    controller.credit.sale.pagination.pageSize);
             return Text('$serial');
           },
-          (i, _) => Text(controller.getCreditDate(i).split("T").first),
+          (i, _) => Text(controller.getCreditDate(i)),
           (i, _) => Text(controller.getCreditName(i)),
           (i, _) => Text(controller.getCreditNet(i).toStringAsFixed(0)),
           (i, _) => Text(controller.getCreditRemaining(i).toStringAsFixed(0)),
@@ -215,9 +247,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
       return Row(
         children: [
-          Expanded(child: _creditTile("Net Total", credit.totals.totalNetAmount)),
+          Expanded(
+              child: _creditTile("Net Total", credit.totals.totalNetAmount)),
           Expanded(child: _creditTile("Paid", credit.totals.totalPaidAmount)),
-          Expanded(child: _creditTile("Remaining", credit.totals.totalCreditAmount)),
+          Expanded(
+              child: _creditTile("Remaining", credit.totals.totalCreditAmount)),
         ],
       );
     });
@@ -246,7 +280,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: _lowStockCard()),
             SizedBox(width: SizeConfig.res(1)),
             Expanded(
-              child: SizedBox(height: SizeConfig.sh(0.48), child: _followupCard()),
+              child:
+                  SizedBox(height: SizeConfig.sh(0.48), child: _followupCard()),
             ),
           ],
         ),
@@ -303,7 +338,13 @@ class _DashboardPageState extends State<DashboardPage> {
         currentPage: controller.followupCurrentPageBackend - 1,
         totalPages: controller.followupTotalPages,
         onPageChanged: (page) => controller.fetchFollowups(page: page),
-        columnTitles: const ["S/N", "Followup Date", "Customer", "Contact", "Status"],
+        columnTitles: const [
+          "S/N",
+          "Followup Date",
+          "Customer",
+          "Contact",
+          "Status"
+        ],
         cellBuilders: [
           (i, idx) => Text(
               '${idx + 1 + (controller.followupCurrentPageBackend - 1) * controller.followupData.value.pagination.pageSize}'),

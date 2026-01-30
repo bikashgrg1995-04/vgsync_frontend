@@ -21,17 +21,23 @@ class StockListPage extends StatefulWidget {
 
 class _StockListPageState extends State<StockListPage> {
   final StockController stockController = Get.find<StockController>();
-  late final CategoryController categoryController;
+  final CategoryController categoryController = Get.find<CategoryController>();
   final GlobalController globalController = Get.find<GlobalController>();
 
   @override
   void initState() {
     super.initState();
-    categoryController = Get.find<CategoryController>();
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      categoryController.fetchCategories();
-      stockController.fetchStocks();
+      _loadData();
     });
+  }
+
+  _loadData() async {
+    await categoryController.fetchCategories();
+
+    // 2️⃣ Then fetch stocks
+    await stockController.fetchStocks();
   }
 
   @override
@@ -283,9 +289,9 @@ class _StockListPageState extends State<StockListPage> {
                     readOnly: true,
                   ),
                   SizedBox(height: SizeConfig.sh(0.015)),
-                  buildTextField(stockController.blockController, "Block",
-                      Icons.label),
-                   SizedBox(height: SizeConfig.sh(0.015)),
+                  buildTextField(
+                      stockController.blockController, "Block", Icons.label),
+                  SizedBox(height: SizeConfig.sh(0.015)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [

@@ -12,7 +12,7 @@ import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_form_dialog.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
-import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
+// import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 
 class SaleListPage extends StatefulWidget {
@@ -102,25 +102,25 @@ class _SaleListPageState extends State<SaleListPage> {
                   ),
                 ),
                 SizedBox(width: SizeConfig.sw(0.01)),
-                actionButton(
-                  label: 'Import',
-                  icon: Icons.upload_file,
-                  onPressed: () {
-                    FileUploadDialog.show(
-                      context: context,
-                      title: 'Import Sales (Excel)',
-                      endpoint: '/upload/sales-excel/',
-                      fileKey: 'file',
-                      allowedExtensions: ['xls', 'xlsx'],
-                      onSuccess: () async {
-                        await controller.fetchSales();
-                        globalController
-                            .triggerRefresh(DashboardRefreshType.all);
-                      },
-                    );
-                  },
-                ),
-                SizedBox(width: SizeConfig.sw(0.01)),
+                // actionButton(
+                //   label: 'Import',
+                //   icon: Icons.upload_file,
+                //   onPressed: () {
+                //     FileUploadDialog.show(
+                //       context: context,
+                //       title: 'Import Sales (Excel)',
+                //       endpoint: '/upload/sales-excel/',
+                //       fileKey: 'file',
+                //       allowedExtensions: ['xls', 'xlsx'],
+                //       onSuccess: () async {
+                //         await controller.fetchSales();
+                //         globalController
+                //             .triggerRefresh(DashboardRefreshType.all);
+                //       },
+                //     );
+                //   },
+                // ),
+                // SizedBox(width: SizeConfig.sw(0.01)),
               ],
             ),
             SizedBox(height: SizeConfig.sh(0.02)),
@@ -633,8 +633,7 @@ class _SaleListPageState extends State<SaleListPage> {
         onSave: () async {
           if (!controller.validateForm()) return; // ✅ fix inversion
 
-          // Update observables
-          controller.handledBy.value = staffSelected.value;
+      
           controller.paidFrom.value = paidFrom.value;
           controller.updateTotals(); // recalc totals & status
 

@@ -22,7 +22,7 @@ class DashboardController extends GetxController {
 
   // ---------------- STATE ----------------
   final Rx<ChartPeriod> selectedPeriod = ChartPeriod.daily.obs;
-  final RxString selectedChart = 'income'.obs;
+  final RxString selectedChart = 'income'.obs; // 'income', 'expense', 'emi'
 
   final RxBool isChartsLoading = false.obs;
   final RxBool isCreditLoading = false.obs;
@@ -31,7 +31,7 @@ class DashboardController extends GetxController {
   final RxBool isStaffSalaryLoading = false.obs;
   final RxBool isFollowupLoading = false.obs;
 
-  final Rx<DashboardChartsOnly> chartsData = DashboardChartsOnly.empty().obs;
+  final Rx<DashboardCharts> chartsData = DashboardCharts.empty().obs;
   final Rx<credit_model.DashboardCreditPaginated> creditData =
       credit_model.DashboardCreditPaginated.empty().obs;
 
@@ -79,11 +79,11 @@ class DashboardController extends GetxController {
       isChartsLoading.value = true;
       final newData = await dashboardRepository.getDashboardCharts(
           period: selectedPeriod.value);
-      chartsData.value = newData; // assign new value
-      chartsData.refresh(); // <-- force rebuild
+      chartsData.value = newData;
+      chartsData.refresh();
     } catch (e) {
       print("❌ Charts fetch error: $e");
-      chartsData.value = DashboardChartsOnly.empty();
+      chartsData.value = DashboardCharts.empty();
     } finally {
       isChartsLoading.value = false;
     }
@@ -95,9 +95,11 @@ class DashboardController extends GetxController {
   Future<void> fetchCredits({int page = 0}) async {
     try {
       isCreditLoading.value = true;
+
       final data = await dashboardRepository.getDashboardCredit(
-          period: selectedPeriod.value, page: page + 1);
+          period: selectedPeriod.value, page: page + 1, pageSize: 5);
       creditData.value = data;
+
       creditCurrentPage.value = page;
     } catch (e) {
       print("❌ Credit fetch error: $e");
@@ -108,21 +110,42 @@ class DashboardController extends GetxController {
   }
 
   List<credit_model.CreditItem> get pagedCreditItems {
-    return selectedChart.value == 'income'
-        ? creditData.value.sale.summary
-        : creditData.value.purchase.summary;
+    switch (selectedChart.value) {
+      case 'income':
+        return creditData.value.sale.summary;
+      case 'expense':
+        return creditData.value.purchase.summary;
+      case 'emi':
+        return creditData.value.emi.summary;
+      default:
+        return [];
+    }
   }
 
   int get creditTotalPages {
-    return selectedChart.value == 'income'
-        ? creditData.value.sale.pagination.totalPages
-        : creditData.value.purchase.pagination.totalPages;
+    switch (selectedChart.value) {
+      case 'income':
+        return creditData.value.sale.pagination.totalPages;
+      case 'expense':
+        return creditData.value.purchase.pagination.totalPages;
+      case 'emi':
+        return creditData.value.emi.pagination.totalPages;
+      default:
+        return 1;
+    }
   }
 
   int get creditCurrentPageBackend {
-    return selectedChart.value == 'income'
-        ? creditData.value.sale.pagination.page
-        : creditData.value.purchase.pagination.page;
+    switch (selectedChart.value) {
+      case 'income':
+        return creditData.value.sale.pagination.page;
+      case 'expense':
+        return creditData.value.purchase.pagination.page;
+      case 'emi':
+        return creditData.value.emi.pagination.page;
+      default:
+        return 1;
+    }
   }
 
   // ---------------- TABLES ----------------
@@ -258,49 +281,106 @@ class DashboardController extends GetxController {
     }
   }
 
-  // ---------------- CHART GETTERS ----------------
-  List<ChartPoint> get incomeChart => chartsData.value.income;
-  List<ExpenseChartPoint> get expenseChart => chartsData.value.expense;
-  bool get hasChartData => incomeChart.isNotEmpty || expenseChart.isNotEmpty;
+  // ---------------- CHART GETTERS (Updated for new model) ----------------
 
+  /// Income series (normal sale)
+  List<ChartPoint> get saleIncomeChart => chartsData.value.saleIncome;
+
+  /// Income series (bike sale)
+  List<ChartPoint> get bikeIncomeChart => chartsData.value.bikeIncome;
+
+  /// Expenses per period with breakdown
+  List<ExpensePeriodPoint> get expenseChart => chartsData.value.expense;
+
+  /// Total Profit / Loss per period
+  List<ChartPoint> get profitLossChart => chartsData.value.profitLoss;
+
+  /// Check if any chart data exists
+  bool get hasChartData =>
+      saleIncomeChart.isNotEmpty ||
+      bikeIncomeChart.isNotEmpty ||
+      expenseChart.isNotEmpty;
+
+  /// Flattened Expense Pie chart data (for breakdown across all periods)
   Map<String, double> get expensePieData {
     if (selectedChart.value != 'expense') return {};
+
     final Map<String, double> data = {};
-    for (final e in expenseChart) {
-      if (e.amount > 0 && e.type.toLowerCase() != 'income') {
-        final key = e.type.toLowerCase();
-        data[key] = (data[key] ?? 0) + e.amount;
+    for (final periodPoint in expenseChart) {
+      for (final typePoint in periodPoint.types) {
+        final key = typePoint.type.toLowerCase();
+        data[key] = (data[key] ?? 0) + typePoint.amount;
       }
     }
     return data;
   }
 
+  /// Total Expense across all periods
   double get totalExpense {
     if (selectedChart.value != 'expense') return 0;
-    return expenseChart
-        .where((e) => e.type.toLowerCase() != 'income')
-        .fold(0.0, (sum, e) => sum + e.amount);
+
+    double sum = 0;
+    for (final periodPoint in expenseChart) {
+      sum += periodPoint.amount;
+    }
+    return sum;
   }
 
   // ---------------- CREDIT GETTERS ----------------
   credit_model.DashboardCreditPaginated get credit => creditData.value;
 
-  double get totalNet => selectedChart.value == 'income'
-      ? credit.sale.totals.totalNetAmount
-      : credit.purchase.totals.totalNetAmount;
+  double get totalNet {
+    switch (selectedChart.value) {
+      case 'income':
+        return credit.sale.totals.totalNetAmount;
+      case 'expense':
+        return credit.purchase.totals.totalNetAmount;
+      case 'emi':
+        // Use totalNetAmount for EMI
+        return credit.emi.totals.totalNetAmount;
+      default:
+        return 0;
+    }
+  }
 
-  double get totalPaid => selectedChart.value == 'income'
-      ? credit.sale.totals.totalPaidAmount
-      : credit.purchase.totals.totalPaidAmount;
+  double get totalPaid {
+    switch (selectedChart.value) {
+      case 'income':
+        return credit.sale.totals.totalPaidAmount;
+      case 'expense':
+        return credit.purchase.totals.totalPaidAmount;
+      case 'emi':
+        return credit.emi.totals.totalPaidAmount;
+      default:
+        return 0;
+    }
+  }
 
-  double get totalRemaining => selectedChart.value == 'income'
-      ? credit.sale.totals.totalCreditAmount
-      : credit.purchase.totals.totalCreditAmount;
+  double get totalRemaining {
+    switch (selectedChart.value) {
+      case 'income':
+        return credit.sale.totals.totalCreditAmount;
+      case 'expense':
+        return credit.purchase.totals.totalCreditAmount;
+      case 'emi':
+        // Use totalCreditAmount for EMI remaining
+        return credit.emi.totals.totalCreditAmount;
+      default:
+        return 0;
+    }
+  }
 
   String getCreditName(credit_model.CreditItem item) {
-    return selectedChart.value == 'income'
-        ? (item.customerName ?? "Unknown Customer")
-        : (item.supplierName ?? "Unknown Supplier");
+    switch (selectedChart.value) {
+      case 'income':
+        return item.customerName ?? "Unknown Customer";
+      case 'expense':
+        return item.supplierName ?? "Unknown Supplier";
+      case 'emi':
+        return item.customerName ?? "Unknown Customer";
+      default:
+        return "-";
+    }
   }
 
   double getCreditNet(credit_model.CreditItem item) => item.netTotal;
@@ -310,14 +390,23 @@ class DashboardController extends GetxController {
   int getCreditDays(credit_model.CreditItem item) => item.creditDays;
 
   String getCreditDate(credit_model.CreditItem item) {
-    final raw = selectedChart.value == 'income'
-        ? (item.saleDate ?? "-")
-        : (item.purchaseDate ?? "-");
+    String? raw;
+    switch (selectedChart.value) {
+      case 'income':
+        raw = item.saleDate;
+        break;
+      case 'expense':
+        raw = item.purchaseDate;
+        break;
+      case 'emi':
+        raw = item.dueDate;
+        break;
+    }
 
-    if (raw == "-") return raw;
+    if (raw == null || raw.isEmpty) return "-";
 
-    final dt = DateTime.parse(raw); // Parses as UTC if 'Z' exists
-    final localDate = dt.toLocal(); // Convert to local time
+    final dt = DateTime.parse(raw);
+    final localDate = dt.toLocal();
     return "${localDate.year}-${localDate.month.toString().padLeft(2, '0')}-${localDate.day.toString().padLeft(2, '0')}";
   }
 }

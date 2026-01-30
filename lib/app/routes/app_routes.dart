@@ -20,6 +20,9 @@ abstract class AppRoutes {
   // Sales
   static const sales = '/sales';
 
+  // Bike Sales
+  static const bikesales = '/bikesales';
+
   // Purchases
   static const purchases = '/purchases';
 

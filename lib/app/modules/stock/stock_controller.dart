@@ -50,7 +50,7 @@ class StockController extends GetxController {
 
     purchasePriceController.addListener(_calculateSalePrice);
 
-    await fetchStocks();
+    //await fetchStocks();
   }
 
   @override

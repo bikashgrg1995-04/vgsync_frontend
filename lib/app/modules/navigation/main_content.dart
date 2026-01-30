@@ -2,6 +2,9 @@ import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
+import 'package:vgsync_frontend/app/modules/bikesales/bike_sale_binding.dart';
+import 'package:vgsync_frontend/app/modules/bikesales/bike_sale_controller.dart';
+import 'package:vgsync_frontend/app/modules/bikesales/bike_sale_list_page.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_binding.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_controller.dart';
 import 'package:vgsync_frontend/app/modules/dashboard/dashboard_binding.dart';
@@ -63,6 +66,12 @@ class MainContent extends StatelessWidget {
           SaleBinding().dependencies();
         }
         return SaleListPage();
+      
+      case 'Bike Sales':
+        if(!Get.isRegistered<BikeSaleController>()){
+          BikeSaleBinding().dependencies();
+        }
+        return BikeSaleListPage();
 
       case 'Follow-ups':
         if (!Get.isRegistered<FollowUpController>()) {

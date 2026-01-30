@@ -5,16 +5,19 @@
 class DashboardCreditPaginated {
   CreditSummaryPaginated sale;
   CreditSummaryPaginated purchase;
+  CreditSummaryPaginated emi;
 
   DashboardCreditPaginated({
     required this.sale,
     required this.purchase,
+    required this.emi,
   });
 
   factory DashboardCreditPaginated.fromJson(Map<String, dynamic> json) {
     return DashboardCreditPaginated(
       sale: CreditSummaryPaginated.fromJson(json['sale'] ?? {}),
       purchase: CreditSummaryPaginated.fromJson(json['purchase'] ?? {}),
+      emi: CreditSummaryPaginated.fromJson(json['emi'] ?? {}),
     );
   }
 
@@ -23,6 +26,7 @@ class DashboardCreditPaginated {
     return DashboardCreditPaginated(
       sale: CreditSummaryPaginated.empty(),
       purchase: CreditSummaryPaginated.empty(),
+      emi: CreditSummaryPaginated.empty(),
     );
   }
 
@@ -30,6 +34,7 @@ class DashboardCreditPaginated {
     return {
       'sale': sale.toJson(),
       'purchase': purchase.toJson(),
+      'emi': emi.toJson(),
     };
   }
 }
@@ -81,8 +86,10 @@ class CreditSummaryPaginated {
 // =======================================================
 class CreditItem {
   int id;
-  String? customerName; // sale only
-  String? contactNo; // sale only
+  int? saleId; // EMI only
+  int? installmentNo; // EMI only
+  String? customerName; // sale / emi
+  String? contactNo; // sale / emi
   String? supplierName; // purchase only
   double netTotal;
   double paidAmount;
@@ -91,9 +98,13 @@ class CreditItem {
   int creditDays;
   String? saleDate; // sale only
   String? purchaseDate; // purchase only
+  String? dueDate; // emi only
+  double? amountDue; // emi only
 
   CreditItem({
     required this.id,
+    this.saleId,
+    this.installmentNo,
     this.customerName,
     this.contactNo,
     this.supplierName,
@@ -104,27 +115,39 @@ class CreditItem {
     required this.creditDays,
     this.saleDate,
     this.purchaseDate,
+    this.dueDate,
+    this.amountDue,
   });
 
   factory CreditItem.fromJson(Map<String, dynamic> json) {
     return CreditItem(
       id: json['id'] ?? 0,
+      saleId: json['sale_id'],
+      installmentNo: json['installment_no'],
       customerName: json['customer_name'],
       contactNo: json['contact_no'],
       supplierName: json['supplier_name'],
-      netTotal: (json['net_total'] ?? 0).toDouble(),
+      netTotal: (json['net_total'] ?? json['amount_due'] ?? 0).toDouble(),
       paidAmount: (json['paid_amount'] ?? 0).toDouble(),
-      remainingAmount: (json['remaining_amount'] ?? 0).toDouble(),
+      remainingAmount: (json['remaining_amount'] ??
+              ((json['net_total'] ?? 0) - (json['paid_amount'] ?? 0)))
+          .toDouble(),
       status: json['status'] ?? '',
       creditDays: json['credit_days'] ?? 0,
       saleDate: json['sale_date'],
       purchaseDate: json['purchase_date'],
+      dueDate: json['due_date'],
+      amountDue: json['amount_due'] != null
+          ? (json['amount_due']).toDouble()
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'sale_id': saleId,
+      'installment_no': installmentNo,
       'customer_name': customerName,
       'contact_no': contactNo,
       'supplier_name': supplierName,
@@ -135,6 +158,8 @@ class CreditItem {
       'credit_days': creditDays,
       'sale_date': saleDate,
       'purchase_date': purchaseDate,
+      'due_date': dueDate,
+      'amount_due': amountDue,
     };
   }
 }
@@ -148,19 +173,33 @@ class CreditTotals {
   double totalCreditAmount;
   int count;
 
+  // NEW fields for EMI
+  double totalDueAmount;       // total due for EMI
+  double totalRemainingAmount; // total remaining for EMI
+
   CreditTotals({
     required this.totalNetAmount,
     required this.totalPaidAmount,
     required this.totalCreditAmount,
     required this.count,
+    this.totalDueAmount = 0,         // default 0
+    this.totalRemainingAmount = 0,   // default 0
   });
 
   factory CreditTotals.fromJson(Map<String, dynamic> json) {
     return CreditTotals(
-      totalNetAmount: (json['total_net_amount'] ?? 0).toDouble(),
+      totalNetAmount: (json['total_net_amount'] ??
+              json['total_due_amount'] ?? // fallback
+              0)
+          .toDouble(),
       totalPaidAmount: (json['total_paid_amount'] ?? 0).toDouble(),
-      totalCreditAmount: (json['total_credit_amount'] ?? 0).toDouble(),
+      totalCreditAmount: (json['total_credit_amount'] ??
+              json['total_remaining_amount'] ?? // fallback
+              0)
+          .toDouble(),
       count: json['count'] ?? 0,
+      totalDueAmount: (json['total_due_amount'] ?? 0).toDouble(),
+      totalRemainingAmount: (json['total_remaining_amount'] ?? 0).toDouble(),
     );
   }
 
@@ -171,6 +210,8 @@ class CreditTotals {
       totalPaidAmount: 0,
       totalCreditAmount: 0,
       count: 0,
+      totalDueAmount: 0,
+      totalRemainingAmount: 0,
     );
   }
 
@@ -180,9 +221,12 @@ class CreditTotals {
       'total_paid_amount': totalPaidAmount,
       'total_credit_amount': totalCreditAmount,
       'count': count,
+      'total_due_amount': totalDueAmount,
+      'total_remaining_amount': totalRemainingAmount,
     };
   }
 }
+
 
 // =======================================================
 // PAGINATION

@@ -11,7 +11,7 @@ import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/common_date_picker.dart';
 import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
-import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
+// import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../wigdets/custom_form_dialog.dart';
 
@@ -68,24 +68,24 @@ class _OrderListPageState extends State<OrderListPage> {
                   onPressed: controller.refreshOrders,
                 ),
                 SizedBox(width: SizeConfig.sw(0.01)),
-                actionButton(
-                  label: 'Import',
-                  icon: Icons.upload_file,
-                  onPressed: () {
-                    FileUploadDialog.show(
-                      context: context,
-                      title: 'Import Orders (Excel)',
-                      endpoint: '/upload/order-excel/',
-                      fileKey: 'file',
-                      allowedExtensions: ['xls', 'xlsx'],
-                      onSuccess: () async {
-                        await controller.fetchOrders();
-                        globalCtrl.triggerRefresh(DashboardRefreshType.order);
-                      },
-                    );
-                  },
-                ),
-                SizedBox(width: SizeConfig.sw(0.01)),
+                // actionButton(
+                //   label: 'Import',
+                //   icon: Icons.upload_file,
+                //   onPressed: () {
+                //     FileUploadDialog.show(
+                //       context: context,
+                //       title: 'Import Orders (Excel)',
+                //       endpoint: '/upload/order-excel/',
+                //       fileKey: 'file',
+                //       allowedExtensions: ['xls', 'xlsx'],
+                //       onSuccess: () async {
+                //         await controller.fetchOrders();
+                //         globalCtrl.triggerRefresh(DashboardRefreshType.order);
+                //       },
+                //     );
+                //   },
+                // ),
+                // SizedBox(width: SizeConfig.sw(0.01)),
               ],
             ),
 
@@ -463,8 +463,9 @@ class _OrderListPageState extends State<OrderListPage> {
                           .toLowerCase()
                           .contains(searchCtrl.text.toLowerCase()))
                       .toList();
-                  if (filtered.isEmpty)
+                  if (filtered.isEmpty) {
                     return const Center(child: Text("No stock found"));
+                  }
                   return ListView.builder(
                     itemCount: filtered.length,
                     itemBuilder: (_, i) {

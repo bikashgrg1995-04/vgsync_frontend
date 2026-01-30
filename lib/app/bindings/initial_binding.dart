@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/auth_controller.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/data/repositories/auth_repository.dart';
+import 'package:vgsync_frontend/app/data/repositories/bike_sale_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/category_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/dashboard_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/followup_repository.dart';
@@ -12,6 +13,7 @@ import 'package:vgsync_frontend/app/data/repositories/supplier_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/user_repository.dart';
 import 'package:vgsync_frontend/app/data/services/api_service.dart';
 import 'package:vgsync_frontend/app/data/services/auth_service.dart';
+import 'package:vgsync_frontend/app/data/services/bike_sale_service.dart';
 import 'package:vgsync_frontend/app/data/services/category_service.dart';
 import 'package:vgsync_frontend/app/data/services/dashboard_service.dart';
 import 'package:vgsync_frontend/app/data/services/followup_service.dart';
@@ -20,6 +22,8 @@ import 'package:vgsync_frontend/app/data/services/purchase_service.dart';
 import 'package:vgsync_frontend/app/data/services/sale_service.dart';
 import 'package:vgsync_frontend/app/data/services/supplier_service.dart';
 import 'package:vgsync_frontend/app/data/services/user_service.dart';
+import 'package:vgsync_frontend/app/modules/categories/category_controller.dart';
+import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
 
 class InitialBinding extends Bindings {
   @override
@@ -38,6 +42,7 @@ class InitialBinding extends Bindings {
     Get.put(SaleService(), permanent: true);
     Get.put(PurchaseService(), permanent: true);
     Get.put(FollowUpService(), permanent: true);
+    Get.put(BikeSaleService(), permanent: true);
 
     // -----------------------------
     // Repositories (singleton)
@@ -51,6 +56,7 @@ class InitialBinding extends Bindings {
     Get.put(SaleRepository(saleService: Get.find()), permanent: true);
     Get.put(PurchaseRepository(purchaseService: Get.find()), permanent: true);
     Get.put(FollowUpRepository(followUpService: Get.find()), permanent: true);
+    Get.put(BikeSaleRepository(bikeSaleService: Get.find()), permanent: true);
 
     // -----------------------------
     // Controllers
@@ -65,5 +71,21 @@ class InitialBinding extends Bindings {
       ),
       permanent: true,
     );
+
+     Get.put(
+      StockController(
+        stockRepository: Get.find(),
+      ),
+      permanent: true,
+    );
+
+    // CategoryController
+    Get.put(
+      CategoryController(
+        categoryRepository: Get.find(),
+      ),
+      permanent: true,
+    );
+
   }
 }

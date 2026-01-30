@@ -534,8 +534,7 @@ class SaleDetailPage extends StatelessWidget {
         onSave: () async {
           if (controller.validateForm()) return;
 
-          // Assign handled_by & paid_from to controller / model
-          controller.handledBy.value = staffSelected.value;
+         
           controller.paidFrom.value = paidFrom.value;
 
           if (isEdit) {

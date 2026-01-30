@@ -107,6 +107,11 @@ class Sidebar extends StatelessWidget {
                     title: 'Sales',
                     onTap: () => globalController.changeMenu('Sales'),
                   ),
+                   _menuItem(
+                    icon: Icons.sell,
+                    title: 'Bike Sales',
+                    onTap: () => globalController.changeMenu('Bike Sales'),
+                  ),
                   _menuItem(
                     icon: Icons.alarm,
                     title: 'Follow-ups',

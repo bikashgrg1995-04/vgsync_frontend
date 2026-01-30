@@ -1,104 +1,104 @@
-// app/data/models/dashboard/charts.dart
-// =======================================================
-// CHARTS DASHBOARD (Income / Expense / Profit & Loss)
-// =======================================================
-
-class DashboardChartsOnly {
-  List<ChartPoint> income;
-  List<ExpenseChartPoint> expense;
+class DashboardCharts {
+  List<ChartPoint> saleIncome;
+  List<ChartPoint> bikeIncome;
+  List<ExpensePeriodPoint> expense;
   List<ChartPoint> profitLoss;
 
-  DashboardChartsOnly({
-    required this.income,
+  DashboardCharts({
+    required this.saleIncome,
+    required this.bikeIncome,
     required this.expense,
     required this.profitLoss,
   });
 
-  factory DashboardChartsOnly.fromJson(Map<String, dynamic> json) {
-    return DashboardChartsOnly(
-      income: (json['income'] as List? ?? [])
-          .map((e) => ChartPoint.fromJson(e))
-          .toList(),
-      expense: (json['expense'] as List? ?? [])
-          .map((e) => ExpenseChartPoint.fromJson(e))
-          .toList(),
-      profitLoss: (json['profit_loss'] as List? ?? [])
-          .map((e) => ChartPoint.fromJson(e))
-          .toList(),
-    );
-  }
+  factory DashboardCharts.fromJson(Map<String, dynamic> json) => DashboardCharts(
+        saleIncome: (json['sale_income'] as List? ?? [])
+            .map((e) => ChartPoint.fromJson(e))
+            .toList(),
+        bikeIncome: (json['bike_income'] as List? ?? [])
+            .map((e) => ChartPoint.fromJson(e))
+            .toList(),
+        expense: (json['expense'] as List? ?? [])
+            .map((e) => ExpensePeriodPoint.fromJson(e))
+            .toList(),
+        profitLoss: (json['profit_loss'] as List? ?? [])
+            .map((e) => ChartPoint.fromJson(e))
+            .toList(),
+      );
 
-  Map<String, dynamic> toJson() {
-    return {
-      'income': income.map((e) => e.toJson()).toList(),
-      'expense': expense.map((e) => e.toJson()).toList(),
-      'profit_loss': profitLoss.map((e) => e.toJson()).toList(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'sale_income': saleIncome.map((e) => e.toJson()).toList(),
+        'bike_income': bikeIncome.map((e) => e.toJson()).toList(),
+        'expense': expense.map((e) => e.toJson()).toList(),
+        'profit_loss': profitLoss.map((e) => e.toJson()).toList(),
+      };
 
-  factory DashboardChartsOnly.empty() {
-    return DashboardChartsOnly(
-      income: [],
-      expense: [],
-      profitLoss: [],
-    );
-  }
+  factory DashboardCharts.empty() => DashboardCharts(
+        saleIncome: [],
+        bikeIncome: [],
+        expense: [],
+        profitLoss: [],
+      );
 }
 
-// =======================================================
-// GENERIC CHART POINT (Income / ProfitLoss)
-// =======================================================
+
 class ChartPoint {
-  String date;
+  String period;
   double amount;
 
-  ChartPoint({
-    required this.date,
-    required this.amount,
-  });
+  ChartPoint({required this.period, required this.amount});
 
-  factory ChartPoint.fromJson(Map<String, dynamic> json) {
-    return ChartPoint(
-      date: json['date'] ?? '',
-      amount: (json['amount'] ?? 0).toDouble(),
-    );
-  }
+  factory ChartPoint.fromJson(Map<String, dynamic> json) => ChartPoint(
+        period: json['period'] ?? '',
+        amount: (json['amount'] ?? 0).toDouble(),
+      );
 
-  Map<String, dynamic> toJson() {
-    return {
-      'date': date,
-      'amount': amount,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'period': period,
+        'amount': amount,
+      };
 }
 
-// =======================================================
-// EXPENSE CHART POINT (Pie / Breakdown)
-// =======================================================
-class ExpenseChartPoint {
-  String date;
+
+class ExpenseTypePoint {
   String type;
   double amount;
 
-  ExpenseChartPoint({
-    required this.date,
-    required this.type,
+  ExpenseTypePoint({required this.type, required this.amount});
+
+  factory ExpenseTypePoint.fromJson(Map<String, dynamic> json) => ExpenseTypePoint(
+        type: json['type'] ?? 'other',
+        amount: (json['amount'] ?? 0).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'amount': amount,
+      };
+}
+
+class ExpensePeriodPoint {
+  String period;
+  double amount;
+  List<ExpenseTypePoint> types;
+
+  ExpensePeriodPoint({
+    required this.period,
     required this.amount,
+    required this.types,
   });
 
-  factory ExpenseChartPoint.fromJson(Map<String, dynamic> json) {
-    return ExpenseChartPoint(
-      date: json['date'] ?? '',
-      type: json['type'] ?? 'other',
-      amount: (json['amount'] ?? 0).toDouble(),
-    );
-  }
+  factory ExpensePeriodPoint.fromJson(Map<String, dynamic> json) => ExpensePeriodPoint(
+        period: json['period'] ?? '',
+        amount: (json['amount'] ?? 0).toDouble(),
+        types: (json['types'] as List? ?? [])
+            .map((e) => ExpenseTypePoint.fromJson(e))
+            .toList(),
+      );
 
-  Map<String, dynamic> toJson() {
-    return {
-      'date': date,
-      'type': type,
-      'amount': amount,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'period': period,
+        'amount': amount,
+        'types': types.map((e) => e.toJson()).toList(),
+      };
 }

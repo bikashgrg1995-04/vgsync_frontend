@@ -1,5 +1,3 @@
-// app/data/repositories/dashboard_repository.dart
-
 import 'package:vgsync_frontend/app/data/models/dashboard/charts.dart';
 import 'package:vgsync_frontend/app/data/models/dashboard/credit.dart';
 import 'package:vgsync_frontend/app/data/models/dashboard/followup.dart';
@@ -29,8 +27,6 @@ class DashboardRepository {
         page: page,
         pageSize: pageSize,
       );
-
-      /// ✅ response = { results: [], pagination: {} }
       return FollowupPaginatedResponse.fromJson(response);
     } catch (e) {
       print('Error fetching followups: $e');
@@ -50,8 +46,6 @@ class DashboardRepository {
         page: page,
         pageSize: pageSize,
       );
-
-      /// ✅ response = { results: [], pagination: {} }
       return StockPaginatedResponse.fromJson(response);
     } catch (e) {
       print('Error fetching low stock: $e');
@@ -71,8 +65,6 @@ class DashboardRepository {
         page: page,
         pageSize: pageSize,
       );
-
-      /// ✅ response = { results: [], pagination: {} }
       return OrderPaginatedResponse.fromJson(response);
     } catch (e) {
       print('Error fetching orders: $e');
@@ -92,8 +84,6 @@ class DashboardRepository {
         page: page,
         pageSize: pageSize,
       );
-
-      /// ✅ response = { results: [], pagination: {} }
       return StaffSalaryPaginatedResponse.fromJson(response);
     } catch (e) {
       print('Error fetching staff salaries: $e');
@@ -102,22 +92,23 @@ class DashboardRepository {
   }
 
   // =======================================================
-  // 📊 DASHBOARD CHARTS
+  // 📊 DASHBOARD CHARTS ONLY
   // =======================================================
-  Future<DashboardChartsOnly> getDashboardCharts({
-    ChartPeriod period = ChartPeriod.daily,
+  Future<DashboardCharts> getDashboardCharts({
+    ChartPeriod period = ChartPeriod.monthly,
   }) async {
     try {
       final response = await _dashboardService.fetchCharts(
         period: _mapPeriod(period),
       );
-
-      return DashboardChartsOnly.fromJson(response);
+      return DashboardCharts.fromJson(response);
     } catch (e) {
       print('Error fetching dashboard charts: $e');
-      rethrow;
+      // Return empty charts if API fails
+      return DashboardCharts.empty();
     }
   }
+
 
   // =======================================================
   // 💳 DASHBOARD CREDIT (Paginated)
@@ -133,8 +124,6 @@ class DashboardRepository {
         page: page,
         pageSize: pageSize,
       );
-
-      /// ✅ response already paginated
       return DashboardCreditPaginated.fromJson(response);
     } catch (e) {
       print('Error fetching dashboard credit: $e');
@@ -142,7 +131,26 @@ class DashboardRepository {
     }
   }
 
-  // =======================================================
+  // // =======================================================
+  // // 💳 DASHBOARD EMI CREDIT (Paginated)
+  // // =======================================================
+  // Future<DashboardCreditPaginated> getDashboardEMICredit({
+  //   int page = 1,
+  //   int pageSize = 5,
+  // }) async {
+  //   try {
+  //     final response = await _dashboardService.fetchEMICredit(
+  //       page: page,
+  //       pageSize: pageSize,
+  //     );
+  //     return DashboardCreditPaginated.fromJson(response);
+  //   } catch (e) {
+  //     print('Error fetching EMI dashboard credit: $e');
+  //     rethrow;
+  //   }
+  // }
+
+   // =======================================================
   // HELPER: Map enum to backend string
   // =======================================================
   String _mapPeriod(ChartPeriod period) {
@@ -154,9 +162,9 @@ class DashboardRepository {
       case ChartPeriod.monthly:
         return 'monthly';
       case ChartPeriod.threeMonths:
-        return '3_months';
+        return '3months'; // match backend key
       case ChartPeriod.sixMonths:
-        return '6_months';
+        return '6months'; // match backend key
       case ChartPeriod.yearly:
         return 'yearly';
     }

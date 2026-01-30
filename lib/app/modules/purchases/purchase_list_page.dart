@@ -7,7 +7,7 @@ import 'package:vgsync_frontend/app/modules/purchases/purchase_detail_page.dart'
 import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
-import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
+// import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../data/models/purchase_model.dart';
 import '../../data/models/stock_model.dart';
@@ -93,26 +93,26 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                   icon: Icons.refresh,
                   onPressed: controller.refreshSales,
                 ),
-                SizedBox(width: SizeConfig.sw(0.01)),
-                actionButton(
-                  label: 'Import',
-                  icon: Icons.upload_file,
-                  onPressed: () {
-                    FileUploadDialog.show(
-                      context: context,
-                      title: 'Import Purchases (Excel)',
-                      endpoint: '/upload/purchase-excel/',
-                      fileKey: 'file',
-                      allowedExtensions: ['xls', 'xlsx'],
-                      onSuccess: () async {
-                        await controller.fetchPurchases();
-                        globalController
-                            .triggerRefresh(DashboardRefreshType.all);
-                      },
-                    );
-                  },
-                ),
-                SizedBox(width: SizeConfig.sw(0.01)),
+                // SizedBox(width: SizeConfig.sw(0.01)),
+                // actionButton(
+                //   label: 'Import',
+                //   icon: Icons.upload_file,
+                //   onPressed: () {
+                //     FileUploadDialog.show(
+                //       context: context,
+                //       title: 'Import Purchases (Excel)',
+                //       endpoint: '/upload/purchase-excel/',
+                //       fileKey: 'file',
+                //       allowedExtensions: ['xls', 'xlsx'],
+                //       onSuccess: () async {
+                //         await controller.fetchPurchases();
+                //         globalController
+                //             .triggerRefresh(DashboardRefreshType.all);
+                //       },
+                //     );
+                //   },
+                // ),
+                // SizedBox(width: SizeConfig.sw(0.01)),
               ],
             ),
             SizedBox(height: SizeConfig.sh(0.04)),

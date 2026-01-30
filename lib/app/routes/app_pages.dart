@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import 'package:vgsync_frontend/app/modules/bikesales/bike_sale_binding.dart';
+import 'package:vgsync_frontend/app/modules/bikesales/bike_sale_list_page.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
 import 'package:vgsync_frontend/app/modules/dashboard/dashboard_binding.dart';
 import 'package:vgsync_frontend/app/modules/expenses/expense_binding.dart';
@@ -89,6 +91,15 @@ class AppPages {
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 400),
       binding: SaleBinding(),
+    ),
+
+       // ---------- SALES ----------
+    GetPage(
+      name: AppRoutes.bikesales,
+      page: () => BikeSaleListPage(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 400),
+      binding: BikeSaleBinding(),
     ),
 
     // ---------- PURCHASES ----------

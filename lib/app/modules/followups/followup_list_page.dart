@@ -21,8 +21,7 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
   // ---------------- Helpers ----------------
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
-      case 'completed':
-        return Colors.green;
+    
       case 'terminated':
         return Colors.red;
       case 'pending':
@@ -38,7 +37,7 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
 
   // ---------------- Status Chips ----------------
   Widget _buildStatusChips() {
-    final statuses = ['All', 'Pending', 'Completed', 'Terminated'];
+    final statuses = ['All', 'Pending', 'Terminated'];
 
     return Obx(() => Wrap(
           spacing: SizeConfig.sw(0.02),
@@ -79,6 +78,7 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
       body: Padding(
         padding: EdgeInsets.all(SizeConfig.sw(0.03)),
         child: Column(
+          
           children: [
             SizedBox(height: SizeConfig.sh(0.015)),
 
