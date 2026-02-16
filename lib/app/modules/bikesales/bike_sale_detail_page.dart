@@ -217,7 +217,7 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
                             "Rs. ${sale.initialPaidAmount.toDouble()}")
                         : SizedBox(),
                     _infoRow(
-                        "Total EMI Paid", "Rs. ${sale.paidAmount.toDouble()}"),
+                        "Total Amount Paid", "Rs. ${sale.paidAmount.toDouble()}"),
                     _infoRow("Remaining",
                         "Rs. ${sale.remainingAmount.toStringAsFixed(0)}"),
                   ],

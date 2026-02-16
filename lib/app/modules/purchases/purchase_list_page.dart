@@ -35,7 +35,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
   @override
   void initState() {
     super.initState();
-    controller.fetchPurchases();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchPurchases();
+    });
   }
 
   @override

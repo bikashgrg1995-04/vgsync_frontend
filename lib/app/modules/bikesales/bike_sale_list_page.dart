@@ -176,7 +176,7 @@ class _BikeSaleListPageState extends State<BikeSaleListPage> {
             title: Text("${sale.customerName} (${sale.vehicleModel})",
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(
-                "Total: Rs ${sale.netTotal.toStringAsFixed(0)} | Toatal EMI Paid: Rs ${sale.paidAmount.toStringAsFixed(0)} | Remaining: Rs ${sale.remainingAmount.toStringAsFixed(0)} | Payment: ${sale.paymentMethod.name.toUpperCase()}"),
+                "Total: Rs ${sale.netTotal.toStringAsFixed(0)} | Total Amount Paid: Rs ${sale.paidAmount.toStringAsFixed(0)} | Remaining: Rs ${sale.remainingAmount.toStringAsFixed(0)} | Payment: ${sale.paymentMethod.name.toUpperCase()}"),
             trailing: Chip(
               label: Text(pending ? "PENDING" : "PAID"),
               backgroundColor: pending ? Colors.orange : Colors.green,

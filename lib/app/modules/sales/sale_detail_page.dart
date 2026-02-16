@@ -66,13 +66,7 @@ class SaleDetailPage extends StatelessWidget {
             _row('Bill No', sale.billNo ?? '-'),
             _row('Customer', sale.customerName.capitalizeFirst ?? ""),
             _row('Contact Number', sale.contactNo.toString()),
-            _row(
-                'Handled By',
-                staffController.staffs
-                    .where((v) => v.id == sale.handledBy)
-                    .first
-                    .name
-                    .toString()),
+           
             const Divider(),
             if (sale.isServicing) ...[
               const SizedBox(height: 16),

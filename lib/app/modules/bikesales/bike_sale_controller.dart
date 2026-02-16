@@ -169,36 +169,66 @@ class BikeSaleController extends GetxController {
     selectedPaymentMethod.value = sale.paymentMethod;
   }
 
-  // ------------------ Totals & EMI Calculation ------------------
   void updateTotals() {
-    final total = double.tryParse(totalAmountController.text) ?? 0;
+  final total = double.tryParse(totalAmountController.text) ?? 0;
 
-    double discountAmount = double.tryParse(discountController.text) ?? 0;
-    final discountPercent =
-        double.tryParse(discountPercentController.text) ?? 0;
+  // ---------------- Discount Calculation ----------------
+  double discountAmount = double.tryParse(discountController.text) ?? 0;
+  final discountPercent = double.tryParse(discountPercentController.text) ?? 0;
 
-    if (discountPercent > 0) {
-      discountAmount = total * discountPercent / 100;
-      discountController.text = discountAmount.toStringAsFixed(2);
-    }
+  if (discountPercent > 0) {
+    discountAmount = total * discountPercent / 100;
+    discountController.text = discountAmount.toStringAsFixed(2);
+  }
 
-    final netTotal = total - discountAmount;
-    netTotalController.text = netTotal.toStringAsFixed(2);
+  final netTotal = total - discountAmount;
+  netTotalController.text = netTotal.toStringAsFixed(2);
 
-    final initialPaid = double.tryParse(initialPaidController.text) ?? 0;
-    final paid = double.tryParse(paidAmountController.text) ?? 0;
-    final remaining = netTotal - initialPaid - paid;
-    remainingController.text = remaining.toStringAsFixed(2);
+  // ---------------- Paid Calculation ----------------
+  final initialPaid = double.tryParse(initialPaidController.text) ?? 0;
+  final paidAmount = double.tryParse(paidAmountController.text) ?? 0;
 
-    if ((selectedSaleType.value == SaleType.emi ||
-            selectedSaleType.value == SaleType.downpayment) &&
-        emiTenureController.text.isNotEmpty) {
-      final tenure = int.tryParse(emiTenureController.text) ?? 1;
-      final emiAmount = tenure > 0 ? remaining / tenure : remaining;
+  if (initialPaid < 0 || paidAmount < 0) {
+    DesktopToast.show(
+      "Paid amounts cannot be negative",
+      backgroundColor: Colors.redAccent,
+    );
+    return;
+  }
+
+  double remaining;
+
+  if (paidAmount == 0) {
+    // Downpayment / not yet EMI paid
+    remaining = netTotal - initialPaid;
+  } else {
+    // EMI or full paid case
+    remaining = netTotal - paidAmount;
+  }
+
+  remainingController.text = remaining.toStringAsFixed(2);
+
+  // ---------------- EMI Calculation ----------------
+  if ((selectedSaleType.value == SaleType.emi ||
+          selectedSaleType.value == SaleType.downpayment) &&
+      emiTenureController.text.isNotEmpty) {
+    final tenure = int.tryParse(emiTenureController.text) ?? 0;
+
+    if (tenure > 0) {
+      final emiAmount = remaining / tenure;
       emiAmountController.text = emiAmount.toStringAsFixed(2);
     }
   }
 
+  // ---------------- Full Payment Auto Fix ----------------
+  if (selectedSaleType.value == SaleType.full) {
+    remainingController.text = "0.00";
+  }
+}
+
+  
+  
+  
   // ------------------ Fetch Bike Sales ------------------
   Future<void> fetchBikeSales({int page = 1, bool append = false}) async {
     try {
@@ -438,50 +468,48 @@ class BikeSaleController extends GetxController {
     }
   }
 
-Future<EmiTracker?> updateEmiPayment({
-  required int emiId,
-  required double paidAmount,
-  required DateTime paymentDate,
-  required EMIPaymentMethod paymentMethod,
-  required EmiStatus status,
-  required int parentSaleId,
-}) async {
-  isEmiLoading.value = true;
+  Future<EmiTracker?> updateEmiPayment({
+    required int emiId,
+    required double paidAmount,
+    required DateTime paymentDate,
+    required EMIPaymentMethod paymentMethod,
+    required EmiStatus status,
+    required int parentSaleId,
+  }) async {
+    isEmiLoading.value = true;
 
-  try {
-    // Call repository to update EMI
-    final updatedEmi = await bikeSaleRepository.updateEmiPayment(
-      emiId: emiId,
-      paidAmount: paidAmount,
-      paymentDate: paymentDate,
-      emiPaymentMethod: paymentMethod,
-      status: status,
-    );
+    try {
+      // Call repository to update EMI
+      final updatedEmi = await bikeSaleRepository.updateEmiPayment(
+        emiId: emiId,
+        paidAmount: paidAmount,
+        paymentDate: paymentDate,
+        emiPaymentMethod: paymentMethod,
+        status: status,
+      );
 
-    // Update reactive list safely
-    final index = emiTrackers.indexWhere((e) => e.id == emiId);
-    if (index != -1) {
-      emiTrackers[index] = updatedEmi;
-    } else {
-      emiTrackers.add(updatedEmi);
+      // Update reactive list safely
+      final index = emiTrackers.indexWhere((e) => e.id == emiId);
+      if (index != -1) {
+        emiTrackers[index] = updatedEmi;
+      } else {
+        emiTrackers.add(updatedEmi);
+      }
+
+      return updatedEmi;
+    } catch (e) {
+      // // Log for debugging
+      // print("Error updating EMI: $e\n$st");
+
+      // DesktopToast.show(
+      //   "Failed to update EMI payment",
+      //   backgroundColor: Colors.redAccent,
+      // );
+      return null;
+    } finally {
+      isEmiLoading.value = false;
     }
-
-    
-    return updatedEmi;
-  } catch (e) {
-    // // Log for debugging
-    // print("Error updating EMI: $e\n$st");
-
-    // DesktopToast.show(
-    //   "Failed to update EMI payment",
-    //   backgroundColor: Colors.redAccent,
-    // );
-    return null;
-  } finally {
-    isEmiLoading.value = false;
   }
-}
-
 
   // ------------------ Validation ------------------
   bool validateForm() {
