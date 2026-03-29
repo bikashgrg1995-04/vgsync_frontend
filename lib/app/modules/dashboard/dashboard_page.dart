@@ -342,6 +342,7 @@ class _DashboardPageState extends State<DashboardPage> {
           "S/N",
           "Followup Date",
           "Customer",
+          "Vehicle",
           "Contact",
           "Status"
         ],
@@ -350,6 +351,7 @@ class _DashboardPageState extends State<DashboardPage> {
               '${idx + 1 + (controller.followupCurrentPageBackend - 1) * controller.followupData.value.pagination.pageSize}'),
           (i, _) => Text(i.followUpDate.split("T").first),
           (i, _) => Text(i.customerName),
+          (i, _) => Text(i.vehicle),
           (i, _) => Text(i.contactNo),
           (i, _) => Text(i.status),
         ],

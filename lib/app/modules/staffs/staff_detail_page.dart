@@ -437,7 +437,6 @@ class _StaffDetailPageState extends State<StaffDetailPage> {
               backgroundColor: Colors.greenAccent,
             );
           }
-          await controller.refreshStaffData(staffId);
         },
       ),
     );

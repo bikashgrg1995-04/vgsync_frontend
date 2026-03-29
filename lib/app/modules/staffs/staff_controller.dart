@@ -226,13 +226,13 @@ class StaffController extends GetxController {
       };
 
       await staffRepository.editSalaryTracker(trackerId, trackerData);
+       await refreshStaffData(staffId); // Refresh tracker & transactions
       Get.back(closeOverlays: true);
       DesktopToast.show(
         'Salary Tracker updated successfully',
         backgroundColor: Colors.greenAccent,
       );
 
-      await refreshStaffData(staffId); // Refresh data
       clearControllers();
     } catch (e) {
       DesktopToast.show(
