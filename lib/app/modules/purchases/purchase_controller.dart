@@ -167,7 +167,7 @@ class PurchaseController extends GetxController {
   // =============================== //
   // ITEM MANAGEMENT //
   // ===============================
-  void addItem(Result stock) {
+  void addItem(StockModel stock) {
     // Check if item is already added
     final exists = items.any((i) => i.item.item == stock.id);
     if (exists) {
@@ -181,7 +181,7 @@ class PurchaseController extends GetxController {
     items.add(
       PurchaseItemController(
         item: PurchaseItemModel(
-          item: stock.id!,
+          item: stock.id,
           itemName: stock.name,
           quantity: 1,
           price: stock.purchasePrice,

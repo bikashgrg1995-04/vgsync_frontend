@@ -331,7 +331,7 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
   // ---------------- Stock Picker ----------------
   void _openStockPicker() async {
     final searchCtrl = TextEditingController();
-    final Result? selected = await showDialog<Result>(
+    final StockModel? selected = await showDialog<StockModel>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Select Stock"),

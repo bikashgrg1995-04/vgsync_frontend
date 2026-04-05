@@ -44,14 +44,13 @@ class CategoryController extends GetxController {
 
     try {
       isSaving.value = true;
-      final newCategory = CategoryModel(
-        id: categories.isEmpty ? 1 : categories.last.id + 1, // temporary id
-        name: name,
-      );
+     final newCategory = CategoryModel(
+  id: 0, // dummy (backend ignores)
+  name: name,
+);
 
       final added = await categoryRepository.addCategory(newCategory);
       categories.add(added); // reactive update
-      fetchCategories();
 
       stockController.fetchStocks();
       globalController
@@ -79,7 +78,6 @@ class CategoryController extends GetxController {
       final index = categories.indexWhere((c) => c.id == res.id);
       if (index != -1) categories[index] = res; // reactive update
 
-      fetchCategories();
       stockController.fetchStocks();
       globalController.triggerRefresh(DashboardRefreshType.stock);
 
@@ -96,8 +94,8 @@ class CategoryController extends GetxController {
   Future<void> delete(int id) async {
     ConfirmDialog.show(
       Get.context!,
-      title: "Delete Stock",
-      message: "Are you sure you want to delete this stock item?",
+      title: "Delete Category",
+      message: "Are you sure you want to delete this category?",
       onConfirm: () async {
         await categoryRepository.deleteCategory(id);
         categories.removeWhere((c) => c.id == id);

@@ -706,7 +706,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
         onPressed: () async {
           final searchCtrl = TextEditingController();
 
-          Result? selected = await showDialog<Result>(
+          StockModel? selected = await showDialog<StockModel>(
             context: context,
             builder: (_) => StatefulBuilder(
               builder: (_, setState) => AlertDialog(

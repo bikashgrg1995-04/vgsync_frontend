@@ -8,10 +8,15 @@ class CategoryService {
 Future<List<CategoryModel>> getAllCategories() async {
   final res = await _dio.get('/categories/');
 
-  return ((res.data['results'] ?? []) as List)
-      .map((e) => CategoryModel.fromJson(e))
-      .toList();
+  if (res.data is List) {
+    return (res.data as List)
+        .map((e) => CategoryModel.fromJson(e))
+        .toList();
+  }
+
+  return [];
 }
+
 
   Future<CategoryModel> addCategory(CategoryModel category) async {
     final res = await _dio.post('/categories/', data: category.toJson());

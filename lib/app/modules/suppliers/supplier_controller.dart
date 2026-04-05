@@ -105,6 +105,7 @@ class SupplierController extends GetxController {
         backgroundColor: Colors.greenAccent,
       );
     } catch (e) {
+       print('Supplier fetch error: $e');  // 👈 add this
           DesktopToast.show(
         'Failed to add supplier',
         backgroundColor: Colors.redAccent,

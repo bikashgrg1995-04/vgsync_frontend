@@ -16,7 +16,7 @@ class StockController extends GetxController {
   static const double vatRate = 0.13;
 
   // ================= STATE =================
-  var stocks = <Result>[].obs;
+  var stocks = <StockModel>[].obs;
   var isLoading = false.obs;
 
   final searchQuery = ''.obs;
@@ -97,18 +97,19 @@ class StockController extends GetxController {
 
   // ---------------- Add Stock ----------------
   Future<bool> addStock() async {
-    final stock = Result(
-      itemNo: itemNoController.text,
-      name: nameController.text,
-      group: groupController.text,
-      model: modelController.text,
-      stock: int.tryParse(stockQtyController.text) ?? 0,
-      purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
-      salePrice: double.tryParse(salePriceController.text) ?? 0.0,
-      category: int.tryParse(categorySelectController.text) ?? 0,
-      block: blockController.text,
-      image: null,
-    );
+   final stock = StockModel(
+  id: 0, // 👈 required (backend ignores)
+  itemNo: itemNoController.text,
+  name: nameController.text,
+  group: groupController.text,
+  model: modelController.text,
+  stock: int.tryParse(stockQtyController.text) ?? 0,
+  purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
+  salePrice: double.tryParse(salePriceController.text) ?? 0.0,
+  category: int.tryParse(categorySelectController.text) ?? 0,
+  block: blockController.text,
+  image: null,
+);
 
     if ([stock.name, stock.itemNo].any((e) => e.isEmpty)) {
       DesktopToast.show(
@@ -143,20 +144,20 @@ class StockController extends GetxController {
   }
 
   // ---------------- Update Stock ----------------
-  Future<bool> updateStock(Result oldStock) async {
-    final updated = Result(
-      id: oldStock.id,
-      itemNo: itemNoController.text,
-      name: nameController.text,
-      group: groupController.text,
-      model: modelController.text,
-      stock: int.tryParse(stockQtyController.text) ?? 0,
-      purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
-      salePrice: double.tryParse(salePriceController.text) ?? 0.0,
-      category: int.tryParse(categorySelectController.text) ?? 0,
-      block: blockController.text,
-      image: oldStock.image,
-    );
+  Future<bool> updateStock(StockModel oldStock) async {
+    final updated = StockModel(
+  id: oldStock.id,
+  itemNo: itemNoController.text,
+  name: nameController.text,
+  group: groupController.text,
+  model: modelController.text,
+  stock: int.tryParse(stockQtyController.text) ?? 0,
+  purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
+  salePrice: double.tryParse(salePriceController.text) ?? 0.0,
+  category: int.tryParse(categorySelectController.text) ?? 0,
+  block: blockController.text,
+  image: oldStock.image,
+);
 
     if ([updated.name, updated.itemNo].any((e) => e.isEmpty)) {
       DesktopToast.show(
@@ -247,7 +248,7 @@ class StockController extends GetxController {
   }
 
   // ---------------- Helper Methods ----------------
-  Result? getStockById(int id) {
+  StockModel? getStockById(int id) {
     try {
       return stocks.firstWhere((s) => s.id == id);
     } catch (_) {
@@ -255,7 +256,7 @@ class StockController extends GetxController {
     }
   }
 
-  void fillForm(Result stock) {
+  void fillForm(StockModel stock) {
     itemNoController.text = stock.itemNo;
     nameController.text = stock.name;
     groupController.text = stock.group;

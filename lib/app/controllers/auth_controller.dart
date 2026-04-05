@@ -24,44 +24,73 @@ class AuthController extends GetxController {
 
   RxBool isPasswordHidden = true.obs;
 
+  /// ================= LOGIN =================
   Future<void> login() async {
-    if (usernameController.text.isEmpty || passwordController.text.isEmpty) {
-      DesktopToast.show("Invalid username or password",  backgroundColor: Colors.redAccent,);
+    final username = usernameController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      DesktopToast.show(
+        "Invalid username or password",
+        backgroundColor: Colors.redAccent,
+      );
       return;
     }
 
     try {
       isLoading.value = true;
 
-      await authRepository.login(
-        usernameController.text.trim(),
-        passwordController.text.trim(),
-      );
+      // ✅ Call login and check success
+      final success = await authRepository.login(username, password);
 
+      if (!success) {
+        DesktopToast.show(
+          "Invalid username or password",
+          backgroundColor: Colors.redAccent,
+        );
+        return;
+      }
+
+      // ✅ Fetch user profile
       final profile = await userRepository.getProfile();
-
       user.value = profile;
       isLoggedIn.value = true;
 
-      // ✅ Clear username & password after successful login
+      // ✅ Clear login form
       usernameController.clear();
       passwordController.clear();
 
       Get.offAllNamed(AppRoutes.navigation);
-      DesktopToast.show("Login Successful",  backgroundColor: Colors.greenAccent,);
+      DesktopToast.show(
+        "Login Successful",
+        backgroundColor: Colors.greenAccent,
+      );
     } catch (e) {
-      DesktopToast.show("Invalid username or password",  backgroundColor: Colors.redAccent,);
+      DesktopToast.show(
+        "Something went wrong",
+        backgroundColor: Colors.redAccent,
+      );
+      print("Login error: $e");
     } finally {
       isLoading.value = false;
     }
   }
 
+  /// ================= LOGOUT =================
   Future<void> logout() async {
-    await authRepository.logout();
+    try {
+      await authRepository.logout();
+    } catch (_) {
+      // ignore errors on logout
+    }
+
     user.value = null;
     isLoggedIn.value = false;
 
     Get.offAllNamed(AppRoutes.login);
-    DesktopToast.show("Logout Successful",  backgroundColor: Colors.greenAccent,);
+    DesktopToast.show(
+      "Logout Successful",
+      backgroundColor: Colors.greenAccent,
+    );
   }
 }

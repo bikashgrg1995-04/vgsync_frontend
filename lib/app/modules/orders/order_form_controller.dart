@@ -7,7 +7,7 @@ import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 
 /// ================= Order Item Form =================
 class OrderItemForm {
-  Result stock;
+  StockModel stock;
   TextEditingController qtyCtrl;
   TextEditingController rateCtrl;
 
@@ -86,7 +86,7 @@ class OrderFormController extends GetxController {
   bool get isCompleted => status.value == 'completed';
 
   // ---------------- Item Ops ----------------
-  void addItem(Result stock) {
+  void addItem(StockModel stock) {
     // prevent duplicate items
     if (items.any((e) => e.stock.id == stock.id)) {
       DesktopToast.show(
@@ -147,7 +147,7 @@ class OrderFormController extends GetxController {
           .map(
             (i) => OrderItemModel(
               id: 0,
-              item: i.stock.id ?? 0,
+              item: i.stock.id,
               quantity: int.tryParse(i.qtyCtrl.text) ?? 1,
               rate: double.tryParse(i.rateCtrl.text) ?? i.stock.salePrice,
               totalPrice: i.total.value,
@@ -173,9 +173,9 @@ class OrderFormController extends GetxController {
     items.clear();
 
     for (final i in order.items) {
-      final Result stock = stockCtrl.stocks.firstWhere(
+      final StockModel stock = stockCtrl.stocks.firstWhere(
         (s) => s.id == i.item,
-        orElse: () => Result(
+        orElse: () => StockModel(
           id: i.item,
           name: "Item ${i.item}",
           group: "",

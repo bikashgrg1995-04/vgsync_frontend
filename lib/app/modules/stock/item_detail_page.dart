@@ -17,7 +17,7 @@ class StockDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final Result? stock = controller.getStockById(stockId);
+      final StockModel? stock = controller.getStockById(stockId);
 
       /// If stock deleted
       if (stock == null) {
@@ -107,7 +107,7 @@ class StockDetailPage extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red),
                           onPressed: () {
-                            controller.deleteStock(context, stock.id ?? 0);
+                            controller.deleteStock(context, stock.id);
                           },
                         ),
                       ),
@@ -160,13 +160,13 @@ class StockDetailPage extends StatelessWidget {
     );
   }
 
-  void openEditDialog(BuildContext context, Result stock) {
+  void openEditDialog(BuildContext context, StockModel stock) {
     // _injectCategoryController();
     controller.fillForm(stock);
     _showStockDialog(context, stock: stock);
   }
 
-  void _showStockDialog(BuildContext context, {Result? stock}) {
+  void _showStockDialog(BuildContext context, {StockModel? stock}) {
     final categoryCtrl = Get.find<CategoryController>();
 
     Get.dialog(
@@ -257,7 +257,7 @@ class StockDetailPage extends StatelessWidget {
                       TextButton(
                         onPressed: () {
                           if (stock != null) {
-                            controller.deleteStock(context, stock.id ?? 0);
+                            controller.deleteStock(context, stock.id);
                           }
                           Get.back(closeOverlays: true);
                           DesktopToast.show(

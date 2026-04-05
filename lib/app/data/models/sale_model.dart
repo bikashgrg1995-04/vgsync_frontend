@@ -21,15 +21,15 @@ class SaleItemModel {
   });
 
   /// Factory to create from stock
-  factory SaleItemModel.fromStock(Result stock) {
-    return SaleItemModel(
-      id: null,
-      itemId: stock.id ?? 0,
-      itemName: stock.name,
-      categoryName: stock.categoryName,
-      quantity: stock.stock, // initial stock
-      salePrice: stock.salePrice,
-    );
+  factory SaleItemModel.fromStock(StockModel stock) {
+  return SaleItemModel(
+    id: null,
+    itemId: stock.id,
+    itemName: stock.name,
+    categoryName: stock.categoryName,
+    quantity: 1, // 🔥 important fix (not stock.stock)
+    salePrice: stock.salePrice,
+  );
   }
 
   /// Copy with optional reset quantity

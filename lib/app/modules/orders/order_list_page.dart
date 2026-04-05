@@ -438,7 +438,7 @@ class _OrderListPageState extends State<OrderListPage> {
     final stockCtrl = Get.find<StockController>();
     final searchCtrl = TextEditingController();
 
-    final Result? selected = await showDialog<Result>(
+    final StockModel? selected = await showDialog<StockModel>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Select Stock"),

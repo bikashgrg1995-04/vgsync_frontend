@@ -202,13 +202,13 @@ class _StockListPageState extends State<StockListPage> {
     _showStockDialog(isEditMode: false);
   }
 
-  void openEditDialog(Result stock) {
+  void openEditDialog(StockModel stock) {
     // _injectCategoryController();
     stockController.fillForm(stock);
     _showStockDialog(isEditMode: true, stock: stock);
   }
 
-  void _showStockDialog({required bool isEditMode, Result? stock}) {
+  void _showStockDialog({required bool isEditMode, StockModel? stock}) {
     final categoryCtrl = Get.find<CategoryController>();
 
     Get.dialog(

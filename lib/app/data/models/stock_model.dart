@@ -1,43 +1,13 @@
 import 'dart:convert';
 
-StockModel stockModelFromJson(String str) =>
-    StockModel.fromJson(json.decode(str));
+List<StockModel> stockModelFromJson(String str) =>
+    List<StockModel>.from(json.decode(str).map((x) => StockModel.fromJson(x)));
 
-String stockModelToJson(StockModel data) => json.encode(data.toJson());
+String stockModelToJson(List<StockModel> data) =>
+    json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 
 class StockModel {
-  int count;
-  dynamic next;
-  dynamic previous;
-  List<Result> results;
-
-  StockModel({
-    required this.count,
-    this.next,
-    this.previous,
-    required this.results,
-  });
-
-  factory StockModel.fromJson(Map<String, dynamic> json) => StockModel(
-        count: json["count"] is int
-            ? json["count"]
-            : int.tryParse(json["count"].toString()) ?? 0,
-        next: json["next"],
-        previous: json["previous"],
-        results: List<Result>.from((json["results"] as List)
-            .map((x) => Result.fromJson(x as Map<String, dynamic>))),
-      );
-
-  Map<String, dynamic> toJson() => {
-        "count": count,
-        "next": next,
-        "previous": previous,
-        "results": List<dynamic>.from(results.map((x) => x.toJson())),
-      };
-}
-
-class Result {
-  int? id;
+  int id;
   String itemNo;
   String name;
   String group;
@@ -49,8 +19,8 @@ class Result {
   String? block;
   dynamic image;
 
-  Result({
-    this.id,
+  StockModel({
+    required this.id,
     required this.itemNo,
     required this.name,
     required this.group,
@@ -63,11 +33,10 @@ class Result {
     this.image,
   });
 
-  // GETTER to show category as string (for UI)
-  String get categoryName => category.toString(); // or map int->name
+  String get categoryName => category.toString();
   String get displayBlock => block ?? 'N/A';
 
-  factory Result.fromJson(Map<String, dynamic> json) => Result(
+  factory StockModel.fromJson(Map<String, dynamic> json) => StockModel(
         id: json["id"] is int
             ? json["id"]
             : int.tryParse(json["id"].toString()) ?? 0,
@@ -79,8 +48,9 @@ class Result {
         stock: int.tryParse(json["stock"].toString()) ?? 0,
         purchasePrice:
             double.tryParse(json["purchase_price"].toString()) ?? 0.0,
-        salePrice: double.tryParse(json["sale_price"].toString()) ?? 0.0,
-        block: json["block"], 
+        salePrice:
+            double.tryParse(json["sale_price"].toString()) ?? 0.0,
+        block: json["block"],
         image: json["image"],
       );
 

@@ -5,52 +5,42 @@ import 'api_service.dart';
 class StockService {
   final Dio _dio = ApiService.dio;
 
-  Future<List<Result>> getStocks() async {
+  /// ================= GET ALL =================
+  Future<List<StockModel>> getStocks() async {
     final res = await _dio.get("/stocks/");
-    final data = res.data;
 
-    if (data != null && data['results'] != null && data['results'] is List) {
-      return (data['results'] as List)
-          .map((e) => Result.fromJson(e as Map<String, dynamic>))
+    if (res.data is List) {
+      return (res.data as List)
+          .map((e) => StockModel.fromJson(e))
           .toList();
     }
 
     return [];
   }
 
-  Future<Result> createStock(Result stock) async {
+  /// ================= CREATE =================
+  Future<StockModel> createStock(StockModel stock) async {
     final res = await _dio.post("/stocks/", data: stock.toJson());
 
-    // Handle validation errors
-    if (res.statusCode != 201 && res.data is Map<String, dynamic>) {
+    if (res.statusCode != 201) {
       throw Exception("Validation error: ${res.data}");
     }
 
-    if (res.data is Map<String, dynamic>) {
-      return Result.fromJson(res.data);
-    } else if (res.data is List) {
-      return Result.fromJson(res.data[0]);
-    } else {
-      throw Exception("Unexpected API response: ${res.data}");
-    }
+    return StockModel.fromJson(res.data);
   }
 
-  Future<Result> updateStock(Result stock) async {
+  /// ================= UPDATE =================
+  Future<StockModel> updateStock(StockModel stock) async {
     final res = await _dio.put("/stocks/${stock.id}/", data: stock.toJson());
 
-    if (res.statusCode != 200 && res.data is Map<String, dynamic>) {
+    if (res.statusCode != 200) {
       throw Exception("Validation error: ${res.data}");
     }
 
-    if (res.data is Map<String, dynamic>) {
-      return Result.fromJson(res.data);
-    } else if (res.data is List) {
-      return Result.fromJson(res.data[0]);
-    } else {
-      throw Exception("Unexpected API response: ${res.data}");
-    }
+    return StockModel.fromJson(res.data);
   }
 
+  /// ================= DELETE =================
   Future<void> deleteStock(int id) async {
     await _dio.delete("/stocks/$id/");
   }

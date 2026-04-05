@@ -27,13 +27,15 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   Future<void> _initSplash() async {
-    // Setup AuthController (if not already in bindings)
-    authController = Get.put(
-      AuthController(
-        authRepository: AuthRepository(authService: AuthService()),
-        userRepository: UserRepository(userService: UserService()),
-      ),
-    );
+    // ✅ Use existing AuthController from bindings if available
+    authController = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : Get.put(
+            AuthController(
+              authRepository: AuthRepository(authService: AuthService()),
+              userRepository: UserRepository(userService: UserService()),
+            ),
+          );
 
     // 🔹 Wait for 4 seconds before proceeding
     await Future.delayed(const Duration(seconds: 4));
@@ -48,9 +50,7 @@ class _SplashPageState extends State<SplashPage> {
     // ----------------- CASE 1: access token exists -----------------
     if (accessToken != null) {
       try {
-        // Try fetching profile to validate token
         final profile = await authController.userRepository.getProfile();
-
         authController.user.value = profile;
         authController.isLoggedIn.value = true;
 
@@ -61,24 +61,22 @@ class _SplashPageState extends State<SplashPage> {
       }
     }
 
-    // ----------------- CASE 2: access invalid but refresh exists -----------------
+    // ----------------- CASE 2: refresh token exists -----------------
     if (refreshToken != null) {
       try {
-        final newTokens = await AuthService().refreshToken(refreshToken);
+        final success = await AuthService().refreshToken(refreshToken);
 
-        // Save new tokens
-        await Storage.write('access_token', newTokens['access']);
-        await Storage.write('refresh_token', newTokens['refresh']);
+        if (success) {
+          // 🔹 Profile fetch after token refresh
+          final profile = await authController.userRepository.getProfile();
+          authController.user.value = profile;
+          authController.isLoggedIn.value = true;
 
-        // Fetch profile after refreshing
-        final profile = await authController.userRepository.getProfile();
-        authController.user.value = profile;
-        authController.isLoggedIn.value = true;
-
-        Get.offAllNamed(AppRoutes.dashboard);
-        return;
-      } catch (_) {
-        // Refresh token failed, fallthrough to login
+          Get.offAllNamed(AppRoutes.navigation);
+          return;
+        }
+      } catch (e) {
+        print('Auto login refresh failed: $e');
       }
     }
 
