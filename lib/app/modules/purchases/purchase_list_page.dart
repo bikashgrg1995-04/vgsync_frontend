@@ -12,6 +12,7 @@ import 'purchase_controller.dart';
 import '../../wigdets/custom_form_dialog.dart';
 import '../../modules/stock/stock_controller.dart';
 import '../../themes/app_colors.dart';
+import 'package:vgsync_frontend/app/wigdets/file_upload.dart';
 
 class PurchaseListPage extends StatefulWidget {
   const PurchaseListPage({super.key});
@@ -29,16 +30,16 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
   final ScrollController _itemScrollCtrl = ScrollController();
 
   // ── Color aliases ─────────────────────────────────────────────────────────
-  static const _bg        = AppColors.background;
-  static const _surface   = AppColors.surface;
-  static const _primary   = AppColors.primary;
-  static const _success   = AppColors.success;
-  static const _warning   = AppColors.warning;
-  static const _danger    = AppColors.error;
-  static const _textDark  = AppColors.textPrimary;
-  static const _textMid   = AppColors.textSecondary;
-  static const _border    = AppColors.divider;
-  static const _shadow    = Color(0x0F000000);
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _success = AppColors.success;
+  static const _warning = AppColors.warning;
+  static const _danger = AppColors.error;
+  static const _textDark = AppColors.textPrimary;
+  static const _textMid = AppColors.textSecondary;
+  static const _border = AppColors.divider;
+  static const _shadow = Color(0x0F000000);
 
   @override
   void initState() {
@@ -51,9 +52,12 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
   // ── Status helpers ────────────────────────────────────────────────────────
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'paid':      return _success;
-      case 'partial':   return _warning;
-      default:          return _danger;
+      case 'paid':
+        return _success;
+      case 'partial':
+        return _warning;
+      default:
+        return _danger;
     }
   }
 
@@ -83,7 +87,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
         icon: const Icon(Icons.add, color: AppColors.surface),
         label: const Text(
           'Add Purchase',
-          style: TextStyle(color: AppColors.surface, fontWeight: FontWeight.w600),
+          style:
+              TextStyle(color: AppColors.surface, fontWeight: FontWeight.w600),
         ),
         backgroundColor: _primary,
         elevation: 2,
@@ -121,7 +126,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
+        ],
       ),
       child: Column(
         children: [
@@ -138,13 +145,17 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                   ),
                   child: TextField(
                     controller: controller.searchController,
-                    style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                    style: TextStyle(
+                        fontSize: SizeConfig.res(3.4), color: _textDark),
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
+                      prefixIcon: Icon(Icons.search,
+                          color: _textMid, size: SizeConfig.res(5)),
                       hintText: 'Search purchases...',
-                      hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
+                      hintStyle: TextStyle(
+                          color: _textMid, fontSize: SizeConfig.res(3.4)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
                     ),
                     onChanged: (_) => controller.purchases.refresh(),
                   ),
@@ -157,6 +168,26 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                 onPressed: controller.refreshSales,
                 color: _primary,
               ),
+              SizedBox(width: SizeConfig.sw(0.008)),
+    _headerButton(
+      label: 'Import',
+      icon: Icons.upload_file_outlined,
+      onPressed: () {
+        FileUploadDialog.show(
+          context: context,
+          title: 'Import Purchase Excel',
+          endpoint: '/upload/purchase-excel/',
+          fileKey: 'file',
+          allowedExtensions: ['xls', 'xlsx'],
+          onSuccess: () async {
+            await controller.fetchPurchases();
+            await stockController.fetchStocks();
+            globalController.triggerRefresh(DashboardRefreshType.all);
+          },
+        );
+      },
+      color: _primary,
+    ),
             ],
           ),
           SizedBox(height: SizeConfig.sh(0.018)),
@@ -225,7 +256,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.calendar_today_rounded, size: SizeConfig.res(4), color: _primary),
+                Icon(Icons.calendar_today_rounded,
+                    size: SizeConfig.res(4), color: _primary),
                 SizedBox(width: SizeConfig.sw(0.006)),
                 Text(
                   controller.filterSelectedDate.value == null
@@ -243,7 +275,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                   SizedBox(width: SizeConfig.sw(0.006)),
                   GestureDetector(
                     onTap: () => controller.filterSelectedDate.value = null,
-                    child: Icon(Icons.close_rounded, size: SizeConfig.res(3.5), color: _primary),
+                    child: Icon(Icons.close_rounded,
+                        size: SizeConfig.res(3.5), color: _primary),
                   ),
                 ],
               ],
@@ -254,9 +287,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
 
   Widget _buildStatusFilter() {
     const statusOptions = [
-      {'label': 'All',      'value': 'all'},
-      {'label': 'Paid',     'value': 'paid'},
-      {'label': 'Partial',  'value': 'partial'},
+      {'label': 'All', 'value': 'all'},
+      {'label': 'Paid', 'value': 'paid'},
+      {'label': 'Partial', 'value': 'partial'},
       {'label': 'Not Paid', 'value': 'not_paid'},
     ];
 
@@ -334,9 +367,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
       if (controller.filterSelectedDate.value != null) {
         filtered = filtered
             .where((p) =>
-                p.date.year  == controller.filterSelectedDate.value!.year &&
+                p.date.year == controller.filterSelectedDate.value!.year &&
                 p.date.month == controller.filterSelectedDate.value!.month &&
-                p.date.day   == controller.filterSelectedDate.value!.day)
+                p.date.day == controller.filterSelectedDate.value!.day)
             .toList();
       }
 
@@ -351,7 +384,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.receipt_long_outlined, size: SizeConfig.res(18), color: _border),
+              Icon(Icons.receipt_long_outlined,
+                  size: SizeConfig.res(18), color: _border),
               SizedBox(height: SizeConfig.sh(0.015)),
               Text(
                 'No purchases found',
@@ -363,7 +397,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
       }
 
       return ListView.builder(
-        padding: EdgeInsets.only(bottom: SizeConfig.sh(0.1), right: SizeConfig.sw(0.01)),
+        padding: EdgeInsets.only(
+            bottom: SizeConfig.sh(0.1), right: SizeConfig.sw(0.01)),
         itemCount: filtered.length,
         itemBuilder: (_, index) {
           final purchase = filtered[index];
@@ -384,28 +419,35 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                     foregroundColor: _surface,
                     icon: Icons.edit_rounded,
                     label: 'Edit',
-                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+                    borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(12)),
                   ),
                   SlidableAction(
-                    onPressed: (_) => controller.deletePurchase(context, purchase.id ?? 0),
+                    onPressed: (_) =>
+                        controller.deletePurchase(context, purchase.id ?? 0),
                     backgroundColor: _danger,
                     foregroundColor: _surface,
                     icon: Icons.delete_rounded,
                     label: 'Delete',
-                    borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+                    borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(12)),
                   ),
                 ],
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
-                onTap: () => Get.to(() => PurchaseDetailPage(purchase: purchase)),
+                onTap: () =>
+                    Get.to(() => PurchaseDetailPage(purchase: purchase)),
                 child: Container(
                   padding: EdgeInsets.all(SizeConfig.res(4)),
                   decoration: BoxDecoration(
                     color: _surface,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: _border),
-                    boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+                    boxShadow: const [
+                      BoxShadow(
+                          color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+                    ],
                   ),
                   child: Row(
                     children: [
@@ -442,11 +484,14 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                             SizedBox(height: SizeConfig.sh(0.006)),
                             Row(
                               children: [
-                                Icon(Icons.calendar_today_outlined, size: SizeConfig.res(3.2), color: _textMid),
+                                Icon(Icons.calendar_today_outlined,
+                                    size: SizeConfig.res(3.2), color: _textMid),
                                 SizedBox(width: SizeConfig.sw(0.004)),
                                 Text(
                                   purchase.date.toIso8601String().split('T')[0],
-                                  style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+                                  style: TextStyle(
+                                      fontSize: SizeConfig.res(3.2),
+                                      color: _textMid),
                                 ),
                               ],
                             ),
@@ -468,7 +513,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                 _amountChip(
                                   label: 'Remaining',
                                   value: purchase.remainingAmount,
-                                  color: purchase.remainingAmount > 0 ? _warning : _success,
+                                  color: purchase.remainingAmount > 0
+                                      ? _warning
+                                      : _success,
                                 ),
                               ],
                             ),
@@ -477,7 +524,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                       ),
 
                       // ── Arrow ──────────────────────────────────────────
-                      Icon(Icons.chevron_right_rounded, color: _textMid, size: SizeConfig.res(5)),
+                      Icon(Icons.chevron_right_rounded,
+                          color: _textMid, size: SizeConfig.res(5)),
                     ],
                   ),
                 ),
@@ -512,11 +560,13 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
     );
   }
 
-  Widget _amountChip({required String label, required double value, required Color color}) {
+  Widget _amountChip(
+      {required String label, required double value, required Color color}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: SizeConfig.res(2.6), color: _textMid)),
+        Text(label,
+            style: TextStyle(fontSize: SizeConfig.res(2.6), color: _textMid)),
         Text(
           'Rs. ${value.toStringAsFixed(0)}',
           style: TextStyle(
@@ -531,7 +581,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
 
   // ── Dialog ─────────────────────────────────────────────────────────────────
   void _openAddDialog() => _openDialog();
-  void _openEditDialog(PurchaseModel purchase) => _openDialog(purchase: purchase);
+  void _openEditDialog(PurchaseModel purchase) =>
+      _openDialog(purchase: purchase);
 
   void _openDialog({PurchaseModel? purchase}) {
     final isEditMode = purchase != null;
@@ -612,32 +663,23 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Discount %',
-                              style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+                          Text('Discount Amount',
+                              style: TextStyle(
+                                  fontSize: SizeConfig.res(3.2),
+                                  color: _textMid)),
                           SizedBox(height: SizeConfig.sh(0.005)),
-                          Row(
-                            children: [
-                              SizedBox(
-                                width: SizeConfig.sw(0.05),
-                                height: SizeConfig.sh(0.06),
-                                child: TextField(
-                                  controller: controller.discountController,
-                                  keyboardType: TextInputType.number,
-                                  style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
-                                  decoration: const InputDecoration(isDense: true),
-                                  onChanged: (_) => controller.items.refresh(),
-                                ),
-                              ),
-                              SizedBox(width: SizeConfig.sw(0.02)),
-                              Text(
-                                '(${controller.discountAmount.toStringAsFixed(2)})',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
+                          SizedBox(
+                            width: SizeConfig.sw(0.08), // अलि चौडा
+                            height: SizeConfig.sh(0.06),
+                            child: TextField(
+                              controller: controller.discountAmountController,
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(
                                   fontSize: SizeConfig.res(3.4),
-                                  color: _danger,
-                                ),
-                              ),
-                            ],
+                                  color: _textDark),
+                              decoration: const InputDecoration(isDense: true),
+                              onChanged: (_) => controller.items.refresh(),
+                            ),
                           ),
                         ],
                       ),
@@ -652,7 +694,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Paid Amount',
-                              style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+                              style: TextStyle(
+                                  fontSize: SizeConfig.res(3.2),
+                                  color: _textMid)),
                           SizedBox(height: SizeConfig.sh(0.005)),
                           SizedBox(
                             width: SizeConfig.sw(0.1),
@@ -660,7 +704,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                             child: TextField(
                               controller: controller.paidController,
                               keyboardType: TextInputType.number,
-                              style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                              style: TextStyle(
+                                  fontSize: SizeConfig.res(3.4),
+                                  color: _textDark),
                               decoration: const InputDecoration(isDense: true),
                               onChanged: (_) => controller.items.refresh(),
                             ),
@@ -675,14 +721,18 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                       _totalColumn(
                         label: 'Remaining',
                         value: controller.remaining.value.toStringAsFixed(2),
-                        valueColor: controller.remaining.value > 0 ? _warning : _success,
+                        valueColor: controller.remaining.value > 0
+                            ? _warning
+                            : _success,
                       ),
                       SizedBox(width: SizeConfig.sw(0.04)),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Status',
-                              style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+                              style: TextStyle(
+                                  fontSize: SizeConfig.res(3.2),
+                                  color: _textMid)),
                           SizedBox(height: SizeConfig.sh(0.005)),
                           _statusPill(controller.purchaseStatus.value),
                         ],
@@ -696,11 +746,13 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
         ));
   }
 
-  Widget _totalColumn({required String label, required String value, Color? valueColor}) {
+  Widget _totalColumn(
+      {required String label, required String value, Color? valueColor}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+        Text(label,
+            style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
         SizedBox(height: SizeConfig.sh(0.005)),
         Text(
           value,
@@ -754,10 +806,12 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                         child: TextField(
                           controller: item.quantityController,
                           keyboardType: TextInputType.number,
-                          style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.4), color: _textDark),
                           decoration: InputDecoration(
                             labelText: 'Qty',
-                            labelStyle: TextStyle(fontSize: SizeConfig.res(3), color: _textMid),
+                            labelStyle: TextStyle(
+                                fontSize: SizeConfig.res(3), color: _textMid),
                           ),
                           onChanged: (_) => controller.items.refresh(),
                         ),
@@ -768,10 +822,12 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                         child: TextField(
                           controller: item.priceController,
                           keyboardType: TextInputType.number,
-                          style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.4), color: _textDark),
                           decoration: InputDecoration(
                             labelText: 'Price',
-                            labelStyle: TextStyle(fontSize: SizeConfig.res(3), color: _textMid),
+                            labelStyle: TextStyle(
+                                fontSize: SizeConfig.res(3), color: _textMid),
                           ),
                           onChanged: (_) => controller.items.refresh(),
                         ),
@@ -789,7 +845,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                             )),
                       ),
                       IconButton(
-                        icon: Icon(Icons.delete_outline_rounded, color: _danger, size: SizeConfig.res(5)),
+                        icon: Icon(Icons.delete_outline_rounded,
+                            color: _danger, size: SizeConfig.res(5)),
                         onPressed: () {
                           final itemToRemove = controller.items[i];
                           WidgetsBinding.instance.addPostFrameCallback(
@@ -817,9 +874,12 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
             style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
             decoration: InputDecoration(
               labelText: 'Purchase Date',
-              labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
-              suffixIcon: Icon(Icons.calendar_today_rounded, size: SizeConfig.res(4.5), color: _primary),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              labelStyle:
+                  TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+              suffixIcon: Icon(Icons.calendar_today_rounded,
+                  size: SizeConfig.res(4.5), color: _primary),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: _primary),
@@ -837,13 +897,16 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
             return DropdownButtonFormField<int>(
               value: controller.selectedSupplierId.value,
               items: supplierController.suppliers
-                  .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                  .map(
+                      (s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
                   .toList(),
               onChanged: (v) => controller.selectedSupplierId.value = v,
               decoration: InputDecoration(
                 labelText: 'Supplier',
-                labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                labelStyle:
+                    TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(color: _primary),
@@ -861,13 +924,16 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
             return DropdownButtonFormField<int>(
               value: controller.selectedStaffId.value,
               items: staffController.staffs
-                  .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                  .map(
+                      (s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
                   .toList(),
               onChanged: (v) => controller.selectedStaffId.value = v,
               decoration: InputDecoration(
                 labelText: 'Created By',
-                labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                labelStyle:
+                    TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(color: _primary),
@@ -892,7 +958,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
             context: context,
             builder: (_) => StatefulBuilder(
               builder: (_, setState) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 title: Text(
                   'Select Stock Item',
                   style: TextStyle(
@@ -914,12 +981,15 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                         ),
                         child: TextField(
                           controller: searchCtrl,
-                          style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.4), color: _textDark),
                           decoration: InputDecoration(
                             labelText: 'Search item',
-                            prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
+                            prefixIcon: Icon(Icons.search,
+                                color: _textMid, size: SizeConfig.res(5)),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                            contentPadding: EdgeInsets.symmetric(
+                                vertical: SizeConfig.sh(0.015)),
                           ),
                           onChanged: (_) => setState(() {}),
                         ),
@@ -929,14 +999,19 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                         child: Obx(() {
                           final filtered = stockController.stocks
                               .where((s) =>
-                                  s.name.toLowerCase().contains(searchCtrl.text.toLowerCase()) ||
-                                  s.itemNo.toLowerCase().contains(searchCtrl.text.toLowerCase()))
+                                  s.name.toLowerCase().contains(
+                                      searchCtrl.text.toLowerCase()) ||
+                                  s.itemNo
+                                      .toLowerCase()
+                                      .contains(searchCtrl.text.toLowerCase()))
                               .toList();
                           if (filtered.isEmpty) {
                             return Center(
                               child: Text(
                                 'No items found',
-                                style: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.5)),
+                                style: TextStyle(
+                                    color: _textMid,
+                                    fontSize: SizeConfig.res(3.5)),
                               ),
                             );
                           }
@@ -945,7 +1020,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                             itemBuilder: (_, index) {
                               final s = filtered[index];
                               return Container(
-                                margin: EdgeInsets.only(bottom: SizeConfig.sh(0.008)),
+                                margin: EdgeInsets.only(
+                                    bottom: SizeConfig.sh(0.008)),
                                 decoration: BoxDecoration(
                                   color: _surface,
                                   borderRadius: BorderRadius.circular(12),
@@ -955,13 +1031,15 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                   borderRadius: BorderRadius.circular(12),
                                   onTap: () => Navigator.pop(context, s),
                                   child: Padding(
-                                    padding: EdgeInsets.all(SizeConfig.res(3.5)),
+                                    padding:
+                                        EdgeInsets.all(SizeConfig.res(3.5)),
                                     child: Row(
                                       children: [
                                         Expanded(
                                           flex: 3,
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 s.name,
@@ -973,7 +1051,9 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                               ),
                                               Text(
                                                 'Item No: ${s.itemNo}',
-                                                style: TextStyle(fontSize: SizeConfig.res(3), color: _textMid),
+                                                style: TextStyle(
+                                                    fontSize: SizeConfig.res(3),
+                                                    color: _textMid),
                                               ),
                                             ],
                                           ),
@@ -984,7 +1064,11 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                             'Stock: ${s.stock}',
                                             style: TextStyle(
                                               fontSize: SizeConfig.res(3.4),
-                                              color: s.stock <= 0 ? _danger : s.stock <= 5 ? _warning : _success,
+                                              color: s.stock <= 0
+                                                  ? _danger
+                                                  : s.stock <= 5
+                                                      ? _warning
+                                                      : _success,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -992,16 +1076,24 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                         Expanded(
                                           flex: 3,
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
                                             children: [
                                               Text(
                                                 'Buy: ${s.purchasePrice.toStringAsFixed(2)}',
-                                                style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
+                                                style: TextStyle(
+                                                    fontSize:
+                                                        SizeConfig.res(3.2),
+                                                    color: _textDark),
                                               ),
-                                              SizedBox(height: SizeConfig.sh(0.004)),
+                                              SizedBox(
+                                                  height: SizeConfig.sh(0.004)),
                                               Text(
                                                 'Sell: ${s.salePrice.toStringAsFixed(2)}',
-                                                style: TextStyle(fontSize: SizeConfig.res(3.2), color: _primary),
+                                                style: TextStyle(
+                                                    fontSize:
+                                                        SizeConfig.res(3.2),
+                                                    color: _primary),
                                               ),
                                             ],
                                           ),
@@ -1036,7 +1128,8 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_circle_outline_rounded, size: SizeConfig.res(4.5), color: _primary),
+              Icon(Icons.add_circle_outline_rounded,
+                  size: SizeConfig.res(4.5), color: _primary),
               SizedBox(width: SizeConfig.sw(0.006)),
               Text(
                 'Add Item',

@@ -121,7 +121,6 @@ class SalesController extends GetxController {
   // ---------------- TOTALS ----------------
   final itemsTotal = 0.0.obs;
   final labourCharge = 0.0.obs;
-  final discountPercent = 0.0.obs;
   final discountAmount = 0.0.obs;
   final totalAmount = 0.0.obs;
   final remainingAmount = 0.0.obs;
@@ -130,7 +129,7 @@ class SalesController extends GetxController {
   final paidFrom = 'cash'.obs; // default to 'cash'
   final saleStatus = 'not_paid'.obs;
 
-  late TextEditingController discountController;
+  late TextEditingController discountAmountController;
 
   // ---------------- LIFECYCLE ----------------
   @override
@@ -163,9 +162,9 @@ class SalesController extends GetxController {
     labourChargeController.addListener(updateTotals);
     paidAmountController.addListener(updateTotals);
 
-    discountController = TextEditingController();
+    discountAmountController = TextEditingController();
 
-    discountController.addListener(updateTotals);
+    discountAmountController.addListener(updateTotals);
   }
 
   @override
@@ -184,7 +183,7 @@ class SalesController extends GetxController {
     remarksController.dispose();
     labourChargeController.dispose();
     paidAmountController.dispose();
-    discountController.dispose();
+    discountAmountController.dispose();
 
     // Dispose all selected item controllers
     for (final itemController in selectedItems) {
@@ -216,12 +215,9 @@ class SalesController extends GetxController {
     if (labourCharge.value < 0) labourCharge.value = 0;
 
     // ---------- DISCOUNT ----------
-    double discount = double.tryParse(discountController.text) ?? 0;
-    if (discount < 0) discount = 0;
-    discountPercent.value = discount;
-
-    discountAmount.value =
-        (itemsTotal.value + labourCharge.value) * discount / 100;
+    double discAmt = double.tryParse(discountAmountController.text) ?? 0;
+    if (discAmt < 0) discAmt = 0;
+    discountAmount.value = discAmt;
 
     // ---------- TOTAL & NET ----------
     totalAmount.value = itemsTotal.value + labourCharge.value;
@@ -419,7 +415,7 @@ class SalesController extends GetxController {
   // ---------------- BUILD MODEL ----------------
   SaleModel _buildSale({int? id}) {
     final paid = double.tryParse(paidAmountController.text) ?? 0;
-    final discount = discountPercent.value;
+    final discountPercentage = 0.00;
     final discountAmt = discountAmount.value;
     final net = netAmount.value;
     final remaining = remainingAmount.value;
@@ -438,7 +434,7 @@ class SalesController extends GetxController {
 
       // ---------- TOTALS ----------
       grandTotal: itemsTotal.value + labourCharge.value,
-      discountPercentage: discount,
+      discountPercentage: discountPercentage,
       discountAmount: discountAmt,
       netTotal: net,
       paidAmount: paid,
@@ -494,6 +490,7 @@ class SalesController extends GetxController {
     itemsTotal.value = 0;
     totalAmount.value = 0;
     remainingAmount.value = 0;
+    discountAmountController.clear();
   }
 
   // ---------------- REFRESH ----------------

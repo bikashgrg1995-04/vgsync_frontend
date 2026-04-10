@@ -567,7 +567,7 @@ class _SaleListPageState extends State<SaleListPage> {
             : 'cash';
     final paidFrom = initialPaidFrom.obs;
 
-    controller.discountController.text = (sale?.discountPercentage ?? 0).toString();
+    controller.discountAmountController.text = (sale?.discountAmount ?? 0).toStringAsFixed(2);
     controller.updateTotals();
 
     Get.dialog(
@@ -1143,39 +1143,32 @@ class _SaleListPageState extends State<SaleListPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Discount %',
+                      Text('Discount Amount',
                           style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
                       SizedBox(height: SizeConfig.sh(0.005)),
-                      Row(children: [
-                        SizedBox(
-                          width: SizeConfig.sw(0.05),
-                          height: SizeConfig.sh(0.055),
-                          child: TextField(
-                            controller: controller.discountController,
-                            keyboardType: TextInputType.number,
-                            style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: _primary),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: _border),
-                              ),
+                      SizedBox(
+                        width: SizeConfig.sw(0.05),
+                        height: SizeConfig.sh(0.055),
+                        child: TextField(
+                          controller: controller.discountAmountController,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: _primary),
                             ),
-                            onChanged: (_) => controller.updateTotals(),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: _border),
+                            ),
                           ),
+                          onChanged: (_) => controller.updateTotals(),
                         ),
-                        SizedBox(width: SizeConfig.sw(0.01)),
-                        Text('(${controller.discountAmount.toStringAsFixed(0)})',
-                            style: TextStyle(
-                                fontSize: SizeConfig.res(3.2),
-                                fontWeight: FontWeight.w700,
-                                color: _danger)),
-                      ]),
+                      ),
+                     
                     ],
                   ),
                   SizedBox(width: SizeConfig.sw(0.04)),

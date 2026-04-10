@@ -565,11 +565,7 @@ class _BikeSaleListPageState extends State<BikeSaleListPage> {
                               keyboardType: TextInputType.number,
                               onChanged: (_) => controller.updateTotals())),
                       SizedBox(width: SizeConfig.sw(0.02)),
-                      SizedBox(width: SizeConfig.sw(0.1),
-                          child: _field(controller.discountPercentController, 'Discount %', Icons.percent,
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => controller.updateTotals())),
-                      SizedBox(width: SizeConfig.sw(0.02)),
+                     
                       SizedBox(width: SizeConfig.sw(0.15),
                           child: _field(controller.discountController, 'Discount Amount', Icons.money_off,
                               keyboardType: TextInputType.number,

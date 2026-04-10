@@ -52,7 +52,6 @@ class BikeSaleController extends GetxController {
   final kmDrivenController = TextEditingController();
   final totalAmountController = TextEditingController();
   final discountController = TextEditingController();
-  final discountPercentController = TextEditingController(); // %
   final netTotalController = TextEditingController();
   final initialPaidController = TextEditingController();
   final paidAmountController = TextEditingController();
@@ -91,7 +90,6 @@ class BikeSaleController extends GetxController {
       kmDrivenController,
       totalAmountController,
       discountController,
-      discountPercentController,
       netTotalController,
       initialPaidController,
       paidAmountController,
@@ -120,7 +118,6 @@ class BikeSaleController extends GetxController {
       kmDrivenController,
       totalAmountController,
       discountController,
-      discountPercentController,
       netTotalController,
       initialPaidController,
       paidAmountController,
@@ -151,9 +148,6 @@ class BikeSaleController extends GetxController {
     totalAmountController.text = sale.totalAmount.toStringAsFixed(2);
 
     discountController.text = sale.discount.toStringAsFixed(2);
-    discountPercentController.text = sale.totalAmount > 0
-        ? ((sale.discount / sale.totalAmount) * 100).toStringAsFixed(1)
-        : '0';
 
     netTotalController.text = sale.netTotal.toStringAsFixed(2);
     initialPaidController.text = sale.initialPaidAmount.toStringAsFixed(2);
@@ -170,65 +164,47 @@ class BikeSaleController extends GetxController {
   }
 
   void updateTotals() {
-  final total = double.tryParse(totalAmountController.text) ?? 0;
+    final total = double.tryParse(totalAmountController.text) ?? 0;
+    final discountAmount = double.tryParse(discountController.text) ?? 0;
+    final netTotal = total - discountAmount;
+    netTotalController.text = netTotal.toStringAsFixed(2);
 
-  // ---------------- Discount Calculation ----------------
-  double discountAmount = double.tryParse(discountController.text) ?? 0;
-  final discountPercent = double.tryParse(discountPercentController.text) ?? 0;
+    final initialPaid = double.tryParse(initialPaidController.text) ?? 0;
+    final paidAmount = double.tryParse(paidAmountController.text) ?? 0;
 
-  if (discountPercent > 0) {
-    discountAmount = total * discountPercent / 100;
-    discountController.text = discountAmount.toStringAsFixed(2);
-  }
+    if (initialPaid < 0 || paidAmount < 0) {
+      DesktopToast.show("Paid amounts cannot be negative",
+          backgroundColor: Colors.redAccent);
+      return;
+    }
 
-  final netTotal = total - discountAmount;
-  netTotalController.text = netTotal.toStringAsFixed(2);
+    double remaining;
 
-  // ---------------- Paid Calculation ----------------
-  final initialPaid = double.tryParse(initialPaidController.text) ?? 0;
-  final paidAmount = double.tryParse(paidAmountController.text) ?? 0;
+    if (selectedSaleType.value == SaleType.full) {
+      // ✅ full मा पनि paid amount बाट remaining calculate गर्नु
+      remaining = netTotal - paidAmount;
+      if (remaining < 0) remaining = 0;
+    } else if (selectedSaleType.value == SaleType.downpayment) {
+      remaining =
+          paidAmount > 0 ? netTotal - paidAmount : netTotal - initialPaid;
+    } else {
+      // emi
+      remaining = netTotal - paidAmount;
+    }
 
-  if (initialPaid < 0 || paidAmount < 0) {
-    DesktopToast.show(
-      "Paid amounts cannot be negative",
-      backgroundColor: Colors.redAccent,
-    );
-    return;
-  }
+    remainingController.text = remaining.toStringAsFixed(2);
 
-  double remaining;
-
-  if (paidAmount == 0) {
-    // Downpayment / not yet EMI paid
-    remaining = netTotal - initialPaid;
-  } else {
-    // EMI or full paid case
-    remaining = netTotal - paidAmount;
-  }
-
-  remainingController.text = remaining.toStringAsFixed(2);
-
-  // ---------------- EMI Calculation ----------------
-  if ((selectedSaleType.value == SaleType.emi ||
-          selectedSaleType.value == SaleType.downpayment) &&
-      emiTenureController.text.isNotEmpty) {
-    final tenure = int.tryParse(emiTenureController.text) ?? 0;
-
-    if (tenure > 0) {
-      final emiAmount = remaining / tenure;
-      emiAmountController.text = emiAmount.toStringAsFixed(2);
+    // EMI calculation
+    if ((selectedSaleType.value == SaleType.emi ||
+            selectedSaleType.value == SaleType.downpayment) &&
+        emiTenureController.text.isNotEmpty) {
+      final tenure = int.tryParse(emiTenureController.text) ?? 0;
+      if (tenure > 0) {
+        emiAmountController.text = (remaining / tenure).toStringAsFixed(2);
+      }
     }
   }
 
-  // ---------------- Full Payment Auto Fix ----------------
-  if (selectedSaleType.value == SaleType.full) {
-    remainingController.text = "0.00";
-  }
-}
-
-  
-  
-  
   // ------------------ Fetch Bike Sales ------------------
   Future<void> fetchBikeSales({int page = 1, bool append = false}) async {
     try {
@@ -459,8 +435,7 @@ class BikeSaleController extends GetxController {
     try {
       isEmiLoading.value = true;
       final response = await bikeSaleRepository.getEmiTrackers(saleId: saleId);
-      emiTrackers.value =
-          response.where((e) => e.saleId == saleId).toList();
+      emiTrackers.value = response.where((e) => e.saleId == saleId).toList();
     } catch (e) {
       DesktopToast.show(
         "Failed to fetch emi details: $e",
@@ -540,8 +515,7 @@ class BikeSaleController extends GetxController {
     }
 
     final discountAmt = double.tryParse(discountController.text) ?? 0;
-    final discountPerc = double.tryParse(discountPercentController.text) ?? 0;
-    if (discountAmt < 0 || discountPerc < 0) {
+    if (discountAmt < 0) {
       DesktopToast.show("Discount cannot be negative",
           backgroundColor: Colors.redAccent);
       return false;

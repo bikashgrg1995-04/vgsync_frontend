@@ -81,7 +81,9 @@ class PurchaseController extends GetxController {
   // ---------------- FORM ----------------
   final selectedSupplierId = RxnInt();
   final selectedStaffId = RxnInt(); // Created by staff
-  final discountController = TextEditingController(text: '0');
+ // final discountController = TextEditingController(text: '0');
+
+  final discountAmountController = TextEditingController(text: '0');
   final paidController = TextEditingController(text: '0');
   final dateController = TextEditingController();
 
@@ -108,7 +110,7 @@ class PurchaseController extends GetxController {
     ever(items, (_) => _recalculateTotals());
 
     // Recalculate when discount changes
-    discountController.addListener(_recalculateTotals);
+    discountAmountController.addListener(_recalculateTotals);
 
     // Recalculate when paid amount changes
     paidController.addListener(_recalculateTotals);
@@ -118,8 +120,7 @@ class PurchaseController extends GetxController {
 
   void _recalculateTotals() {
     final t = items.fold<double>(0.0, (s, i) => s + i.totalPrice);
-    final disc = double.tryParse(discountController.text) ?? 0;
-    final discAmount = disc == 0 ? 0 : t * disc / 100;
+    final discAmount = double.tryParse(discountAmountController.text) ?? 0;
 
     final net = t - discAmount;
     final paid = double.tryParse(paidController.text) ?? 0;
@@ -157,9 +158,7 @@ class PurchaseController extends GetxController {
   // CALCULATION BLOCK //
   // ===============================
   double get total => items.fold<double>(0.0, (s, i) => s + i.totalPrice);
-  double get discountPercent => double.tryParse(discountController.text) ?? 0;
-  double get discountAmount =>
-      discountPercent == 0 ? 0 : total * discountPercent / 100;
+  double get discountAmount => double.tryParse(discountAmountController.text) ?? 0;
   double get netTotal => total - discountAmount;
   double get paidAmount => double.tryParse(paidController.text) ?? 0;
   double get grandTotal => total;
@@ -222,7 +221,7 @@ class PurchaseController extends GetxController {
   void clearForm() {
     selectedSupplierId.value = null;
     selectedStaffId.value = null;
-    discountController.text = '0';
+    discountAmountController.text = '0';
     paidController.text = '0';
     dateController.clear();
     clearItems();
@@ -234,13 +233,7 @@ class PurchaseController extends GetxController {
     dateController.text = purchase.date.toIso8601String().split('T')[0];
     paidController.text = purchase.paidAmount.toString();
 
-    // Calculate discount %
-    final itemsTotal = purchase.items
-        .fold<double>(0.0, (sum, i) => sum + (i.price * i.quantity));
-
-    discountController.text = itemsTotal == 0
-        ? '0'
-        : ((purchase.discountAmount * 100) / itemsTotal).toStringAsFixed(2);
+    discountAmountController.text = purchase.discountAmount.toStringAsFixed(2);
 
     // Replace items list completely with fresh controllers
     items.assignAll(
