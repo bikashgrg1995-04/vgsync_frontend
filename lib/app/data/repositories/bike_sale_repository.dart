@@ -10,13 +10,11 @@ class BikeSaleRepository {
   // Bike Sale Methods
   // ===============================
 
-  Future<BikeSaleResponse> getBikeSales({
-    int page = 1,
+  Future<List<BikeSale>> getBikeSales({
     String? saleType,
     String? vehicleType,
   }) {
     return bikeSaleService.getBikeSales(
-      page: page,
       saleType: saleType,
       vehicleType: vehicleType,
     );
@@ -41,7 +39,7 @@ class BikeSaleRepository {
   // EMI Tracker Methods
   // ===============================
 
-  Future<EmiTrackerResponse> getEmiTrackers({int? saleId}) {
+  Future<List<EmiTracker>> getEmiTrackers({int? saleId}) {
     return bikeSaleService.getEmiTrackers(saleId: saleId);
   }
 

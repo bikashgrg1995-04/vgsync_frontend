@@ -182,6 +182,7 @@ class StockController extends GetxController {
 
       return true;
     } catch (e) {
+      print('Error updating stock: $e');
       DesktopToast.show(
         'Failed to update stock',
         backgroundColor: Colors.redAccent,

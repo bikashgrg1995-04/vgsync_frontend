@@ -5,11 +5,16 @@ import 'api_service.dart';
 class BikeSaleService {
   final Dio _dio = ApiService.dio;
 
+  List _extractList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map && data['results'] is List) return data['results'];
+    return [];
+  }
+
   // ===============================
   // GET : List Bike Sales
   // ===============================
-  Future<BikeSaleResponse> getBikeSales({
-    int page = 1,
+  Future<List<BikeSale>> getBikeSales({
     String? saleType,
     String? vehicleType,
   }) async {
@@ -17,13 +22,13 @@ class BikeSaleService {
       final response = await _dio.get(
         "/bike-sales/",
         queryParameters: {
-          'page': page,
           if (saleType != null) 'sale_type': saleType,
           if (vehicleType != null) 'vehicle_type': vehicleType,
         },
       );
-
-      return BikeSaleResponse.fromJson(response.data);
+      return _extractList(response.data)
+          .map((e) => BikeSale.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       throw Exception("Failed to fetch bike sales: $e");
     }
@@ -34,11 +39,7 @@ class BikeSaleService {
   // ===============================
   Future<BikeSale> createBikeSale(BikeSale sale) async {
     try {
-      final response = await _dio.post(
-        "/bike-sales/",
-        data: sale.toJson(),
-      );
-
+      final response = await _dio.post("/bike-sales/", data: sale.toJson());
       return BikeSale.fromJson(response.data);
     } catch (e) {
       throw Exception("Failed to create bike sale: $e");
@@ -53,11 +54,7 @@ class BikeSaleService {
     required Map<String, dynamic> data,
   }) async {
     try {
-      final response = await _dio.patch(
-        "/bike-sales/$saleId/",
-        data: data,
-      );
-
+      final response = await _dio.patch("/bike-sales/$saleId/", data: data);
       return BikeSale.fromJson(response.data);
     } catch (e) {
       throw Exception("Failed to update bike sale: $e");
@@ -78,7 +75,7 @@ class BikeSaleService {
   // ===============================
   // GET : EMI Tracker List
   // ===============================
-  Future<EmiTrackerResponse> getEmiTrackers({int? saleId}) async {
+  Future<List<EmiTracker>> getEmiTrackers({int? saleId}) async {
     try {
       final response = await _dio.get(
         "/emi-tracker/",
@@ -86,8 +83,9 @@ class BikeSaleService {
           if (saleId != null) 'sale': saleId,
         },
       );
-
-      return EmiTrackerResponse.fromJson(response.data);
+      return _extractList(response.data)
+          .map((e) => EmiTracker.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       throw Exception("Failed to fetch EMI trackers: $e");
     }
@@ -95,14 +93,13 @@ class BikeSaleService {
 
   // ===============================
   // PATCH : Update EMI Payment
-  // NOTE: Pass emiId, NOT saleId
   // ===============================
   Future<EmiTracker> updateEmiPayment({
     required int emiId,
     required double paidAmount,
     required DateTime paymentDate,
-    required EMIPaymentMethod emiPaymentMethod, // from bike_sale_model
-    required EmiStatus status, // enum
+    required EMIPaymentMethod emiPaymentMethod,
+    required EmiStatus status,
   }) async {
     try {
       final response = await _dio.patch(
@@ -114,7 +111,6 @@ class BikeSaleService {
           "status": status == EmiStatus.paid ? "Paid" : "Pending",
         },
       );
-
       return EmiTracker.fromJson(response.data);
     } catch (e) {
       throw Exception("Failed to update EMI payment: $e");

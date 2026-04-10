@@ -234,13 +234,16 @@ class BikeSaleController extends GetxController {
     try {
       isLoading.value = true;
       currentPage = page;
-      final response = await bikeSaleRepository.getBikeSales(page: page);
+      final response = await bikeSaleRepository.getBikeSales(
+        saleType: saleTypeFilter.value?.name,
+        vehicleType: selectedVehicleType.value.name,
+      );
       if (append) {
-        bikeSales.addAll(response.results);
+        bikeSales.addAll(response);
       } else {
-        bikeSales.value = response.results;
+        bikeSales.value = response;
       }
-      totalCount = response.count;
+      totalCount = response.length;
     } catch (e) {
       DesktopToast.show(
         "Failed to fetch Bike sale: $e",
@@ -457,7 +460,7 @@ class BikeSaleController extends GetxController {
       isEmiLoading.value = true;
       final response = await bikeSaleRepository.getEmiTrackers(saleId: saleId);
       emiTrackers.value =
-          response.results.where((e) => e.saleId == saleId).toList();
+          response.where((e) => e.saleId == saleId).toList();
     } catch (e) {
       DesktopToast.show(
         "Failed to fetch emi details: $e",

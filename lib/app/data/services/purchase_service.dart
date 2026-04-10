@@ -5,15 +5,19 @@ import 'package:vgsync_frontend/app/data/services/api_service.dart';
 class PurchaseService {
   final Dio _dio = ApiService.dio;
 
+  List _extractList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map && data['results'] is List) return data['results'];
+    return [];
+  }
+
   Future<List<PurchaseModel>> getPurchases() async {
     final res = await _dio.get("/purchases/");
-    final data = res.data;
-    if (data != null && data['results'] != null && data['results'] is List) {
-      return (data['results'] as List)
-          .map((e) => PurchaseModel.fromJson(e))
-          .toList();
-    }
-    return [];
+    
+    return _extractList(res.data)
+        .map((e) => PurchaseModel.fromJson(e))
+        .toList();
+
   }
 
   Future<PurchaseModel> createPurchase(PurchaseModel purchase) async {

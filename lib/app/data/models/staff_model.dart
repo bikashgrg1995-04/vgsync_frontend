@@ -1,11 +1,24 @@
-// app/data/models/staff_model.dart
+// ---------------- Helper ----------------
+int? _parseInt(dynamic v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  return int.tryParse(v.toString());
+}
+
+double _parseDouble(dynamic v) {
+  if (v == null) return 0.0;
+  if (v is double) return v;
+  if (v is int) return v.toDouble();
+  return double.tryParse(v.toString()) ?? 0.0;
+}
+
 // ---------------- Staff Model ----------------
 class StaffModel {
   final int? id;
   final String name;
   final String phone;
   final String? email;
-  final String? address; // ✅ nullable
+  final String? address;
   final String designation;
   final String designationDisplay;
   final String salaryMode;
@@ -29,18 +42,18 @@ class StaffModel {
 
   factory StaffModel.fromJson(Map<String, dynamic> json) {
     return StaffModel(
-      id: json['id'],
+      id: _parseInt(json['id']),
       name: json['name'] ?? '',
       phone: json['phone'] ?? '',
-      email: json['email'] ?? '',
-      address: json['address'], // null-safe
+      email: json['email'],
+      address: json['address'],
       designation: json['designation'] ?? '',
       designationDisplay: json['designation_display'] ?? '',
       salaryMode: json['salary_mode'] ?? '',
       salaryModeDisplay: json['salary_mode_display'] ?? '',
       joinedDate: json['joined_date'] != null && json['joined_date'] != ''
-        ? DateTime.tryParse(json['joined_date'])
-        : null,
+          ? DateTime.tryParse(json['joined_date'])
+          : null,
       isActive: json['is_active'] ?? false,
     );
   }
@@ -80,25 +93,23 @@ class SalaryTrackerModel {
 
   factory SalaryTrackerModel.fromJson(Map<String, dynamic> json) {
     return SalaryTrackerModel(
-      id: json['id'],
-      staff: json['staff'],
-      totalSalary: (json['total_salary'] ?? 0).toDouble(),
-      paymentDate: json['payment_date'],
-      paymentMode: json['payment_mode'],
-      transactionType: json['transaction_type'],
+      id: _parseInt(json['id']) ?? 0,
+      staff: _parseInt(json['staff']) ?? 0,
+      totalSalary: _parseDouble(json['total_salary']),
+      paymentDate: json['payment_date'] ?? '',
+      paymentMode: json['payment_mode'] ?? '',
+      transactionType: json['transaction_type'] ?? '',
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'staff': staff,
-      'total_salary': totalSalary,
-      'payment_date': paymentDate,
-      'payment_mode': paymentMode,
-      'transaction_type': transactionType,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'staff': staff,
+        'total_salary': totalSalary,
+        'payment_date': paymentDate,
+        'payment_mode': paymentMode,
+        'transaction_type': transactionType,
+      };
 }
 
 // ---------------- Salary Transaction Model ----------------
@@ -125,27 +136,25 @@ class SalaryTransactionModel {
 
   factory SalaryTransactionModel.fromJson(Map<String, dynamic> json) {
     return SalaryTransactionModel(
-      id: json['id'],
-      staff: json['staff'],
-      transactionType: json['transaction_type'],
-      amount: (json['amount'] ?? 0).toDouble(),
-      paymentDate: json['payment_date'],
-      paymentMode: json['payment_mode'],
+      id: _parseInt(json['id']) ?? 0,
+      staff: _parseInt(json['staff']) ?? 0,
+      transactionType: json['transaction_type'] ?? '',
+      amount: _parseDouble(json['amount']),
+      paymentDate: json['payment_date'] ?? '',
+      paymentMode: json['payment_mode'] ?? '',
       note: json['note'] ?? '',
-      salaryTracker: json['salary_tracker'],
+      salaryTracker: _parseInt(json['salary_tracker']) ?? 0,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'staff': staff,
-      'transaction_type': transactionType,
-      'amount': amount,
-      'payment_date': paymentDate,
-      'payment_mode': paymentMode,
-      'note': note,
-      'salary_tracker': salaryTracker,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'staff': staff,
+        'transaction_type': transactionType,
+        'amount': amount,
+        'payment_date': paymentDate,
+        'payment_mode': paymentMode,
+        'note': note,
+        'salary_tracker': salaryTracker,
+      };
 }

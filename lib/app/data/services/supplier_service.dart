@@ -1,22 +1,25 @@
+import 'package:dio/dio.dart';
 import 'package:vgsync_frontend/app/data/services/api_service.dart';
+import '../models/supplier_model.dart';
 
 class SupplierService {
-  final _dio = ApiService.dio;
+  final Dio _dio = ApiService.dio;
 
-  Future<List<dynamic>> getAllSuppliers() async {
-    final response = await _dio.get('/suppliers/');
-    return response.data['results'] ?? [];
+  Future<List<SupplierModel>> getAllSuppliers() async {
+    final res = await _dio.get('/suppliers/');
+    final data = res.data;
+    final List list = data is Map ? (data['results'] ?? []) : data;
+    return list.map((e) => SupplierModel.fromJson(e)).toList();
   }
 
-  Future<Map<String, dynamic>> addSupplier(Map<String, dynamic> data) async {
-    final response = await _dio.post('/suppliers/', data: data);
-    return response.data;
+  Future<SupplierModel> addSupplier(Map<String, dynamic> data) async {
+    final res = await _dio.post('/suppliers/', data: data);
+    return SupplierModel.fromJson(res.data);
   }
 
-  Future<Map<String, dynamic>> updateSupplier(
-      int id, Map<String, dynamic> data) async {
-    final response = await _dio.put('/suppliers/$id/', data: data);
-    return response.data;
+  Future<SupplierModel> updateSupplier(int id, Map<String, dynamic> data) async {
+    final res = await _dio.put('/suppliers/$id/', data: data);
+    return SupplierModel.fromJson(res.data);
   }
 
   Future<void> deleteSupplier(int id) async {

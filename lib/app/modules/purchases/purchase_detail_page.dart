@@ -7,6 +7,7 @@ import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_controller.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
+import '../../themes/app_colors.dart';
 
 class PurchaseDetailPage extends StatefulWidget {
   final PurchaseModel purchase;
@@ -22,14 +23,33 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
   final SupplierController supplierController = Get.find();
   final StaffController staffController = Get.find();
 
+  // ── Color aliases ─────────────────────────────────────────────────────────
+  static const _bg       = AppColors.background;
+  static const _surface  = AppColors.surface;
+  static const _primary  = AppColors.primary;
+  static const _success  = AppColors.success;
+  static const _warning  = AppColors.warning;
+  static const _danger   = AppColors.error;
+  static const _textDark = AppColors.textPrimary;
+  static const _textMid  = AppColors.textSecondary;
+  static const _border   = AppColors.divider;
+  static const _shadow   = Color(0x0F000000);
+
   @override
   void initState() {
     super.initState();
-    // Delay reactive updates until after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.populateForm(widget.purchase);
       controller.clearModifiedFlag();
     });
+  }
+
+  Color _statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'paid':    return _success;
+      case 'partial': return _warning;
+      default:        return _danger;
+    }
   }
 
   @override
@@ -37,31 +57,19 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
     SizeConfig.init(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Purchase Details"),
-        actions: [
-          Obx(() {
-            if (!controller.isModified.value) return const SizedBox.shrink();
-            return IconButton(
-              tooltip: "Save Purchase",
-              icon: const Icon(Icons.save),
-              onPressed: _savePurchase,
-            );
-          }),
-        ],
-      ),
+      backgroundColor: _bg,
+      appBar: _buildAppBar(),
       body: Padding(
-        padding: EdgeInsets.all(SizeConfig.sw(0.03)),
+        padding: EdgeInsets.all(SizeConfig.res(4)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildInfoStrip(),
+            SizedBox(height: SizeConfig.sh(0.02)),
             _buildHeader(),
-            const SizedBox(height: 12),
-            _buildAddItemButton(),
-            const SizedBox(height: 8),
-            _buildItemTableHeader(),
-            Expanded(child: _buildItemList()),
-            const SizedBox(height: 12),
+            SizedBox(height: SizeConfig.sh(0.018)),
+            _buildTableSection(),
+            SizedBox(height: SizeConfig.sh(0.016)),
             _buildTotals(),
           ],
         ),
@@ -69,198 +77,614 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
     );
   }
 
-  // ---------------- Header: Supplier, Staff, Date, Paid ----------------
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            // ---------------- Purchase Date ----------------
-            Expanded(
-              child: TextField(
-                controller: controller.dateController,
-                readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Purchase Date',
-                  suffixIcon: Icon(Icons.calendar_today),
+  // ── AppBar ────────────────────────────────────────────────────────────────
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: _surface,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      leading: GestureDetector(
+        onTap: () => Get.back(),
+        child: Container(
+          margin: EdgeInsets.all(SizeConfig.res(2.5)),
+          decoration: BoxDecoration(
+            color: _bg,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _border),
+          ),
+          child: Icon(Icons.arrow_back_rounded, color: _textDark, size: SizeConfig.res(5)),
+        ),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Purchase Details',
+            style: TextStyle(
+              fontSize: SizeConfig.res(4.8),
+              fontWeight: FontWeight.w800,
+              color: _textDark,
+              letterSpacing: -0.3,
+            ),
+          ),
+          Text(
+            'PO #${widget.purchase.id ?? "-"}',
+            style: TextStyle(fontSize: SizeConfig.res(3), color: _textMid),
+          ),
+        ],
+      ),
+      actions: [
+        Obx(() {
+          if (!controller.isModified.value) return const SizedBox.shrink();
+          return Padding(
+            padding: EdgeInsets.only(right: SizeConfig.sw(0.012)),
+            child: GestureDetector(
+              onTap: _savePurchase,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: SizeConfig.sw(0.016),
+                  vertical: SizeConfig.sh(0.010),
                 ),
-                onTap: () => controller.pickPurchaseDate(context),
+                decoration: BoxDecoration(
+                  color: _primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.save_rounded, size: SizeConfig.res(4), color: _surface),
+                    SizedBox(width: SizeConfig.sw(0.005)),
+                    Text(
+                      'Save',
+                      style: TextStyle(
+                        fontSize: SizeConfig.res(3.4),
+                        fontWeight: FontWeight.w700,
+                        color: _surface,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(width: 12),
-
-            // ---------------- Supplier Dropdown ----------------
-            Expanded(
-              child: Obx(() {
-                // Show loading if empty
-                if (supplierController.suppliers.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                return DropdownButtonFormField<int>(
-                  value: controller.selectedSupplierId.value,
-                  items: supplierController.suppliers
-                      .map((s) => DropdownMenuItem(
-                            value: s.id,
-                            child: Text(s.name),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    controller.selectedSupplierId.value = v;
-                    controller.isModified.value = true;
-                  },
-                  decoration: const InputDecoration(
-                      labelText: 'Supplier', border: OutlineInputBorder()),
-                );
-              }),
-            ),
-            const SizedBox(width: 12),
-
-            // ---------------- Staff Dropdown ----------------
-            Expanded(
-              child: Obx(() {
-                if (staffController.staffs.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                return DropdownButtonFormField<int>(
-                  value: controller.selectedStaffId.value,
-                  items: staffController.staffs
-                      .map((s) => DropdownMenuItem(
-                            value: s.id,
-                            child: Text(s.name),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    controller.selectedStaffId.value = v;
-                    controller.isModified.value = true;
-                  },
-                  decoration: const InputDecoration(
-                      labelText: 'Created By', border: OutlineInputBorder()),
-                );
-              }),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-
-        // ---------------- Paid Amount ----------------
-        TextField(
-          controller: controller.paidController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: "Paid Amount"),
-          onChanged: (_) => controller.isModified.value = true,
-        ),
+          );
+        }),
       ],
-    );
-  }
-
-  // ---------------- Add Item Button ----------------
-  Widget _buildAddItemButton() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: ElevatedButton.icon(
-        onPressed: _openStockPicker,
-        icon: const Icon(Icons.add),
-        label: const Text("Add Item"),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(height: 1, color: _border),
       ),
     );
   }
 
-  // ---------------- Item Table Header ----------------
-  Widget _buildItemTableHeader() {
+  // ── Info strip ────────────────────────────────────────────────────────────
+  Widget _buildInfoStrip() {
+    final status = widget.purchase.status;
     return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      color: Colors.grey.shade300,
+      padding: EdgeInsets.symmetric(
+        horizontal: SizeConfig.sw(0.016),
+        vertical: SizeConfig.sh(0.014),
+      ),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _border),
+        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+      ),
       child: Row(
-        children: const [
-          SizedBox(
-              width: 40,
-              child: Center(
-                  child: Text("SN",
-                      style: TextStyle(fontWeight: FontWeight.bold)))),
+        children: [
+          // Status accent
+          Container(
+            width: SizeConfig.sw(0.006),
+            height: SizeConfig.sh(0.06),
+            decoration: BoxDecoration(
+              color: _statusColor(status),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          SizedBox(width: SizeConfig.sw(0.014)),
           Expanded(
-              child:
-                  Text("Item", style: TextStyle(fontWeight: FontWeight.bold))),
-          SizedBox(
-              width: 70,
-              child: Center(
-                  child: Text("Qty",
-                      style: TextStyle(fontWeight: FontWeight.bold)))),
-          SizedBox(
-              width: 90,
-              child: Center(
-                  child: Text("Rate",
-                      style: TextStyle(fontWeight: FontWeight.bold)))),
-          SizedBox(
-              width: 90,
-              child: Center(
-                  child: Text("Total",
-                      style: TextStyle(fontWeight: FontWeight.bold)))),
-          SizedBox(width: 36),
+            child: Row(
+              children: [
+                _infoTile(
+                  icon: Icons.tag_rounded,
+                  label: 'Order ID',
+                  value: '#${widget.purchase.id ?? "-"}',
+                ),
+                _verticalDivider(),
+                _infoTile(
+                  icon: Icons.calendar_today_rounded,
+                  label: 'Date',
+                  value: widget.purchase.date.toIso8601String().split('T')[0],
+                ),
+                _verticalDivider(),
+                _infoTile(
+                  icon: Icons.local_shipping_outlined,
+                  label: 'Supplier',
+                  value: supplierController.suppliers
+                      .firstWhere(
+                        (s) => s.id == widget.purchase.supplier,
+                        orElse: () => supplierController.suppliers.first,
+                      )
+                      .name,
+                ),
+                _verticalDivider(),
+                // Status pill
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Status',
+                        style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+                    SizedBox(height: SizeConfig.sh(0.004)),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: SizeConfig.sw(0.010),
+                        vertical: SizeConfig.sh(0.005),
+                      ),
+                      decoration: BoxDecoration(
+                        color: _statusColor(status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: _statusColor(status).withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        status.replaceAll('_', ' ').toUpperCase(),
+                        style: TextStyle(
+                          fontSize: SizeConfig.res(2.8),
+                          fontWeight: FontWeight.w700,
+                          color: _statusColor(status),
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // ---------------- Item List ----------------
+  Widget _infoTile({required IconData icon, required String label, required String value}) {
+    return Expanded(
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(SizeConfig.res(2)),
+            decoration: BoxDecoration(
+              color: _primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: SizeConfig.res(4), color: _primary),
+          ),
+          SizedBox(width: SizeConfig.sw(0.008)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: SizeConfig.res(3.4),
+                  fontWeight: FontWeight.w700,
+                  color: _textDark,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _verticalDivider() {
+    return Container(
+      width: 1,
+      height: SizeConfig.sh(0.05),
+      color: _border,
+      margin: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.012)),
+    );
+  }
+
+  // ── Header: dropdowns + paid ──────────────────────────────────────────────
+  Widget _buildHeader() {
+    return Container(
+      padding: EdgeInsets.all(SizeConfig.res(4)),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _border),
+        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _styledDateField()),
+              SizedBox(width: SizeConfig.sw(0.012)),
+              Expanded(child: _supplierDropdown()),
+              SizedBox(width: SizeConfig.sw(0.012)),
+              Expanded(child: _staffDropdown()),
+            ],
+          ),
+          SizedBox(height: SizeConfig.sh(0.016)),
+          _paidAmountField(),
+        ],
+      ),
+    );
+  }
+
+  Widget _styledDateField() {
+    return TextField(
+      controller: controller.dateController,
+      readOnly: true,
+      style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+      decoration: InputDecoration(
+        labelText: 'Purchase Date',
+        labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+        suffixIcon: Icon(Icons.calendar_today_rounded, size: SizeConfig.res(4.5), color: _primary),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _primary, width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: _border),
+        ),
+      ),
+      onTap: () => controller.pickPurchaseDate(context),
+    );
+  }
+
+  Widget _supplierDropdown() {
+    return Obx(() {
+      if (supplierController.suppliers.isEmpty) {
+        return Center(child: CircularProgressIndicator(color: _primary));
+      }
+      return DropdownButtonFormField<int>(
+        value: controller.selectedSupplierId.value,
+        style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+        decoration: InputDecoration(
+          labelText: 'Supplier',
+          labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _primary, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _border),
+          ),
+        ),
+        items: supplierController.suppliers
+            .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+            .toList(),
+        onChanged: (v) {
+          controller.selectedSupplierId.value = v;
+          controller.isModified.value = true;
+        },
+      );
+    });
+  }
+
+  Widget _staffDropdown() {
+    return Obx(() {
+      if (staffController.staffs.isEmpty) {
+        return Center(child: CircularProgressIndicator(color: _primary));
+      }
+      return DropdownButtonFormField<int>(
+        value: controller.selectedStaffId.value,
+        style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+        decoration: InputDecoration(
+          labelText: 'Created By',
+          labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _primary, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _border),
+          ),
+        ),
+        items: staffController.staffs
+            .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+            .toList(),
+        onChanged: (v) {
+          controller.selectedStaffId.value = v;
+          controller.isModified.value = true;
+        },
+      );
+    });
+  }
+
+  Widget _paidAmountField() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: TextField(
+            controller: controller.paidController,
+            keyboardType: TextInputType.number,
+            style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+            decoration: InputDecoration(
+              labelText: 'Paid Amount',
+              labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+              prefixIcon: Padding(
+                padding: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.008)),
+                child: Text(
+                  'Rs.',
+                  style: TextStyle(
+                    fontSize: SizeConfig.res(3.4),
+                    fontWeight: FontWeight.w700,
+                    color: _success,
+                  ),
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _success, width: 1.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: _border),
+              ),
+            ),
+            onChanged: (_) => controller.isModified.value = true,
+          ),
+        ),
+        SizedBox(width: SizeConfig.sw(0.012)),
+        // Add item button here for convenient access
+        GestureDetector(
+          onTap: _openStockPicker,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: SizeConfig.sw(0.018),
+              vertical: SizeConfig.sh(0.018),
+            ),
+            decoration: BoxDecoration(
+              color: _primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _primary.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_circle_outline_rounded, size: SizeConfig.res(4.5), color: _primary),
+                SizedBox(width: SizeConfig.sw(0.006)),
+                Text(
+                  'Add Item',
+                  style: TextStyle(
+                    fontSize: SizeConfig.res(3.4),
+                    fontWeight: FontWeight.w600,
+                    color: _primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Item table ─────────────────────────────────────────────────────────────
+  Widget _buildTableSection() {
+    return Expanded(
+      child: Container(
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _border),
+          boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+        ),
+        child: Column(
+          children: [
+            _buildItemTableHeader(),
+            Expanded(child: _buildItemList()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemTableHeader() {
+    return Container(
+      height: SizeConfig.sh(0.05),
+      padding: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.012)),
+      decoration: BoxDecoration(
+        color: _primary.withOpacity(0.06),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+        border: Border(bottom: BorderSide(color: _border)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: SizeConfig.sw(0.04),
+            child: Text('SN',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: SizeConfig.res(3),
+                  fontWeight: FontWeight.w700,
+                  color: _primary,
+                )),
+          ),
+          SizedBox(width: SizeConfig.sw(0.008)),
+          Expanded(
+            child: Text('Item Name',
+                style: TextStyle(
+                  fontSize: SizeConfig.res(3),
+                  fontWeight: FontWeight.w700,
+                  color: _primary,
+                )),
+          ),
+          SizedBox(
+            width: SizeConfig.sw(0.07),
+            child: Text('Qty',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: SizeConfig.res(3),
+                  fontWeight: FontWeight.w700,
+                  color: _primary,
+                )),
+          ),
+          SizedBox(width: SizeConfig.sw(0.008)),
+          SizedBox(
+            width: SizeConfig.sw(0.09),
+            child: Text('Rate',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: SizeConfig.res(3),
+                  fontWeight: FontWeight.w700,
+                  color: _primary,
+                )),
+          ),
+          SizedBox(width: SizeConfig.sw(0.008)),
+          SizedBox(
+            width: SizeConfig.sw(0.09),
+            child: Text('Total',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: SizeConfig.res(3),
+                  fontWeight: FontWeight.w700,
+                  color: _primary,
+                )),
+          ),
+          SizedBox(width: SizeConfig.sw(0.036)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildItemList() {
     return Obx(() => ListView.builder(
           itemCount: controller.items.length,
           itemBuilder: (_, index) {
             final item = controller.items[index];
+            final isEven = index.isEven;
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: EdgeInsets.symmetric(
+                horizontal: SizeConfig.sw(0.012),
+                vertical: SizeConfig.sh(0.008),
+              ),
               decoration: BoxDecoration(
-                color: index.isEven ? Colors.grey.shade50 : Colors.white,
-                border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                color: isEven ? _bg : _surface,
+                border: Border(bottom: BorderSide(color: _border.withOpacity(0.5))),
               ),
               child: Row(
                 children: [
                   SizedBox(
-                      width: 40, child: Center(child: Text("${index + 1}"))),
+                    width: SizeConfig.sw(0.04),
+                    child: Text(
+                      '${index + 1}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: SizeConfig.res(3.2),
+                        color: _textMid,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: SizeConfig.sw(0.008)),
                   Expanded(
-                      child:
-                          Text(item.itemName, overflow: TextOverflow.ellipsis)),
+                    child: Text(
+                      item.itemName,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: SizeConfig.res(3.4),
+                        fontWeight: FontWeight.w600,
+                        color: _textDark,
+                      ),
+                    ),
+                  ),
                   SizedBox(
-                    width: 70,
-                    height: 36,
+                    width: SizeConfig.sw(0.07),
+                    height: SizeConfig.sh(0.042),
                     child: TextField(
                       controller: item.quantityController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      decoration: const InputDecoration(
-                          isDense: true, border: OutlineInputBorder()),
+                      style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: SizeConfig.sh(0.01),
+                          horizontal: SizeConfig.sw(0.004),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: _border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: _primary, width: 1.5),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: _border),
+                        ),
+                      ),
                       onChanged: (_) => controller.isModified.value = true,
                     ),
                   ),
-                  SizedBox(width: 8),
+                  SizedBox(width: SizeConfig.sw(0.008)),
                   SizedBox(
-                    width: 90,
-                    height: 36,
+                    width: SizeConfig.sw(0.09),
+                    height: SizeConfig.sh(0.042),
                     child: TextField(
                       controller: item.priceController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      decoration: const InputDecoration(
-                          isDense: true, border: OutlineInputBorder()),
+                      style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: SizeConfig.sh(0.01),
+                          horizontal: SizeConfig.sw(0.004),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: _border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: _primary, width: 1.5),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: _border),
+                        ),
+                      ),
                       onChanged: (_) => controller.isModified.value = true,
                     ),
                   ),
-                  SizedBox(width: 8),
+                  SizedBox(width: SizeConfig.sw(0.008)),
                   SizedBox(
-                      width: 90,
-                      height: 36,
-                      child: Center(
-                          child: Obx(
-                              () => Text(item.totalPrice.toStringAsFixed(2))))),
+                    width: SizeConfig.sw(0.09),
+                    child: Obx(() => Text(
+                          'Rs. ${item.totalPrice.toStringAsFixed(0)}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: SizeConfig.res(3.2),
+                            fontWeight: FontWeight.w700,
+                            color: _primary,
+                          ),
+                        )),
+                  ),
                   SizedBox(
-                    width: 36,
+                    width: SizeConfig.sw(0.036),
                     child: IconButton(
-                        icon: const Icon(Icons.delete, size: 18),
-                        onPressed: () => controller.removeItem(item)),
+                      padding: EdgeInsets.zero,
+                      icon: Icon(Icons.delete_outline_rounded,
+                          size: SizeConfig.res(4.5), color: _danger),
+                      onPressed: () => controller.removeItem(item),
+                    ),
                   ),
                 ],
               ),
@@ -269,44 +693,96 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
         ));
   }
 
-  // ---------------- Totals ----------------
+  // ── Totals ─────────────────────────────────────────────────────────────────
   Widget _buildTotals() {
-    return Obx(() => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildAmountRow("Grand Total", controller.grandTotal),
-            _buildAmountRow("Discount", controller.discountAmount),
-            const Divider(),
-            _buildAmountRow("Net Total", controller.netTotal, isBold: true),
-            _buildAmountRow("Remaining", controller.remaining.value,
-                isBold: true, valueColor: Colors.red),
-          ],
+    return Obx(() => Container(
+          padding: EdgeInsets.all(SizeConfig.res(4)),
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _border),
+            boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+          ),
+          child: Row(
+            children: [
+              _totalTile(
+                label: 'Grand Total',
+                value: controller.grandTotal,
+                color: _textDark,
+                icon: Icons.account_balance_wallet_outlined,
+              ),
+              _verticalDivider(),
+              _totalTile(
+                label: 'Discount',
+                value: controller.discountAmount,
+                color: _warning,
+                icon: Icons.local_offer_outlined,
+              ),
+              _verticalDivider(),
+              _totalTile(
+                label: 'Net Total',
+                value: controller.netTotal,
+                color: _primary,
+                icon: Icons.receipt_outlined,
+                isBold: true,
+              ),
+              _verticalDivider(),
+              _totalTile(
+                label: 'Remaining',
+                value: controller.remaining.value,
+                color: controller.remaining.value > 0 ? _danger : _success,
+                icon: Icons.pending_outlined,
+                isBold: true,
+              ),
+            ],
+          ),
         ));
   }
 
-  Widget _buildAmountRow(String label, double amount,
-      {bool isBold = false, Color? valueColor}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label,
-            style: TextStyle(
-                fontWeight: isBold ? FontWeight.bold : FontWeight.w500)),
-        Text(amount.toStringAsFixed(2),
-            style: TextStyle(
-                fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-                color: valueColor ?? Colors.black)),
-      ],
+  Widget _totalTile({
+    required String label,
+    required double value,
+    required Color color,
+    required IconData icon,
+    bool isBold = false,
+  }) {
+    return Expanded(
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(SizeConfig.res(2.2)),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: SizeConfig.res(4.5), color: color),
+          ),
+          SizedBox(width: SizeConfig.sw(0.01)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+              SizedBox(height: SizeConfig.sh(0.003)),
+              Text(
+                'Rs. ${value.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontSize: SizeConfig.res(isBold ? 4 : 3.6),
+                  fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  // ---------------- Save Purchase ----------------
+  // ── Save ───────────────────────────────────────────────────────────────────
   void _savePurchase() async {
     try {
-      // Convert form items back to models
       final updatedItems = controller.items.map((i) => i.toModel()).toList();
-
-      // Create a new updated PurchaseModel
       final updatedPurchase = widget.purchase.copyWith(
         items: updatedItems,
         paidAmount: double.tryParse(controller.paidController.text) ?? 0,
@@ -314,61 +790,152 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
         supplier: controller.selectedSupplierId.value,
         createdBy: controller.selectedStaffId.value,
       );
-
-      // Call API
       await controller.updatePurchase(updatedPurchase);
-
-      // Update controller/UI
       controller.populateForm(updatedPurchase);
       controller.clearModifiedFlag();
-
-      //AppSnackbar.success("Purchase updated successfully!");
-    } catch (e) {
-      //AppSnackbar.error("Failed to update purchase.");
-    }
+    } catch (_) {}
   }
 
-  // ---------------- Stock Picker ----------------
+  // ── Stock picker ───────────────────────────────────────────────────────────
   void _openStockPicker() async {
     final searchCtrl = TextEditingController();
     final StockModel? selected = await showDialog<StockModel>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Select Stock"),
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Select Stock Item',
+          style: TextStyle(
+            fontSize: SizeConfig.res(4.5),
+            fontWeight: FontWeight.w700,
+            color: _textDark,
+          ),
+        ),
         content: SizedBox(
           width: SizeConfig.sw(0.4),
           height: SizeConfig.sh(0.6),
           child: Column(
             children: [
-              TextField(
-                controller: searchCtrl,
-                decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: "Search stock..."),
-                //onChanged: (_) => (context as Element).markNeedsBuild(),
+              Container(
+                decoration: BoxDecoration(
+                  color: _bg,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _border),
+                ),
+                child: TextField(
+                  controller: searchCtrl,
+                  style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                  decoration: InputDecoration(
+                    hintText: 'Search stock...',
+                    hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
+                    prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                  ),
+                  onChanged: (_) => (searchCtrl).notifyListeners(),
+                ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: SizeConfig.sh(0.012)),
               Expanded(
                 child: Obx(() {
                   final filtered = stockController.stocks
-                      .where((s) => s.name
-                          .toLowerCase()
-                          .contains(searchCtrl.text.toLowerCase()))
+                      .where((s) =>
+                          s.name.toLowerCase().contains(searchCtrl.text.toLowerCase()) ||
+                          s.itemNo.toLowerCase().contains(searchCtrl.text.toLowerCase()))
                       .toList();
                   if (filtered.isEmpty) {
-                    return const Center(child: Text("No stock found"));
+                    return Center(
+                      child: Text('No stock found',
+                          style: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.5))),
+                    );
                   }
-
                   return ListView.builder(
                     itemCount: filtered.length,
                     itemBuilder: (_, i) {
                       final s = filtered[i];
-                      return ListTile(
-                        title: Text(s.name),
-                        subtitle: Text("Available: ${s.stock}"),
-                        trailing: Text(
-                            "Price: ${s.purchasePrice.toStringAsFixed(2)}"),
-                        onTap: () => Navigator.pop(context, s),
+                      final stockColor = s.stock <= 0
+                          ? _danger
+                          : s.stock <= 5
+                              ? _warning
+                              : _success;
+                      return Container(
+                        margin: EdgeInsets.only(bottom: SizeConfig.sh(0.008)),
+                        decoration: BoxDecoration(
+                          color: _bg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _border),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => Navigator.pop(context, s),
+                          child: Padding(
+                            padding: EdgeInsets.all(SizeConfig.res(3.5)),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        s.name,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: SizeConfig.res(3.6),
+                                          color: _textDark,
+                                        ),
+                                      ),
+                                      Text(
+                                        'No: ${s.itemNo}',
+                                        style: TextStyle(fontSize: SizeConfig.res(3), color: _textMid),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: SizeConfig.sw(0.008),
+                                    vertical: SizeConfig.sh(0.005),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: stockColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Stock: ${s.stock}',
+                                    style: TextStyle(
+                                      fontSize: SizeConfig.res(3),
+                                      fontWeight: FontWeight.w700,
+                                      color: stockColor,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: SizeConfig.sw(0.012)),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Buy: Rs.${s.purchasePrice.toStringAsFixed(0)}',
+                                      style: TextStyle(
+                                        fontSize: SizeConfig.res(3.2),
+                                        fontWeight: FontWeight.w600,
+                                        color: _textDark,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Sell: Rs.${s.salePrice.toStringAsFixed(0)}',
+                                      style: TextStyle(
+                                        fontSize: SizeConfig.res(3),
+                                        color: _primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       );
                     },
                   );
@@ -379,7 +946,6 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
         ),
       ),
     );
-
     if (selected != null) controller.addItem(selected);
   }
 }

@@ -5,18 +5,19 @@ import 'api_service.dart';
 class OrderService {
   final Dio _dio = ApiService.dio;
 
+  List _extractList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map && data['results'] is List) return data['results'];
+    return [];
+  }
+
   // Fetch all orders
   Future<List<OrderModel>> getOrders() async {
     final res = await _dio.get("/orders/");
-    final data = res.data;
 
-    if (data != null && data['results'] != null && data['results'] is List) {
-      return (data['results'] as List)
-          .map((e) => OrderModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-
-    return [];
+     return _extractList(res.data)
+        .map((e) => OrderModel.fromJson(e))
+        .toList();
   }
 
   // Create new order

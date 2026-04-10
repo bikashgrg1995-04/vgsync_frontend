@@ -14,12 +14,16 @@ class CategoryController extends GetxController {
 
   CategoryController({required this.categoryRepository});
 
+  /// 🔥 MAIN STATE
   var categories = <CategoryModel>[].obs;
   var isLoading = false.obs;
   var isSaving = false.obs;
 
-  final nameController = TextEditingController();
+  /// 🔥 SEARCH STATE (IMPORTANT FIX)
+  var searchQuery = ''.obs;
 
+  /// FORM
+  final nameController = TextEditingController();
   final searchController = TextEditingController();
 
   @override
@@ -28,55 +32,63 @@ class CategoryController extends GetxController {
     fetchCategories();
   }
 
+  /// ================= FETCH =================
   Future<void> fetchCategories() async {
     try {
       isLoading.value = true;
       final result = await categoryRepository.getAllCategories();
-      categories.assignAll(result); // ✅ better than categories.value =
+      categories.assignAll(result);
+    } catch (e) {
+      DesktopToast.show("Failed to load categories", backgroundColor: Colors.red);
     } finally {
       isLoading.value = false;
     }
   }
 
+  /// ================= ADD =================
   Future<void> addCategory() async {
     final name = nameController.text.trim();
     if (name.isEmpty) return;
 
     try {
       isSaving.value = true;
-     final newCategory = CategoryModel(
-  id: 0, // dummy (backend ignores)
-  name: name,
-);
+
+      final newCategory = CategoryModel(
+        id: 0,
+        name: name,
+      );
 
       final added = await categoryRepository.addCategory(newCategory);
-      categories.add(added); // reactive update
+      categories.add(added);
 
       stockController.fetchStocks();
-      globalController
-          .triggerRefresh(DashboardRefreshType.stock); // ✅ WRITE event
+      globalController.triggerRefresh(DashboardRefreshType.stock);
 
       Get.back(closeOverlays: true);
-       DesktopToast.show('Category added successfully',  backgroundColor: Colors.greenAccent,);
-  
+      DesktopToast.show('Category added successfully',
+          backgroundColor: Colors.greenAccent);
 
       clearForm();
+    } catch (e) {
+      DesktopToast.show("Failed to add category", backgroundColor: Colors.red);
     } finally {
       isSaving.value = false;
     }
   }
 
+  /// ================= UPDATE =================
   Future<void> updateCategory(CategoryModel category) async {
     final name = nameController.text.trim();
     if (name.isEmpty) return;
 
     try {
       isSaving.value = true;
+
       final updated = CategoryModel(id: category.id, name: name);
       final res = await categoryRepository.updateCategory(updated);
 
       final index = categories.indexWhere((c) => c.id == res.id);
-      if (index != -1) categories[index] = res; // reactive update
+      if (index != -1) categories[index] = res;
 
       stockController.fetchStocks();
       globalController.triggerRefresh(DashboardRefreshType.stock);
@@ -84,27 +96,34 @@ class CategoryController extends GetxController {
       clearForm();
 
       Get.back(closeOverlays: true);
-      DesktopToast.show('Category updated successfully',  backgroundColor: Colors.greenAccent,);
-   
+      DesktopToast.show('Category updated successfully',
+          backgroundColor: Colors.greenAccent);
+    } catch (e) {
+      DesktopToast.show("Failed to update category", backgroundColor: Colors.red);
     } finally {
       isSaving.value = false;
     }
   }
 
+  /// ================= DELETE =================
   Future<void> delete(int id) async {
     ConfirmDialog.show(
       Get.context!,
       title: "Delete Category",
       message: "Are you sure you want to delete this category?",
       onConfirm: () async {
-        await categoryRepository.deleteCategory(id);
-        categories.removeWhere((c) => c.id == id);
+        try {
+          await categoryRepository.deleteCategory(id);
+          categories.removeWhere((c) => c.id == id);
 
-        globalController.triggerRefresh(DashboardRefreshType.stock);
+          globalController.triggerRefresh(DashboardRefreshType.stock);
 
-        Get.back(closeOverlays: true);
-         DesktopToast.show("Category deleted successfully.",  backgroundColor: Colors.greenAccent,);
-       
+          Get.back(closeOverlays: true);
+          DesktopToast.show("Category deleted successfully.",
+              backgroundColor: Colors.greenAccent);
+        } catch (e) {
+          DesktopToast.show("Delete failed", backgroundColor: Colors.red);
+        }
       },
       confirmText: "Delete",
       cancelText: "Cancel",
@@ -113,6 +132,7 @@ class CategoryController extends GetxController {
     );
   }
 
+  /// ================= FORM =================
   void fillForm(CategoryModel category) {
     nameController.text = category.name;
   }
@@ -121,11 +141,25 @@ class CategoryController extends GetxController {
     nameController.clear();
   }
 
+  /// ================= SEARCH =================
+  void onSearchChanged(String value) {
+    searchQuery.value = value;
+  }
+
+  List<CategoryModel> get filteredCategories {
+    final query = searchQuery.value.toLowerCase();
+
+    if (query.isEmpty) return categories;
+
+    return categories
+        .where((c) => c.name.toLowerCase().contains(query))
+        .toList();
+  }
+
+  /// ================= REFRESH =================
   Future<void> refreshCategories() async {
-    // 🔥 RESET FILTERS
-
     searchController.clear();
-
+    searchQuery.value = '';
     await fetchCategories();
   }
 }

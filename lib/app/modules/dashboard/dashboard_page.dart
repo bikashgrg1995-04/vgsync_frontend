@@ -13,11 +13,11 @@ import 'package:vgsync_frontend/app/data/models/dashboard/staffs_salary.dart'
 import 'package:vgsync_frontend/app/data/models/dashboard/followup.dart'
     as followup_model;
 import 'package:vgsync_frontend/app/data/repositories/dashboard_repository.dart';
-
 import 'package:vgsync_frontend/app/modules/dashboard/dashboard_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/paginated_table.dart';
 import 'package:vgsync_frontend/app/wigdets/dashboard_charts.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
+import '../../themes/app_colors.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -29,217 +29,297 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   final DashboardController controller = Get.find();
 
+  // ── Derived constants from AppColors ──────────────────────────────────────
+  static const _bg         = AppColors.background;
+  static const _surface    = AppColors.surface;
+  static const _primary    = AppColors.primary;
+  static final _primaryLight = const Color(0xFF4A6CF7).withOpacity(0.1);
+  static const _accent     = Color(0xFF0EA5E9);
+  static const _success    = AppColors.success;
+  static const _warning    = Color(0xFFF59E0B);
+  static const _danger     = AppColors.error;
+  static const _textDark   = AppColors.textPrimary;
+  static const _textMid    = AppColors.textSecondary;
+  static const _border     = Color(0xFFE5E7EB);
+  static const _shadow     = Color(0x0F000000);
+
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
+    final isWide = MediaQuery.of(context).size.width >= 900;
 
-    return Container(
-      margin: EdgeInsets.all(SizeConfig.res(2)),
-      child: Card(
-        elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
+    return Scaffold(
+      backgroundColor: _bg,
+      body: SafeArea(
+        child: SingleChildScrollView(
           padding: EdgeInsets.all(SizeConfig.res(5)),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _headerRow(),
-                const SizedBox(height: 10),
-                _chartAndCreditRow(),
-                const SizedBox(height: 16),
-                _creditSummary(),
-                const Divider(),
-                const SizedBox(height: 16),
-                _tablesSection(),
-              ],
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _topBar(isWide),
+              SizedBox(height: SizeConfig.sh(0.025)),
+              _chartSection(isWide),
+              SizedBox(height: SizeConfig.sh(0.02)),
+              _creditSummaryRow(),
+              SizedBox(height: SizeConfig.sh(0.02)),
+              _tablesSection(isWide),
+              SizedBox(height: SizeConfig.sh(0.02)),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // ================= HEADER =================
-  Widget _headerRow() {
-    return LayoutBuilder(
-      builder: (context, c) {
-        final narrow = c.maxWidth < 900;
-        return narrow
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _chartToggle(),
-                  const SizedBox(height: 8),
-                  _periodSelector(),
-                ],
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _chartToggle(),
-                  _periodSelector(),
-                ],
-              );
-      },
+  // ── TOP BAR ───────────────────────────────────────────────────────────────
+  Widget _topBar(bool isWide) {
+    return isWide
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _pageTitle(),
+              SizedBox(width: SizeConfig.sw(0.02)),
+              _chartToggle(),
+              const Spacer(),
+              _periodSelector(),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _pageTitle(),
+              SizedBox(height: SizeConfig.sh(0.015)),
+              _chartToggle(),
+              SizedBox(height: SizeConfig.sh(0.01)),
+              _periodSelector(),
+            ],
+          );
+  }
+
+  Widget _pageTitle() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Dashboard',
+          style: TextStyle(
+            fontSize: SizeConfig.res(7),
+            fontWeight: FontWeight.w800,
+            color: _textDark,
+            letterSpacing: -0.5,
+          ),
+        ),
+        Text(
+          'Overview of your business',
+          style: TextStyle(
+            fontSize: SizeConfig.res(3.5),
+            color: _textMid,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _chartToggle() {
     final labels = ['Income', 'Expense', 'Installments'];
-    final keys = ['income', 'expense', 'emi'];
+    final keys   = ['income', 'expense', 'emi'];
+    final icons  = [Icons.trending_up, Icons.trending_down, Icons.payment];
 
-    return Obx(() => ToggleButtons(
-          isSelected:
-              keys.map((k) => controller.selectedChart.value == k).toList(),
-          onPressed: (i) => controller.selectedChart.value = keys[i],
-          borderRadius: BorderRadius.circular(8),
-          fillColor: Colors.blueAccent,
-          selectedColor: Colors.white,
-          children: labels
-              .map((e) => Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: SizeConfig.res(3)),
-                    child: Text(e,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ))
-              .toList(),
+    return Obx(() => Container(
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _border),
+            boxShadow: const [BoxShadow(color: _shadow, blurRadius: 4)],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(keys.length, (i) {
+              final selected = controller.selectedChart.value == keys[i];
+              return GestureDetector(
+                onTap: () => controller.selectedChart.value = keys[i],
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: SizeConfig.sw(0.012),
+                    vertical: SizeConfig.sh(0.012),
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected ? _primary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icons[i],
+                          size: SizeConfig.res(4),
+                          color: selected ? Colors.white : _textMid),
+                      SizedBox(width: SizeConfig.sw(0.004)),
+                      Text(
+                        labels[i],
+                        style: TextStyle(
+                          fontSize: SizeConfig.res(3.2),
+                          fontWeight: FontWeight.w600,
+                          color: selected ? Colors.white : _textMid,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
         ));
   }
 
   Widget _periodSelector() {
-    return Wrap(
-      spacing: SizeConfig.res(1),
-      children: ChartPeriod.values.map((p) {
-        return Obx(() {
-          final active = controller.selectedPeriod.value == p;
-          return ChoiceChip(
-            label: Text(p.name.toUpperCase()),
-            selected: active,
-            onSelected: (_) => controller.changePeriod(p),
-            selectedColor: Colors.blueAccent,
-            labelStyle: TextStyle(
-              color: active ? Colors.white : Colors.black,
-              fontWeight: FontWeight.bold,
+    return Obx(() => Container(
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _border),
+            boxShadow: const [BoxShadow(color: _shadow, blurRadius: 4)],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: ChartPeriod.values.map((p) {
+              final active = controller.selectedPeriod.value == p;
+              return GestureDetector(
+                onTap: () => controller.changePeriod(p),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: SizeConfig.sw(0.01),
+                    vertical: SizeConfig.sh(0.012),
+                  ),
+                  decoration: BoxDecoration(
+                    color: active ? _accent : Colors.transparent,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    p.name.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: SizeConfig.res(3),
+                      fontWeight: FontWeight.w700,
+                      color: active ? Colors.white : _textMid,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ));
+  }
+
+  // ── CHART SECTION ─────────────────────────────────────────────────────────
+  Widget _chartSection(bool isWide) {
+    if (isWide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 4,
+            child: _surfaceCard(
+              child: SizedBox(height: SizeConfig.sh(0.38), child: DashboardCharts()),
             ),
-          );
-        });
-      }).toList(),
+          ),
+          SizedBox(width: SizeConfig.sw(0.015)),
+          Expanded(
+            flex: 6,
+            child: SizedBox(height: SizeConfig.sh(0.38), child: _creditTable()),
+          ),
+        ],
+      );
+    }
+    return Column(
+      children: [
+        _surfaceCard(
+          child: SizedBox(height: SizeConfig.sh(0.35), child: DashboardCharts()),
+        ),
+        SizedBox(height: SizeConfig.sh(0.02)),
+        SizedBox(height: SizeConfig.sh(0.38), child: _creditTable()),
+      ],
     );
   }
 
-  // ================= CHART + CREDIT =================
-  Widget _chartAndCreditRow() {
-    return LayoutBuilder(
-      builder: (context, c) {
-        final narrow = c.maxWidth < 900;
-
-        if (narrow) {
-          return Column(
-            children: [
-              SizedBox(height: SizeConfig.sh(0.4), child: DashboardCharts()),
-              const SizedBox(height: 16),
-              _creditTable(),
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-                flex: 4,
-                child: SizedBox(
-                    height: SizeConfig.sh(0.4), child: DashboardCharts())),
-            const SizedBox(width: 16),
-            Expanded(
-                flex: 6,
-                child: SizedBox(
-                    height: SizeConfig.sh(0.4), child: _creditTable())),
-          ],
-        );
-      },
+  Widget _surfaceCard({required Widget child, EdgeInsets? padding}) {
+    return Container(
+      padding: padding ?? EdgeInsets.all(SizeConfig.res(4)),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _border),
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
+        ],
+      ),
+      child: child,
     );
   }
 
+  // ── CREDIT TABLE ──────────────────────────────────────────────────────────
   Widget _creditTable() {
     return Obx(() {
       if (controller.isCreditLoading.value) {
-        return const Center(child: CircularProgressIndicator());
+        return _surfaceCard(child: const Center(child: CircularProgressIndicator()));
       }
 
-      // --------------- EMI / Installments ----------------
       if (controller.selectedChart.value == 'emi') {
-        return ModernTable<credit_model.CreditItem>(
-          title: "EMI / Installments",
+        return _surfaceCard(
+          padding: EdgeInsets.all(SizeConfig.res(3)),
+          child: ModernTable<credit_model.CreditItem>(
+            title: "EMI / Installments",
+            rows: controller.pagedCreditItems,
+
+            currentPage: controller.creditCurrentPageBackend - 1,
+            totalPages: controller.creditTotalPages,
+            onPageChanged: (page) => controller.fetchCredits(page: page),
+            columnTitles: const ["S/N", "Amount", "Due Date", "Customer", "Contact", "Status"],
+            cellBuilders: [
+              (i, idx) => Text('${idx + 1 + (controller.creditCurrentPageBackend - 1) * controller.credit.emi.pagination.pageSize}'),
+              (i, _) => Text(i.remainingAmount.toStringAsFixed(0)),
+              (i, _) => Text(i.dueDate?.split("T").first ?? "-"),
+              (i, _) => Text(i.customerName ?? "-"),
+              (i, _) => Text(i.contactNo ?? "-"),
+              (i, _) => _statusChip(i.status),
+            ],
+          ),
+        );
+      }
+
+      return _surfaceCard(
+         padding: EdgeInsets.all(SizeConfig.res(3)),
+        child: ModernTable<credit_model.CreditItem>(
+          title: controller.selectedChart.value == 'income'
+              ? "Income Credits : Sales"
+              : "Expense Credits : Purchases",
           rows: controller.pagedCreditItems,
           currentPage: controller.creditCurrentPageBackend - 1,
           totalPages: controller.creditTotalPages,
           onPageChanged: (page) => controller.fetchCredits(page: page),
-          columnTitles: const [
-            "S/N",
-            "Amount",
-            "Due Date",
-            "Customer",
-            "Contact",
-            "Status",
-          ],
+          columnTitles: const ["S/N", "Date", "Name", "Total", "Remaining", "Credit Days"],
           cellBuilders: [
-            (i, idx) => Text(
-                  '${idx + 1 + (controller.creditCurrentPageBackend - 1) * controller.credit.emi.pagination.pageSize}',
-                ),
-            (i, _) => Text(i.remainingAmount.toStringAsFixed(0)),
-            (i, _) => Text(i.dueDate?.split("T").first ?? "-"),
-            (i, _) => Text(i.customerName ?? "-"),
-            (i, _) => Text(i.contactNo ?? "-"),
-            (i, _) => Text(i.status),
+            (i, idx) {
+              final serial = idx + 1 + ((controller.creditCurrentPageBackend - 1) * controller.credit.sale.pagination.pageSize);
+              return Text('$serial');
+            },
+            (i, _) => Text(controller.getCreditDate(i)),
+            (i, _) => Text(controller.getCreditName(i)),
+            (i, _) => Text(controller.getCreditNet(i).toStringAsFixed(0)),
+            (i, _) => Text(controller.getCreditRemaining(i).toStringAsFixed(0)),
+            (i, _) => _daysChip(controller.getCreditDays(i)),
           ],
-        );
-      }
-
-      // --------------- Income / Expense Credits ----------------
-      return ModernTable<credit_model.CreditItem>(
-        title: controller.selectedChart.value == 'income'
-            ? "Income Credits : Sales"
-            : "Expense Credits : Purchases",
-        rows: controller.pagedCreditItems,
-        currentPage: controller.creditCurrentPageBackend - 1,
-        totalPages: controller.creditTotalPages,
-        onPageChanged: (page) => controller.fetchCredits(page: page),
-        columnTitles: const [
-          "S/N",
-          "Date",
-          "Name",
-          "Total",
-          "Remaining",
-          "Credit Days",
-        ],
-        cellBuilders: [
-          (i, idx) {
-            final serial = idx +
-                1 +
-                ((controller.creditCurrentPageBackend - 1) *
-                    controller.credit.sale.pagination.pageSize);
-            return Text('$serial');
-          },
-          (i, _) => Text(controller.getCreditDate(i)),
-          (i, _) => Text(controller.getCreditName(i)),
-          (i, _) => Text(controller.getCreditNet(i).toStringAsFixed(0)),
-          (i, _) => Text(controller.getCreditRemaining(i).toStringAsFixed(0)),
-          (i, _) => Text(controller.getCreditDays(i).toString()),
-        ],
+        ),
       );
     });
   }
 
-  // ================= CREDIT SUMMARY =================
-  Widget _creditSummary() {
+  // ── CREDIT SUMMARY ────────────────────────────────────────────────────────
+  Widget _creditSummaryRow() {
     return Obx(() {
-      if (controller.isCreditLoading.value) {
-        return const SizedBox();
-      }
+      if (controller.isCreditLoading.value) return const SizedBox();
+      if (controller.selectedChart.value == 'emi') return const SizedBox();
 
       final credit = controller.selectedChart.value == 'income'
           ? controller.credit.sale
@@ -247,67 +327,132 @@ class _DashboardPageState extends State<DashboardPage> {
 
       return Row(
         children: [
-          Expanded(
-              child: _creditTile("Net Total", credit.totals.totalNetAmount)),
-          Expanded(child: _creditTile("Paid", credit.totals.totalPaidAmount)),
-          Expanded(
-              child: _creditTile("Remaining", credit.totals.totalCreditAmount)),
+          Expanded(child: _summaryTile('Net Total', credit.totals.totalNetAmount, Icons.account_balance_wallet_outlined, _primary)),
+          SizedBox(width: SizeConfig.sw(0.01)),
+          Expanded(child: _summaryTile('Paid', credit.totals.totalPaidAmount, Icons.check_circle_outline, _success)),
+          SizedBox(width: SizeConfig.sw(0.01)),
+          Expanded(child: _summaryTile('Remaining', credit.totals.totalCreditAmount, Icons.pending_outlined, _warning)),
         ],
       );
     });
   }
 
-  Widget _creditTile(String title, double value) {
-    return Card(
-      child: ListTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        trailing: Text("Rs. ${value.toStringAsFixed(0)}",
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+  Widget _summaryTile(String label, double value, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: SizeConfig.sw(0.012),
+        vertical: SizeConfig.sh(0.018),
+      ),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
+        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(SizeConfig.res(2.2)),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: SizeConfig.res(5)),
+          ),
+          SizedBox(width: SizeConfig.sw(0.01)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(fontSize: SizeConfig.res(3), color: _textMid)),
+                SizedBox(height: SizeConfig.sh(0.003)),
+                Text(
+                  'Rs. ${value.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    fontSize: SizeConfig.res(3.8),
+                    fontWeight: FontWeight.w700,
+                    color: _textDark,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ================= TABLES SECTION =================
-  Widget _tablesSection() {
+  // ── TABLES SECTION ────────────────────────────────────────────────────────
+  Widget _tablesSection(bool isWide) {
+    if (isWide) {
+      return Column(
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: SizeConfig.sw(0.34),
+                  child: _surfaceCard(
+                    padding: EdgeInsets.all(SizeConfig.res(3)),
+                    child: SizedBox(height: SizeConfig.sh(0.46), child: _lowStockTable()),
+                  ),
+                ),
+                SizedBox(width: SizeConfig.sw(0.015)),
+                Expanded(
+                  child: _surfaceCard(
+                     padding: EdgeInsets.all(SizeConfig.res(3)),
+                    child: SizedBox(height: SizeConfig.sh(0.46), child: _followupTable()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: SizeConfig.sh(0.02)),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                   width: SizeConfig.sw(0.44),
+                  child: _surfaceCard(
+                     padding: EdgeInsets.all(SizeConfig.res(3)),
+                    child: SizedBox(height: SizeConfig.sh(0.46), child: _ordersTable()),
+                  ),
+                ),
+                SizedBox(width: SizeConfig.sw(0.015)),
+                Expanded(
+                  child: _surfaceCard(
+                     padding: EdgeInsets.all(SizeConfig.res(3)),
+                    child: SizedBox(height: SizeConfig.sh(0.46), child: _staffSalaryTable()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-                width: SizeConfig.sw(0.34),
-                height: SizeConfig.sh(0.48),
-                child: _lowStockCard()),
-            SizedBox(width: SizeConfig.res(1)),
-            Expanded(
-              child:
-                  SizedBox(height: SizeConfig.sh(0.48), child: _followupCard()),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-                width: SizeConfig.sw(0.48),
-                height: SizeConfig.sh(0.48),
-                child: _ordersCard()),
-            SizedBox(width: SizeConfig.res(1)),
-            Expanded(child: _staffSalaryCard()),
-          ],
-        ),
+        _surfaceCard(padding: EdgeInsets.zero, child: SizedBox(height: SizeConfig.sh(0.46), child: _lowStockTable())),
+        SizedBox(height: SizeConfig.sh(0.02)),
+        _surfaceCard(padding: EdgeInsets.zero, child: SizedBox(height: SizeConfig.sh(0.46), child: _followupTable())),
+        SizedBox(height: SizeConfig.sh(0.02)),
+        _surfaceCard(padding: EdgeInsets.zero, child: SizedBox(height: SizeConfig.sh(0.46), child: _ordersTable())),
+        SizedBox(height: SizeConfig.sh(0.02)),
+        _surfaceCard(padding: EdgeInsets.zero, child: SizedBox(height: SizeConfig.sh(0.46), child: _staffSalaryTable())),
       ],
     );
   }
 
-  // ================= TABLE CARDS =================
-  Widget _lowStockCard() {
+  // ── TABLE WIDGETS ─────────────────────────────────────────────────────────
+  Widget _lowStockTable() {
     return Obx(() {
-      if (controller.isLowStockLoading.value) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
+      if (controller.isLowStockLoading.value) return const Center(child: CircularProgressIndicator());
       return ModernTable<stock_model.StockItem>(
         title: "Low Stocks",
         rows: controller.pagedStockItems,
@@ -316,105 +461,131 @@ class _DashboardPageState extends State<DashboardPage> {
         onPageChanged: (page) => controller.fetchLowStock(page: page),
         columnTitles: const ["S/N", "Item No", "Name", "Stock"],
         cellBuilders: [
-          (i, idx) => Text(
-              '${idx + 1 + (controller.stockCurrentPageBackend - 1) * controller.stockData.value.pagination.pageSize}'),
-          (i, _) => Text(i.itemNo),
-          (i, _) => Text(i.name),
-          (i, _) => Text(i.stock.toString()),
+          (i, idx) => Text('${idx + 1 + (controller.stockCurrentPageBackend - 1) * controller.stockData.value.pagination.pageSize}'),
+          (i, _) => Text(i.itemNo, style: TextStyle(fontSize: SizeConfig.res(3.5)),),
+          (i, _) => Text(i.name, style: TextStyle(fontSize: SizeConfig.res(3.5)),),
+          (i, _) => _stockBadge(i.stock),
         ],
       );
     });
   }
 
-  Widget _followupCard() {
+  Widget _followupTable() {
     return Obx(() {
-      if (controller.isFollowupLoading.value) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
+      if (controller.isFollowupLoading.value) return const Center(child: CircularProgressIndicator());
       return ModernTable<followup_model.FollowupItem>(
         title: "Follow-ups",
         rows: controller.pagedFollowups,
         currentPage: controller.followupCurrentPageBackend - 1,
         totalPages: controller.followupTotalPages,
         onPageChanged: (page) => controller.fetchFollowups(page: page),
-        columnTitles: const [
-          "S/N",
-          "Followup Date",
-          "Customer",
-          "Vehicle",
-          "Contact",
-          "Status"
-        ],
+        columnTitles: const ["S/N", "Date", "Customer", "Vehicle", "Contact", "Status"],
         cellBuilders: [
-          (i, idx) => Text(
-              '${idx + 1 + (controller.followupCurrentPageBackend - 1) * controller.followupData.value.pagination.pageSize}'),
+          (i, idx) => Text('${idx + 1 + (controller.followupCurrentPageBackend - 1) * controller.followupData.value.pagination.pageSize}'),
           (i, _) => Text(i.followUpDate.split("T").first),
           (i, _) => Text(i.customerName),
           (i, _) => Text(i.vehicle),
           (i, _) => Text(i.contactNo),
-          (i, _) => Text(i.status),
+          (i, _) => _statusChip(i.status),
         ],
       );
     });
   }
 
-  Widget _ordersCard() {
+  Widget _ordersTable() {
     return Obx(() {
-      if (controller.isOrdersLoading.value) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
+      if (controller.isOrdersLoading.value) return const Center(child: CircularProgressIndicator());
       return ModernTable<order_model.OrderItem>(
         title: "Orders",
         rows: controller.pagedOrders,
         currentPage: controller.ordersCurrentPageBackend - 1,
         totalPages: controller.ordersTotalPages,
         onPageChanged: (page) => controller.fetchOrders(page: page),
-        columnTitles: const [
-          "S/N",
-          "Order Date",
-          "Customer",
-          "Contact",
-          "Total",
-          "Remaining",
-          "Status"
-        ],
+        columnTitles: const ["S/N", "Date", "Customer", "Total", "Remaining", "Status"],
         cellBuilders: [
-          (i, idx) => Text(
-              '${idx + 1 + (controller.ordersCurrentPageBackend - 1) * controller.orderData.value.pagination.pageSize}'),
+          (i, idx) => Text('${idx + 1 + (controller.ordersCurrentPageBackend - 1) * controller.orderData.value.pagination.pageSize}'),
           (i, _) => Text(i.orderDate.split("T").first),
           (i, _) => Text(i.customerName),
-          (i, _) => Text(i.contactNo),
           (i, _) => Text(i.totalAmount.toStringAsFixed(0)),
           (i, _) => Text(i.remainingAmount.toStringAsFixed(0)),
-          (i, _) => Text(i.status),
+          (i, _) => _statusChip(i.status),
         ],
       );
     });
   }
 
-  Widget _staffSalaryCard() {
+  Widget _staffSalaryTable() {
     return Obx(() {
-      if (controller.isStaffSalaryLoading.value) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
+      if (controller.isStaffSalaryLoading.value) return const Center(child: CircularProgressIndicator());
       return ModernTable<staff_model.StaffSalaryItem>(
-        title: "Staffs Salary",
+        title: "Staff Salary",
         rows: controller.pagedStaffSalaries,
         currentPage: controller.staffCurrentPageBackend - 1,
         totalPages: controller.staffTotalPages,
         onPageChanged: (page) => controller.fetchStaffSalaries(page: page),
-        columnTitles: const ["S/N", "Name", "Salary", "Remaining"],
+        columnTitles: const ["S/N", "Staff Name", "Salary", "Remaining"],
         cellBuilders: [
-          (i, idx) => Text(
-              '${idx + 1 + (controller.staffCurrentPageBackend - 1) * controller.staffData.value.pagination.pageSize}'),
+          (i, idx) => Text('${idx + 1 + (controller.staffCurrentPageBackend - 1) * controller.staffData.value.pagination.pageSize}'),
           (i, _) => Text(i.name),
-          (i, _) => Text(i.totalSalary.toStringAsFixed(0)),
-          (i, _) => Text(i.remainingAmount.toStringAsFixed(0)),
+          (i, _) => Text('Rs. ${i.totalSalary.toStringAsFixed(0)}'),
+          (i, _) => _remainingBadge(i.remainingAmount),
         ],
       );
     });
+  }
+
+  // ── HELPER CHIPS & BADGES ─────────────────────────────────────────────────
+  Widget _statusChip(String status) {
+    final s = status.toLowerCase();
+    final Color bg;
+    final Color fg;
+    if (s == 'paid' || s == 'completed' || s == 'done') {
+      bg = _success.withOpacity(0.1); fg = _success;
+    } else if (s == 'partial' || s == 'pending') {
+      bg = _warning.withOpacity(0.1); fg = _warning;
+    } else {
+      bg = _danger.withOpacity(0.1); fg = _danger;
+    }
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: SizeConfig.sw(0.007),
+        vertical: SizeConfig.sh(0.004),
+      ),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Text(status,
+          style: TextStyle(fontSize: SizeConfig.res(2.8), fontWeight: FontWeight.w600, color: fg)),
+    );
+  }
+
+  Widget _stockBadge(int qty) {
+    final color = qty <= 0 ? _danger : qty <= 5 ? _warning : _success;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: SizeConfig.sw(0.007),
+        vertical: SizeConfig.sh(0.004),
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text('$qty',
+          style: TextStyle(fontSize: SizeConfig.res(3), fontWeight: FontWeight.w700, color: color)),
+    );
+  }
+
+  Widget _remainingBadge(double amount) {
+    final color = amount <= 0 ? _success : _warning;
+    return Text(
+      'Rs. ${amount.toStringAsFixed(0)}',
+      style: TextStyle(fontSize: SizeConfig.res(3), fontWeight: FontWeight.w600, color: color),
+    );
+  }
+
+  Widget _daysChip(int days) {
+    final color = days > 30 ? _danger : days > 15 ? _warning : _textMid;
+    return Text(
+      '$days days',
+      style: TextStyle(fontSize: SizeConfig.res(3), fontWeight: FontWeight.w600, color: color),
+    );
   }
 }

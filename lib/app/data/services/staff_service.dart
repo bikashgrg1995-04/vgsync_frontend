@@ -5,17 +5,19 @@ import 'api_service.dart';
 class StaffService {
   final Dio _dio = ApiService.dio;
 
+  // ---------------- Helper ----------------
+  List _extractList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map && data['results'] is List) return data['results'];
+    return [];
+  }
+
   // ---------------- Staff CRUD ----------------
   Future<List<StaffModel>> getStaffs() async {
     final res = await _dio.get("/staffs/");
-    final data = res.data;
-
-    if (data != null && data['results'] != null && data['results'] is List) {
-      return (data['results'] as List)
-          .map((e) => StaffModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    return _extractList(res.data)
+        .map((e) => StaffModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<StaffModel> createStaff(StaffModel staff) async {
@@ -47,13 +49,8 @@ class StaffService {
 
   // ** New function to fetch salary trackers for a specific staff **
   Future<List<Map<String, dynamic>>> getSalaryTrackers(int staffId) async {
-    final res =
-        await _dio.get("/salarytracker/", queryParameters: {"staff": staffId});
-    final data = res.data;
-    if (data != null && data['results'] != null && data['results'] is List) {
-      return List<Map<String, dynamic>>.from(data['results']);
-    }
-    return [];
+    final res = await _dio.get("/salarytracker/", queryParameters: {"staff": staffId});
+    return List<Map<String, dynamic>>.from(_extractList(res.data));
   }
 
   // ---------------- Salary Transaction CRUD ----------------
@@ -72,12 +69,7 @@ class StaffService {
 
   // ** New function to fetch salary transactions for a specific staff **
   Future<List<Map<String, dynamic>>> getTransactions(int staffId) async {
-    final res = await _dio
-        .get("/salarytransactions/", queryParameters: {"staff": staffId});
-    final data = res.data;
-    if (data != null && data['results'] != null && data['results'] is List) {
-      return List<Map<String, dynamic>>.from(data['results']);
-    }
-    return [];
+    final res = await _dio.get("/salarytransactions/", queryParameters: {"staff": staffId});
+    return List<Map<String, dynamic>>.from(_extractList(res.data));
   }
 }

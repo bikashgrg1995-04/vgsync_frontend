@@ -39,7 +39,8 @@ class DashboardCharts extends StatelessWidget {
       margin: const EdgeInsets.all(8),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: SizedBox(height: 300, child: child),
+        // ✅ No fixed SizedBox — fill available space
+        child: child,
       ),
     );
   }
@@ -116,6 +117,8 @@ class DashboardCharts extends StatelessWidget {
               },
             ),
           ),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         barGroups: barGroups,
         gridData: FlGridData(show: true),
@@ -123,20 +126,19 @@ class DashboardCharts extends StatelessWidget {
       ),
     );
 
-    final legend = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _legendIndicator(Colors.blue, "Bike Sale"),
-        const SizedBox(width: 16),
-        _legendIndicator(Colors.green, "Other Sale"),
-      ],
-    );
-
     return Column(
       children: [
-        SizedBox(height: 250, child: chart),
+        // ✅ Expanded fills remaining space — no fixed height
+        Expanded(child: chart),
         const SizedBox(height: 8),
-        legend,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _legendIndicator(Colors.blue, "Bike Sale"),
+            const SizedBox(width: 16),
+            _legendIndicator(Colors.green, "Other Sale"),
+          ],
+        ),
       ],
     );
   }
@@ -211,7 +213,6 @@ class DashboardCharts extends StatelessWidget {
 
     final length = emiItems.length;
 
-    // Determine maxY
     double maxY = 0;
     for (var item in emiItems) {
       maxY = [maxY, item.netTotal, item.paidAmount].reduce((a, b) => a > b ? a : b);
@@ -263,6 +264,8 @@ class DashboardCharts extends StatelessWidget {
               },
             ),
           ),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         barGroups: barGroups,
         gridData: FlGridData(show: true),
@@ -270,27 +273,25 @@ class DashboardCharts extends StatelessWidget {
       ),
     );
 
-    final legend = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _legendIndicator(Colors.orange, "Total Due"),
-        const SizedBox(width: 16),
-        _legendIndicator(Colors.green, "Paid"),
-      ],
-    );
-
     return Column(
       children: [
-        SizedBox(height: 250, child: chart),
+        Expanded(child: chart),
         const SizedBox(height: 8),
-        legend,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _legendIndicator(Colors.orange, "Total Due"),
+            const SizedBox(width: 16),
+            _legendIndicator(Colors.green, "Paid"),
+          ],
+        ),
       ],
     );
   }
 
   // ---------------- EXPENSE PIE CHART ----------------
   Widget _expensePieChartWithLegend() {
-    final data = controller.expensePieData; // Only expenses
+    final data = controller.expensePieData;
     final filteredData = data.entries.where((e) => e.value > 0).toList();
 
     if (filteredData.isEmpty) {
@@ -309,7 +310,7 @@ class DashboardCharts extends StatelessWidget {
       Colors.orange,
       Colors.purple,
       Colors.teal,
-      Colors.yellow
+      Colors.yellow,
     ];
 
     final pieChart = PieChart(
@@ -322,9 +323,9 @@ class DashboardCharts extends StatelessWidget {
             value: e.value,
             color: colors[i % colors.length],
             title: e.value.toStringAsFixed(0),
-            radius: 100,
+            radius: 90,
             titleStyle: const TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -341,7 +342,14 @@ class DashboardCharts extends StatelessWidget {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 16, height: 16, color: colors[i % colors.length]),
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: colors[i % colors.length],
+                shape: BoxShape.circle,
+              ),
+            ),
             const SizedBox(width: 4),
             Text(e.key, style: const TextStyle(fontSize: 12)),
           ],
@@ -350,11 +358,9 @@ class DashboardCharts extends StatelessWidget {
     );
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const SizedBox(height: 20),
-        SizedBox(height: 180, child: pieChart),
-        const SizedBox(height: 60),
+        Expanded(child: pieChart),
+        const SizedBox(height: 8),
         legend,
       ],
     );
@@ -365,7 +371,11 @@ class DashboardCharts extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(fontSize: 12)),
       ],

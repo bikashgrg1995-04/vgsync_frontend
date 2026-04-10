@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/modules/bikesales/bike_sale_binding.dart';
 import 'package:vgsync_frontend/app/modules/bikesales/bike_sale_list_page.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_list_page.dart';
-import 'package:vgsync_frontend/app/modules/dashboard/dashboard_binding.dart';
 import 'package:vgsync_frontend/app/modules/expenses/expense_binding.dart';
 import 'package:vgsync_frontend/app/modules/expenses/expense_list_page.dart';
 import 'package:vgsync_frontend/app/modules/followups/followup_binding.dart';
@@ -58,7 +57,7 @@ class AppPages {
         page: () => DashboardPage(),
         transition: Transition.zoom,
         transitionDuration: const Duration(milliseconds: 300),
-        binding: DashboardBinding()),
+        binding: SupplierBinding()),
 
     // ---------- SUPPLIERS ----------
     GetPage(

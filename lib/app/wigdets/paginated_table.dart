@@ -33,8 +33,10 @@ class ModernTable<T> extends StatelessWidget {
       case "s/n":
         return 30;
       case "item no":
-        return 180;
+        return 130;
       case "name":
+        return 195;
+      case "staff name":
         return 150;
       case "stock":
         return 45;
@@ -46,8 +48,7 @@ class ModernTable<T> extends StatelessWidget {
 
       case "followup date":
       case "customer":
-      case "staff":
-        return 130;
+        return 100;
        case "status":
         return 70;
 
