@@ -170,6 +170,24 @@ class _StockListPageState extends State<StockListPage> {
               );
             },
           ),
+           SizedBox(width: SizeConfig.sw(0.008)),
+          _outlineBtn(
+            icon: Icons.price_change_outlined,
+            label: 'MRP',
+            onTap: () {
+              FileUploadDialog.show(
+                context: context,
+                title: 'Update MRP (Price Upload)',
+                endpoint: '/upload/new-mrp-excel/',
+                fileKey: 'file',
+                allowedExtensions: ['xls', 'xlsx'],
+                onSuccess: () async {
+                  await stockController.fetchStocks();
+                  globalController.triggerRefresh(DashboardRefreshType.stock);
+                },
+              );
+            },
+          ),
         ],
       ),
     );

@@ -169,25 +169,25 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                 color: _primary,
               ),
               SizedBox(width: SizeConfig.sw(0.008)),
-    _headerButton(
-      label: 'Import',
-      icon: Icons.upload_file_outlined,
-      onPressed: () {
-        FileUploadDialog.show(
-          context: context,
-          title: 'Import Purchase Excel',
-          endpoint: '/upload/purchase-excel/',
-          fileKey: 'file',
-          allowedExtensions: ['xls', 'xlsx'],
-          onSuccess: () async {
-            await controller.fetchPurchases();
-            await stockController.fetchStocks();
-            globalController.triggerRefresh(DashboardRefreshType.all);
-          },
-        );
-      },
-      color: _primary,
-    ),
+              _headerButton(
+                label: 'Import',
+                icon: Icons.upload_file_outlined,
+                onPressed: () {
+                  FileUploadDialog.show(
+                    context: context,
+                    title: 'Import Purchase Excel',
+                    endpoint: '/upload/purchase-excel/',
+                    fileKey: 'file',
+                    allowedExtensions: ['xls', 'xlsx'],
+                    onSuccess: () async {
+                      await controller.fetchPurchases();
+                      await stockController.fetchStocks();
+                      globalController.triggerRefresh(DashboardRefreshType.all);
+                    },
+                  );
+                },
+                color: _primary,
+              ),
             ],
           ),
           SizedBox(height: SizeConfig.sh(0.018)),
