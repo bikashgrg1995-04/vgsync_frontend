@@ -28,4 +28,22 @@ class CustomerModel {
         'email': email,
         'image': image,
       };
+
+  // Method to create a copy of the current instance with modified fields
+  // This is useful for immutability and updating specific fields
+  CustomerModel copyWith({
+    int? id,
+    String? name,
+    String? contact,
+    String? email,
+    String? image,
+  }) {
+    return CustomerModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      contact: contact ?? this.contact,
+      email: email ?? this.email,
+      image: image ?? this.image,
+    );
+  }
 }

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/models/user_model.dart';
 import 'package:vgsync_frontend/app/data/repositories/auth_repository.dart';
 import 'package:vgsync_frontend/app/data/repositories/user_repository.dart';
+import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import '../routes/app_routes.dart';
 
 class AuthController extends GetxController {
@@ -21,37 +22,75 @@ class AuthController extends GetxController {
   RxBool isLoggedIn = false.obs;
   RxBool isLoading = false.obs;
 
+  RxBool isPasswordHidden = true.obs;
+
+  /// ================= LOGIN =================
   Future<void> login() async {
-    if (usernameController.text.isEmpty || passwordController.text.isEmpty) {
-      Get.snackbar("Error", "Username & password required");
+    final username = usernameController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      DesktopToast.show(
+        "Invalid username or password",
+        backgroundColor: Colors.redAccent,
+      );
       return;
     }
 
     try {
       isLoading.value = true;
 
-      await authRepository.login(
-        usernameController.text.trim(),
-        passwordController.text.trim(),
-      );
+      // ✅ Call login and check success
+      final success = await authRepository.login(username, password);
 
+      if (!success) {
+        DesktopToast.show(
+          "Invalid username or password",
+          backgroundColor: Colors.redAccent,
+        );
+        return;
+      }
+
+      // ✅ Fetch user profile
       final profile = await userRepository.getProfile();
-
       user.value = profile;
       isLoggedIn.value = true;
 
-      Get.offAllNamed(AppRoutes.dashboard);
+      // ✅ Clear login form
+      usernameController.clear();
+      passwordController.clear();
+
+      Get.offAllNamed(AppRoutes.navigation);
+      DesktopToast.show(
+        "Login Successful",
+        backgroundColor: Colors.greenAccent,
+      );
     } catch (e) {
-      Get.snackbar("Login Failed", e.toString());
+      DesktopToast.show(
+        "Something went wrong",
+        backgroundColor: Colors.redAccent,
+      );
+      print("Login error: $e");
     } finally {
       isLoading.value = false;
     }
   }
 
+  /// ================= LOGOUT =================
   Future<void> logout() async {
-    await authRepository.logout();
+    try {
+      await authRepository.logout();
+    } catch (_) {
+      // ignore errors on logout
+    }
+
     user.value = null;
     isLoggedIn.value = false;
+
     Get.offAllNamed(AppRoutes.login);
+    DesktopToast.show(
+      "Logout Successful",
+      backgroundColor: Colors.greenAccent,
+    );
   }
 }

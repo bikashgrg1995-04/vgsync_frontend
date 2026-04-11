@@ -1,20 +1,22 @@
+import 'package:vgsync_frontend/app/data/services/auth_service.dart';
 import 'package:vgsync_frontend/utils/storage.dart';
 
-import '../services/auth_service.dart';
 
 class AuthRepository {
   final AuthService authService;
 
   AuthRepository({required this.authService});
 
-  Future<void> login(String username, String password) async {
-    final data = await authService.login(username, password);
+  Future<bool> login(String username, String password) async {
+    return await authService.login(username, password);
+  }
 
-    await Storage.write('access_token', data['access']);
-    await Storage.write('refresh_token', data['refresh']);
+  Future<bool> refreshToken(String refreshToken) async {
+    return await authService.refreshToken(refreshToken);
   }
 
   Future<void> logout() async {
+    // clear tokens
     await Storage.clear();
   }
 }

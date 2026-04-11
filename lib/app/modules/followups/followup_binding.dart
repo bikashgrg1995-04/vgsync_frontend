@@ -1,9 +1,21 @@
 import 'package:get/get.dart';
-import 'followup_controller.dart';
+import 'package:vgsync_frontend/app/data/repositories/followup_repository.dart';
+import 'package:vgsync_frontend/app/data/services/followup_service.dart';
+import 'package:vgsync_frontend/app/modules/followups/followup_controller.dart';
 
-class FollowupBinding extends Bindings {
+class FollowUpBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut(() => FollowUpController(followUpRepository: Get.find()));
+    // Service
+    final followUpService = FollowUpService();
+
+    // Repository
+    final followUpRepository =
+        FollowUpRepository(followUpService: followUpService);
+
+    // Controller
+    Get.put<FollowUpController>(
+      FollowUpController(followUpRepository: followUpRepository),
+    );
   }
 }

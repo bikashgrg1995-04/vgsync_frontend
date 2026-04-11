@@ -7,8 +7,8 @@ class CategoryRepository {
   CategoryRepository({required this.categoryService});
 
   Future<List<CategoryModel>> getAllCategories() =>
-      categoryService.getAllCategories();
-
+    categoryService.getAllCategories();
+    
   Future<CategoryModel> addCategory(CategoryModel category) =>
       categoryService.addCategory(category);
 
