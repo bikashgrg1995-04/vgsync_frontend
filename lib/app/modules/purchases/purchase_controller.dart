@@ -128,7 +128,7 @@ class PurchaseController extends GetxController {
     remaining.value = net - paid;
 
     if (paid <= 0) {
-      purchaseStatus.value = 'not_paid';
+      purchaseStatus.value = 'pending';
     } else if (remaining.value <= 0) {
       purchaseStatus.value = 'paid';
     } else {
@@ -384,10 +384,10 @@ class PurchaseController extends GetxController {
   List<PurchaseModel> filteredPurchases({String query = ''}) {
     final q = query.toLowerCase();
     return purchases.where((p) {
-      if (selectedSupplierId.value != null &&
-          p.supplier != selectedSupplierId.value) {
-        return false;
-      }
+      // if (selectedSupplierId.value != null &&
+      //     p.supplier != selectedSupplierId.value) {
+      //   return false;
+      // }
 
       if (filterSelectedDate.value != null) {
         final date = filterSelectedDate.value!;
