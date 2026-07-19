@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
-import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../themes/app_colors.dart';
 import 'followup_controller.dart';
@@ -19,20 +18,22 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
   final RxString selectedStatus = 'All'.obs;
 
   // ── Color aliases ──────────────────────────────────────────────────────────
-  static const _bg       = AppColors.background;
-  static const _surface  = AppColors.surface;
-  static const _primary  = AppColors.primary;
-  static const _warning  = AppColors.warning;
-  static const _danger   = AppColors.error;
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _warning = AppColors.warning;
+  static const _danger = AppColors.error;
   static const _textDark = AppColors.textPrimary;
-  static const _textMid  = AppColors.textSecondary;
-  static const _border   = AppColors.divider;
-  static const _shadow   = Color(0x0F000000);
+  static const _textMid = AppColors.textSecondary;
+  static const _border = AppColors.divider;
+  static const _shadow = Color(0x0F000000);
 
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
-      case 'terminated': return _danger;
-      default:           return _warning;
+      case 'terminated':
+        return _danger;
+      default:
+        return _warning;
     }
   }
 
@@ -44,7 +45,8 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => controller.fetchFollowUps());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => controller.fetchFollowUps());
   }
 
   @override
@@ -92,7 +94,9 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
+        ],
       ),
       child: Column(
         children: [
@@ -109,13 +113,17 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                   ),
                   child: TextField(
                     controller: searchController,
-                    style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                    style: TextStyle(
+                        fontSize: SizeConfig.res(3.4), color: _textDark),
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
+                      prefixIcon: Icon(Icons.search,
+                          color: _textMid, size: SizeConfig.res(5)),
                       hintText: 'Search follow-ups...',
-                      hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
+                      hintStyle: TextStyle(
+                          color: _textMid, fontSize: SizeConfig.res(3.4)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
@@ -126,7 +134,9 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                     label: 'Refresh',
                     icon: Icons.refresh_rounded,
                     color: _primary,
-                    onPressed: controller.isLoading.value ? null : controller.fetchFollowUps,
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : controller.fetchFollowUps,
                   )),
             ],
           ),
@@ -134,7 +144,11 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
           Obx(() => Row(
                 children: ['All', 'Pending', 'Terminated'].map((s) {
                   final isSelected = selectedStatus.value == s;
-                  final color = s == 'Terminated' ? _danger : s == 'Pending' ? _warning : _primary;
+                  final color = s == 'Terminated'
+                      ? _danger
+                      : s == 'Pending'
+                          ? _warning
+                          : _primary;
                   return Padding(
                     padding: EdgeInsets.only(right: SizeConfig.sw(0.008)),
                     child: GestureDetector(
@@ -148,7 +162,8 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                           color: isSelected ? color : color.withOpacity(0.07),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: isSelected ? color : color.withOpacity(0.3)),
+                              color:
+                                  isSelected ? color : color.withOpacity(0.3)),
                         ),
                         child: Text(s,
                             style: TextStyle(
@@ -177,14 +192,18 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
         padding: EdgeInsets.symmetric(
             horizontal: SizeConfig.sw(0.014), vertical: SizeConfig.sh(0.013)),
         decoration: BoxDecoration(
-          color: onPressed == null ? _border.withOpacity(0.3) : color.withOpacity(0.08),
+          color: onPressed == null
+              ? _border.withOpacity(0.3)
+              : color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: onPressed == null ? _border : color.withOpacity(0.25)),
+          border: Border.all(
+              color: onPressed == null ? _border : color.withOpacity(0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: SizeConfig.res(4.5),
+            Icon(icon,
+                size: SizeConfig.res(4.5),
                 color: onPressed == null ? _textMid : color),
             SizedBox(width: SizeConfig.sw(0.005)),
             Text(label,
@@ -227,7 +246,8 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                   size: SizeConfig.res(18), color: _border),
               SizedBox(height: SizeConfig.sh(0.015)),
               Text('No follow-ups found',
-                  style: TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
+                  style:
+                      TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
             ],
           ),
         );
@@ -267,12 +287,11 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                   color: _surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isTerminated
-                        ? _danger.withOpacity(0.2)
-                        : _border,
+                    color: isTerminated ? _danger.withOpacity(0.2) : _border,
                   ),
                   boxShadow: const [
-                    BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+                    BoxShadow(
+                        color: _shadow, blurRadius: 6, offset: Offset(0, 2))
                   ],
                 ),
                 child: Row(
@@ -448,15 +467,16 @@ class _FollowUpListPageState extends State<FollowUpListPage> {
                 ),
                 child: Text(
                   'Are you sure you want to terminate this follow-up? This action cannot be undone.',
-                  style: TextStyle(
-                      fontSize: SizeConfig.res(3.4), color: _textMid),
+                  style:
+                      TextStyle(fontSize: SizeConfig.res(3.4), color: _textMid),
                 ),
               ),
               SizedBox(height: SizeConfig.sh(0.016)),
               TextField(
                 controller: reasonCtrl,
                 maxLines: 2,
-                style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                style:
+                    TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
                 decoration: InputDecoration(
                   labelText: 'Reason (optional)',
                   labelStyle:

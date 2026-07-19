@@ -5,6 +5,7 @@ import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/modules/purchases/purchase_detail_page.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_controller.dart';
+import 'package:vgsync_frontend/app/wigdets/percent_amount_pair.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
 import '../../data/models/purchase_model.dart';
 import '../../data/models/stock_model.dart';
@@ -601,11 +602,11 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
             child: Column(
               children: [
                 _buildFormHeader(),
-                SizedBox(height: SizeConfig.sh(0.02)),
+                SizedBox(height: SizeConfig.sh(0.01)),
                 _buildAddItemButton(),
-                SizedBox(height: SizeConfig.sh(0.02)),
+                SizedBox(height: SizeConfig.sh(0.01)),
                 _buildItemList(),
-                SizedBox(height: SizeConfig.sh(0.02)),
+                SizedBox(height: SizeConfig.sh(0.01)),
                 _buildTotalsCard(),
               ],
             ),
@@ -645,102 +646,95 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _border),
           ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              height: SizeConfig.sh(0.2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _totalColumn(
-                        label: 'Grand Total',
-                        value: controller.grandTotal.toStringAsFixed(2),
-                      ),
-                      SizedBox(width: SizeConfig.sw(0.05)),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Discount Amount',
-                              style: TextStyle(
-                                  fontSize: SizeConfig.res(3.2),
-                                  color: _textMid)),
-                          SizedBox(height: SizeConfig.sh(0.005)),
-                          SizedBox(
-                            width: SizeConfig.sw(0.08), // अलि चौडा
-                            height: SizeConfig.sh(0.06),
-                            child: TextField(
-                              controller: controller.discountAmountController,
-                              keyboardType: TextInputType.number,
-                              style: TextStyle(
-                                  fontSize: SizeConfig.res(3.4),
-                                  color: _textDark),
-                              decoration: const InputDecoration(isDense: true),
-                              onChanged: (_) => controller.items.refresh(),
-                            ),
+          child: SizedBox(
+            height: SizeConfig.sh(0.2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _totalColumn(
+                      label: 'Grand Total',
+                      value: controller.grandTotal.toStringAsFixed(2),
+                    ),
+                    SizedBox(width: SizeConfig.sw(0.05)),
+                    // ✅ Discount (percent + amount)
+                    buildPercentAmountPair(
+                      label: 'Discount',
+                      percentController: controller.discountPercentController,
+                      amountController: controller.discountAmountController,
+                      onChanged: () {},
+                      width: 0.06,
+                    ),
+                    SizedBox(width: SizeConfig.sw(0.03)),
+
+                    // ✅ Transit Discount (percent + amount)
+                    buildPercentAmountPair(
+                      label: 'Transit Discount',
+                      percentController:
+                          controller.transitDiscountPercentController,
+                      amountController:
+                          controller.transitDiscountAmountController,
+                      onChanged: () {},
+                      width: 0.06,
+                    ),
+                    SizedBox(width: SizeConfig.sw(0.04)),
+                    _totalColumn(
+                      label: 'Net Total',
+                      value: controller.netTotal.toStringAsFixed(2),
+                      valueColor: _primary,
+                    ),
+                  ],
+                ),
+                SizedBox(height: SizeConfig.sh(0.02)),
+                Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Paid Amount',
+                            style: TextStyle(
+                                fontSize: SizeConfig.res(3.2),
+                                color: _textMid)),
+                        SizedBox(height: SizeConfig.sh(0.005)),
+                        SizedBox(
+                          width: SizeConfig.sw(0.1),
+                          height: SizeConfig.sh(0.06),
+                          child: TextField(
+                            controller: controller.paidController,
+                            keyboardType: TextInputType.number,
+                            style: TextStyle(
+                                fontSize: SizeConfig.res(3.4),
+                                color: _textDark),
+                            decoration: const InputDecoration(isDense: true),
+                            onChanged: (_) => controller.items.refresh(),
                           ),
-                        ],
-                      ),
-                      SizedBox(width: SizeConfig.sw(0.04)),
-                      _totalColumn(
-                        label: 'Net Total',
-                        value: controller.netTotal.toStringAsFixed(2),
-                        valueColor: _primary,
-                      ),
-                      SizedBox(width: SizeConfig.sw(0.04)),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Paid Amount',
-                              style: TextStyle(
-                                  fontSize: SizeConfig.res(3.2),
-                                  color: _textMid)),
-                          SizedBox(height: SizeConfig.sh(0.005)),
-                          SizedBox(
-                            width: SizeConfig.sw(0.1),
-                            height: SizeConfig.sh(0.06),
-                            child: TextField(
-                              controller: controller.paidController,
-                              keyboardType: TextInputType.number,
-                              style: TextStyle(
-                                  fontSize: SizeConfig.res(3.4),
-                                  color: _textDark),
-                              decoration: const InputDecoration(isDense: true),
-                              onChanged: (_) => controller.items.refresh(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: SizeConfig.sh(0.01)),
-                  Row(
-                    children: [
-                      _totalColumn(
-                        label: 'Remaining',
-                        value: controller.remaining.value.toStringAsFixed(2),
-                        valueColor: controller.remaining.value > 0
-                            ? _warning
-                            : _success,
-                      ),
-                      SizedBox(width: SizeConfig.sw(0.04)),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Status',
-                              style: TextStyle(
-                                  fontSize: SizeConfig.res(3.2),
-                                  color: _textMid)),
-                          SizedBox(height: SizeConfig.sh(0.005)),
-                          _statusPill(controller.purchaseStatus.value),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(width: SizeConfig.sw(0.04)),
+                    _totalColumn(
+                      label: 'Remaining',
+                      value: controller.remaining.value.toStringAsFixed(2),
+                      valueColor:
+                          controller.remaining.value > 0 ? _warning : _success,
+                    ),
+                    SizedBox(width: SizeConfig.sw(0.04)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Status',
+                            style: TextStyle(
+                                fontSize: SizeConfig.res(3.2),
+                                color: _textMid)),
+                        SizedBox(height: SizeConfig.sh(0.005)),
+                        _statusPill(controller.purchaseStatus.value),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ));

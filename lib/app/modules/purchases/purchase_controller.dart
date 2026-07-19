@@ -15,7 +15,7 @@ import '../../modules/stock/stock_controller.dart';
 /// ===============================
 class PurchaseItemController {
   final PurchaseItemModel item;
-  final VoidCallback onChanged; // 🔥 ADD THIS
+  final VoidCallback onChanged;
 
   final quantity = 1.obs;
   final price = 0.0.obs;
@@ -25,7 +25,7 @@ class PurchaseItemController {
 
   PurchaseItemController({
     required this.item,
-    required this.onChanged, // 🔥 ADD THIS
+    required this.onChanged,
   }) {
     quantity.value = item.quantity;
     price.value = item.price;
@@ -36,16 +36,15 @@ class PurchaseItemController {
 
     quantityController.addListener(() {
       quantity.value = int.tryParse(quantityController.text) ?? 1;
-      onChanged(); // 🔥 trigger recalculation
+      onChanged();
     });
 
     priceController.addListener(() {
       price.value = double.tryParse(priceController.text) ?? 0.0;
-      onChanged(); // 🔥 trigger recalculation
+      onChanged();
     });
   }
 
-  // Convert reactive form back to model
   PurchaseItemModel toModel() {
     final qty = int.tryParse(quantityController.text) ?? 0;
     final price = double.tryParse(priceController.text) ?? 0.0;
@@ -75,29 +74,38 @@ class PurchaseController extends GetxController {
   final purchases = <PurchaseModel>[].obs;
   final items = <PurchaseItemController>[].obs;
   final isLoading = false.obs;
-
   final isModified = false.obs;
 
   // ---------------- FORM ----------------
   final selectedSupplierId = RxnInt();
-  final selectedStaffId = RxnInt(); // Created by staff
- // final discountController = TextEditingController(text: '0');
+  final selectedStaffId = RxnInt();
 
+  // Discount (percent + amount pair)
+  final discountPercentController = TextEditingController(text: '0');
   final discountAmountController = TextEditingController(text: '0');
+
+  // Transit Discount (percent + amount pair)
+  final transitDiscountPercentController = TextEditingController(text: '0');
+  final transitDiscountAmountController = TextEditingController(text: '0');
+
   final paidController = TextEditingController(text: '0');
   final dateController = TextEditingController();
 
-  // Reactive calculation for remaining & status
   final remaining = 0.0.obs;
   final purchaseStatus = 'not_paid'.obs;
 
-  // ---------------- CONTROLLERS ----------------
+  // guards to prevent infinite listener loops
+  bool _syncingDiscount = false;
+  bool _syncingTransit = false;
+
+  // ✅ tolerance for floating point comparisons (paisa-level rounding noise)
+  static const double _epsilon = 0.01;
+
   final StockController stockController = Get.find();
   final GlobalController globalController = Get.find();
   final SupplierController supplierController = Get.find();
   final ExpenseController expenseController = Get.find();
 
-  //filter
   Rx<DateTime?> filterSelectedDate = Rx<DateTime?>(null);
   RxString selectedStatus = 'all'.obs;
   final searchController = TextEditingController();
@@ -106,36 +114,121 @@ class PurchaseController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Recalculate when items change
-    ever(items, (_) => _recalculateTotals());
+    ever(items, (_) => _onItemsChanged());
 
-    // Recalculate when discount changes
-    discountAmountController.addListener(_recalculateTotals);
+    discountPercentController.addListener(_onDiscountPercentChanged);
+    discountAmountController.addListener(_onDiscountAmountChanged);
 
-    // Recalculate when paid amount changes
+    transitDiscountPercentController.addListener(_onTransitPercentChanged);
+    transitDiscountAmountController.addListener(_onTransitAmountChanged);
+
     paidController.addListener(_recalculateTotals);
 
     supplierController.fetchSuppliers();
   }
 
+  // =============================== //
+  // ROUNDING HELPER //
+  // ===============================
+  // ✅ हरेक calculation लाई ठ्याक्कै 2 decimal places मा snap गर्छ,
+  //    floating-point precision drift (0.6999999... जस्ता issues) हटाउन
+  double _round2(double value) => (value * 100).roundToDouble() / 100;
+
+  // =============================== //
+  // SYNC LOGIC — DISCOUNT //
+  // ===============================
+  void _onDiscountPercentChanged() {
+    if (_syncingDiscount) return;
+    _syncingDiscount = true;
+
+    final pct = double.tryParse(discountPercentController.text) ?? 0;
+    final amount = _round2(total * (pct / 100));
+    discountAmountController.text = amount.toStringAsFixed(2);
+
+    _syncingDiscount = false;
+    _recalculateTotals();
+  }
+
+  void _onDiscountAmountChanged() {
+    if (_syncingDiscount) return;
+    _syncingDiscount = true;
+
+    final amount = double.tryParse(discountAmountController.text) ?? 0;
+    final pct = total > 0 ? (amount / total) * 100 : 0;
+    discountPercentController.text = pct.toStringAsFixed(2);
+
+    _syncingDiscount = false;
+    _recalculateTotals();
+  }
+
+  // =============================== //
+  // SYNC LOGIC — TRANSIT DISCOUNT //
+  // ===============================
+  void _onTransitPercentChanged() {
+    if (_syncingTransit) return;
+    _syncingTransit = true;
+
+    final pct = double.tryParse(transitDiscountPercentController.text) ?? 0;
+    final base = amountBeforeTransitDiscount;
+    final amount = _round2(base * (pct / 100));
+    transitDiscountAmountController.text = amount.toStringAsFixed(2);
+
+    _syncingTransit = false;
+    _recalculateTotals();
+  }
+
+  void _onTransitAmountChanged() {
+    if (_syncingTransit) return;
+    _syncingTransit = true;
+
+    final amount = double.tryParse(transitDiscountAmountController.text) ?? 0;
+    final base = amountBeforeTransitDiscount;
+    final pct = base > 0 ? (amount / base) * 100 : 0;
+    transitDiscountPercentController.text = pct.toStringAsFixed(2);
+
+    _syncingTransit = false;
+    _recalculateTotals();
+  }
+
+  // जब items (qty/price) बदलिन्छ, grand total बदलिन्छ —
+  // discount amount लाई current percent अनुसार पुनः calculate गर्नुपर्छ
+  void _onItemsChanged() {
+    final pct = double.tryParse(discountPercentController.text) ?? 0;
+    if (pct > 0) {
+      _syncingDiscount = true;
+      discountAmountController.text =
+          _round2(total * (pct / 100)).toStringAsFixed(2);
+      _syncingDiscount = false;
+    }
+
+    final transitPct =
+        double.tryParse(transitDiscountPercentController.text) ?? 0;
+    if (transitPct > 0) {
+      _syncingTransit = true;
+      transitDiscountAmountController.text =
+          _round2(amountBeforeTransitDiscount * (transitPct / 100))
+              .toStringAsFixed(2);
+      _syncingTransit = false;
+    }
+
+    _recalculateTotals();
+  }
+
   void _recalculateTotals() {
-    final t = items.fold<double>(0.0, (s, i) => s + i.totalPrice);
-    final discAmount = double.tryParse(discountAmountController.text) ?? 0;
+    final net = _round2(netTotal);
+    final paid = _round2(double.tryParse(paidController.text) ?? 0);
 
-    final net = t - discAmount;
-    final paid = double.tryParse(paidController.text) ?? 0;
+    remaining.value = _round2(net - paid);
 
-    remaining.value = net - paid;
-
+    // ✅ epsilon tolerance — 0.01 भित्रको difference लाई "बराबर" मान्ने
     if (paid <= 0) {
       purchaseStatus.value = 'pending';
-    } else if (remaining.value <= 0) {
+    } else if (remaining.value <= _epsilon) {
       purchaseStatus.value = 'paid';
     } else {
       purchaseStatus.value = 'partial';
     }
 
-    // mark as modified whenever totals recalc
     isModified.value = true;
   }
 
@@ -155,19 +248,33 @@ class PurchaseController extends GetxController {
   }
 
   // =============================== //
-  // CALCULATION BLOCK //
+  // CALCULATION BLOCK — rounded getters //
   // ===============================
-  double get total => items.fold<double>(0.0, (s, i) => s + i.totalPrice);
-  double get discountAmount => double.tryParse(discountAmountController.text) ?? 0;
-  double get netTotal => total - discountAmount;
-  double get paidAmount => double.tryParse(paidController.text) ?? 0;
+  double get total =>
+      _round2(items.fold<double>(0.0, (s, i) => s + i.totalPrice));
+
+  double get discountPercent =>
+      double.tryParse(discountPercentController.text) ?? 0;
+  double get discountAmount =>
+      _round2(double.tryParse(discountAmountController.text) ?? 0);
+
+  double get amountBeforeTransitDiscount => _round2(total - discountAmount);
+
+  double get transitDiscountPercent =>
+      double.tryParse(transitDiscountPercentController.text) ?? 0;
+  double get transitDiscountAmount =>
+      _round2(double.tryParse(transitDiscountAmountController.text) ?? 0);
+
+  double get netTotal =>
+      _round2(amountBeforeTransitDiscount - transitDiscountAmount);
+
+  double get paidAmount => _round2(double.tryParse(paidController.text) ?? 0);
   double get grandTotal => total;
 
   // =============================== //
   // ITEM MANAGEMENT //
   // ===============================
   void addItem(StockModel stock) {
-    // Check if item is already added
     final exists = items.any((i) => i.item.item == stock.id);
     if (exists) {
       DesktopToast.show(
@@ -185,14 +292,13 @@ class PurchaseController extends GetxController {
           quantity: 1,
           price: stock.purchasePrice,
         ),
-        onChanged: _recalculateTotals,
+        onChanged: _onItemsChanged,
       ),
     );
     isModified.value = true;
   }
 
   Future<void> pickPurchaseDate(BuildContext context) async {
-    // Use current date if the field is empty or invalid
     final initialDate =
         DateTime.tryParse(dateController.text) ?? DateTime.now();
 
@@ -210,7 +316,7 @@ class PurchaseController extends GetxController {
 
   void removeItem(PurchaseItemController item) {
     items.remove(item);
-    _recalculateTotals();
+    _onItemsChanged();
   }
 
   void clearItems() => items.clear();
@@ -221,7 +327,10 @@ class PurchaseController extends GetxController {
   void clearForm() {
     selectedSupplierId.value = null;
     selectedStaffId.value = null;
+    discountPercentController.text = '0';
     discountAmountController.text = '0';
+    transitDiscountPercentController.text = '0';
+    transitDiscountAmountController.text = '0';
     paidController.text = '0';
     dateController.clear();
     clearItems();
@@ -231,16 +340,22 @@ class PurchaseController extends GetxController {
     selectedSupplierId.value = purchase.supplier;
     selectedStaffId.value = purchase.createdBy;
     dateController.text = purchase.date.toIso8601String().split('T')[0];
-    paidController.text = purchase.paidAmount.toString();
+    paidController.text = purchase.paidAmount.toStringAsFixed(2);
 
     discountAmountController.text = purchase.discountAmount.toStringAsFixed(2);
+    discountPercentController.text =
+        purchase.discountPercentage.toStringAsFixed(2);
 
-    // Replace items list completely with fresh controllers
+    transitDiscountAmountController.text =
+        purchase.transitDiscountAmount.toStringAsFixed(2);
+    transitDiscountPercentController.text =
+        purchase.transitDiscountPercentage.toStringAsFixed(2);
+
     items.assignAll(
       purchase.items.map(
         (i) => PurchaseItemController(
           item: i,
-          onChanged: _recalculateTotals,
+          onChanged: _onItemsChanged,
         ),
       ),
     );
@@ -266,7 +381,11 @@ class PurchaseController extends GetxController {
               ))
           .toList(),
       grandTotal: total,
+      discountPercentage: discountPercent,
       discountAmount: discountAmount,
+      amountBeforeTransitDiscount: amountBeforeTransitDiscount,
+      transitDiscountPercentage: transitDiscountPercent,
+      transitDiscountAmount: transitDiscountAmount,
       netTotal: netTotal,
       paidAmount: paidAmount,
       remainingAmount: remaining.value,
@@ -384,11 +503,6 @@ class PurchaseController extends GetxController {
   List<PurchaseModel> filteredPurchases({String query = ''}) {
     final q = query.toLowerCase();
     return purchases.where((p) {
-      // if (selectedSupplierId.value != null &&
-      //     p.supplier != selectedSupplierId.value) {
-      //   return false;
-      // }
-
       if (filterSelectedDate.value != null) {
         final date = filterSelectedDate.value!;
         if (p.date.year != date.year ||

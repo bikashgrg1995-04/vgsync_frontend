@@ -30,18 +30,17 @@ class _DashboardPageState extends State<DashboardPage> {
   final DashboardController controller = Get.find();
 
   // ── Derived constants from AppColors ──────────────────────────────────────
-  static const _bg         = AppColors.background;
-  static const _surface    = AppColors.surface;
-  static const _primary    = AppColors.primary;
-  static final _primaryLight = const Color(0xFF4A6CF7).withOpacity(0.1);
-  static const _accent     = Color(0xFF0EA5E9);
-  static const _success    = AppColors.success;
-  static const _warning    = Color(0xFFF59E0B);
-  static const _danger     = AppColors.error;
-  static const _textDark   = AppColors.textPrimary;
-  static const _textMid    = AppColors.textSecondary;
-  static const _border     = Color(0xFFE5E7EB);
-  static const _shadow     = Color(0x0F000000);
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _accent = Color(0xFF0EA5E9);
+  static const _success = AppColors.success;
+  static const _warning = Color(0xFFF59E0B);
+  static const _danger = AppColors.error;
+  static const _textDark = AppColors.textPrimary;
+  static const _textMid = AppColors.textSecondary;
+  static const _border = Color(0xFFE5E7EB);
+  static const _shadow = Color(0x0F000000);
 
   @override
   Widget build(BuildContext context) {
@@ -122,8 +121,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _chartToggle() {
     final labels = ['Income', 'Expense', 'Installments'];
-    final keys   = ['income', 'expense', 'emi'];
-    final icons  = [Icons.trending_up, Icons.trending_down, Icons.payment];
+    final keys = ['income', 'expense', 'emi'];
+    final icons = [Icons.trending_up, Icons.trending_down, Icons.payment];
 
     return Obx(() => Container(
           decoration: BoxDecoration(
@@ -221,7 +220,8 @@ class _DashboardPageState extends State<DashboardPage> {
           Expanded(
             flex: 4,
             child: _surfaceCard(
-              child: SizedBox(height: SizeConfig.sh(0.38), child: DashboardCharts()),
+              child: SizedBox(
+                  height: SizeConfig.sh(0.38), child: DashboardCharts()),
             ),
           ),
           SizedBox(width: SizeConfig.sw(0.015)),
@@ -235,7 +235,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       children: [
         _surfaceCard(
-          child: SizedBox(height: SizeConfig.sh(0.35), child: DashboardCharts()),
+          child:
+              SizedBox(height: SizeConfig.sh(0.35), child: DashboardCharts()),
         ),
         SizedBox(height: SizeConfig.sh(0.02)),
         SizedBox(height: SizeConfig.sh(0.38), child: _creditTable()),
@@ -262,7 +263,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _creditTable() {
     return Obx(() {
       if (controller.isCreditLoading.value) {
-        return _surfaceCard(child: const Center(child: CircularProgressIndicator()));
+        return _surfaceCard(
+            child: const Center(child: CircularProgressIndicator()));
       }
 
       if (controller.selectedChart.value == 'emi') {
@@ -271,13 +273,20 @@ class _DashboardPageState extends State<DashboardPage> {
           child: ModernTable<credit_model.CreditItem>(
             title: "EMI / Installments",
             rows: controller.pagedCreditItems,
-
             currentPage: controller.creditCurrentPageBackend - 1,
             totalPages: controller.creditTotalPages,
             onPageChanged: (page) => controller.fetchCredits(page: page),
-            columnTitles: const ["S/N", "Amount", "Due Date", "Customer", "Contact", "Status"],
+            columnTitles: const [
+              "S/N",
+              "Amount",
+              "Due Date",
+              "Customer",
+              "Contact",
+              "Status"
+            ],
             cellBuilders: [
-              (i, idx) => Text('${idx + 1 + (controller.creditCurrentPageBackend - 1) * controller.credit.emi.pagination.pageSize}'),
+              (i, idx) => Text(
+                  '${idx + 1 + (controller.creditCurrentPageBackend - 1) * controller.credit.emi.pagination.pageSize}'),
               (i, _) => Text(i.remainingAmount.toStringAsFixed(0)),
               (i, _) => Text(i.dueDate?.split("T").first ?? "-"),
               (i, _) => Text(i.customerName ?? "-"),
@@ -289,7 +298,7 @@ class _DashboardPageState extends State<DashboardPage> {
       }
 
       return _surfaceCard(
-         padding: EdgeInsets.all(SizeConfig.res(3)),
+        padding: EdgeInsets.all(SizeConfig.res(3)),
         child: ModernTable<credit_model.CreditItem>(
           title: controller.selectedChart.value == 'income'
               ? "Income Credits : Sales"
@@ -298,10 +307,20 @@ class _DashboardPageState extends State<DashboardPage> {
           currentPage: controller.creditCurrentPageBackend - 1,
           totalPages: controller.creditTotalPages,
           onPageChanged: (page) => controller.fetchCredits(page: page),
-          columnTitles: const ["S/N", "Date", "Name", "Total", "Remaining", "Credit Days"],
+          columnTitles: const [
+            "S/N",
+            "Date",
+            "Name",
+            "Total",
+            "Remaining",
+            "Credit Days"
+          ],
           cellBuilders: [
             (i, idx) {
-              final serial = idx + 1 + ((controller.creditCurrentPageBackend - 1) * controller.credit.sale.pagination.pageSize);
+              final serial = idx +
+                  1 +
+                  ((controller.creditCurrentPageBackend - 1) *
+                      controller.credit.sale.pagination.pageSize);
               return Text('$serial');
             },
             (i, _) => Text(controller.getCreditDate(i)),
@@ -327,11 +346,17 @@ class _DashboardPageState extends State<DashboardPage> {
 
       return Row(
         children: [
-          Expanded(child: _summaryTile('Net Total', credit.totals.totalNetAmount, Icons.account_balance_wallet_outlined, _primary)),
+          Expanded(
+              child: _summaryTile('Net Total', credit.totals.totalNetAmount,
+                  Icons.account_balance_wallet_outlined, _primary)),
           SizedBox(width: SizeConfig.sw(0.01)),
-          Expanded(child: _summaryTile('Paid', credit.totals.totalPaidAmount, Icons.check_circle_outline, _success)),
+          Expanded(
+              child: _summaryTile('Paid', credit.totals.totalPaidAmount,
+                  Icons.check_circle_outline, _success)),
           SizedBox(width: SizeConfig.sw(0.01)),
-          Expanded(child: _summaryTile('Remaining', credit.totals.totalCreditAmount, Icons.pending_outlined, _warning)),
+          Expanded(
+              child: _summaryTile('Remaining', credit.totals.totalCreditAmount,
+                  Icons.pending_outlined, _warning)),
         ],
       );
     });
@@ -347,7 +372,9 @@ class _DashboardPageState extends State<DashboardPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+        ],
       ),
       child: Row(
         children: [
@@ -365,7 +392,8 @@ class _DashboardPageState extends State<DashboardPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: TextStyle(fontSize: SizeConfig.res(3), color: _textMid)),
+                    style: TextStyle(
+                        fontSize: SizeConfig.res(3), color: _textMid)),
                 SizedBox(height: SizeConfig.sh(0.003)),
                 Text(
                   'Rs. ${value.toStringAsFixed(0)}',
@@ -397,14 +425,16 @@ class _DashboardPageState extends State<DashboardPage> {
                   width: SizeConfig.sw(0.34),
                   child: _surfaceCard(
                     padding: EdgeInsets.all(SizeConfig.res(3)),
-                    child: SizedBox(height: SizeConfig.sh(0.46), child: _lowStockTable()),
+                    child: SizedBox(
+                        height: SizeConfig.sh(0.46), child: _lowStockTable()),
                   ),
                 ),
                 SizedBox(width: SizeConfig.sw(0.015)),
                 Expanded(
                   child: _surfaceCard(
-                     padding: EdgeInsets.all(SizeConfig.res(3)),
-                    child: SizedBox(height: SizeConfig.sh(0.46), child: _followupTable()),
+                    padding: EdgeInsets.all(SizeConfig.res(3)),
+                    child: SizedBox(
+                        height: SizeConfig.sh(0.46), child: _followupTable()),
                   ),
                 ),
               ],
@@ -416,17 +446,20 @@ class _DashboardPageState extends State<DashboardPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                   width: SizeConfig.sw(0.44),
+                  width: SizeConfig.sw(0.44),
                   child: _surfaceCard(
-                     padding: EdgeInsets.all(SizeConfig.res(3)),
-                    child: SizedBox(height: SizeConfig.sh(0.46), child: _ordersTable()),
+                    padding: EdgeInsets.all(SizeConfig.res(3)),
+                    child: SizedBox(
+                        height: SizeConfig.sh(0.46), child: _ordersTable()),
                   ),
                 ),
                 SizedBox(width: SizeConfig.sw(0.015)),
                 Expanded(
                   child: _surfaceCard(
-                     padding: EdgeInsets.all(SizeConfig.res(3)),
-                    child: SizedBox(height: SizeConfig.sh(0.46), child: _staffSalaryTable()),
+                    padding: EdgeInsets.all(SizeConfig.res(3)),
+                    child: SizedBox(
+                        height: SizeConfig.sh(0.46),
+                        child: _staffSalaryTable()),
                   ),
                 ),
               ],
@@ -438,13 +471,25 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Column(
       children: [
-        _surfaceCard(padding: EdgeInsets.zero, child: SizedBox(height: SizeConfig.sh(0.46), child: _lowStockTable())),
+        _surfaceCard(
+            padding: EdgeInsets.zero,
+            child:
+                SizedBox(height: SizeConfig.sh(0.46), child: _lowStockTable())),
         SizedBox(height: SizeConfig.sh(0.02)),
-        _surfaceCard(padding: EdgeInsets.zero, child: SizedBox(height: SizeConfig.sh(0.46), child: _followupTable())),
+        _surfaceCard(
+            padding: EdgeInsets.zero,
+            child:
+                SizedBox(height: SizeConfig.sh(0.46), child: _followupTable())),
         SizedBox(height: SizeConfig.sh(0.02)),
-        _surfaceCard(padding: EdgeInsets.zero, child: SizedBox(height: SizeConfig.sh(0.46), child: _ordersTable())),
+        _surfaceCard(
+            padding: EdgeInsets.zero,
+            child:
+                SizedBox(height: SizeConfig.sh(0.46), child: _ordersTable())),
         SizedBox(height: SizeConfig.sh(0.02)),
-        _surfaceCard(padding: EdgeInsets.zero, child: SizedBox(height: SizeConfig.sh(0.46), child: _staffSalaryTable())),
+        _surfaceCard(
+            padding: EdgeInsets.zero,
+            child: SizedBox(
+                height: SizeConfig.sh(0.46), child: _staffSalaryTable())),
       ],
     );
   }
@@ -452,7 +497,8 @@ class _DashboardPageState extends State<DashboardPage> {
   // ── TABLE WIDGETS ─────────────────────────────────────────────────────────
   Widget _lowStockTable() {
     return Obx(() {
-      if (controller.isLowStockLoading.value) return const Center(child: CircularProgressIndicator());
+      if (controller.isLowStockLoading.value)
+        return const Center(child: CircularProgressIndicator());
       return ModernTable<stock_model.StockItem>(
         title: "Low Stocks",
         rows: controller.pagedStockItems,
@@ -461,9 +507,16 @@ class _DashboardPageState extends State<DashboardPage> {
         onPageChanged: (page) => controller.fetchLowStock(page: page),
         columnTitles: const ["S/N", "Item No", "Name", "Stock"],
         cellBuilders: [
-          (i, idx) => Text('${idx + 1 + (controller.stockCurrentPageBackend - 1) * controller.stockData.value.pagination.pageSize}'),
-          (i, _) => Text(i.itemNo, style: TextStyle(fontSize: SizeConfig.res(3.5)),),
-          (i, _) => Text(i.name, style: TextStyle(fontSize: SizeConfig.res(3.5)),),
+          (i, idx) => Text(
+              '${idx + 1 + (controller.stockCurrentPageBackend - 1) * controller.stockData.value.pagination.pageSize}'),
+          (i, _) => Text(
+                i.itemNo,
+                style: TextStyle(fontSize: SizeConfig.res(3.5)),
+              ),
+          (i, _) => Text(
+                i.name,
+                style: TextStyle(fontSize: SizeConfig.res(3.5)),
+              ),
           (i, _) => _stockBadge(i.stock),
         ],
       );
@@ -472,16 +525,25 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _followupTable() {
     return Obx(() {
-      if (controller.isFollowupLoading.value) return const Center(child: CircularProgressIndicator());
+      if (controller.isFollowupLoading.value)
+        return const Center(child: CircularProgressIndicator());
       return ModernTable<followup_model.FollowupItem>(
         title: "Follow-ups",
         rows: controller.pagedFollowups,
         currentPage: controller.followupCurrentPageBackend - 1,
         totalPages: controller.followupTotalPages,
         onPageChanged: (page) => controller.fetchFollowups(page: page),
-        columnTitles: const ["S/N", "Date", "Customer", "Vehicle", "Contact", "Status"],
+        columnTitles: const [
+          "S/N",
+          "Date",
+          "Customer",
+          "Vehicle",
+          "Contact",
+          "Status"
+        ],
         cellBuilders: [
-          (i, idx) => Text('${idx + 1 + (controller.followupCurrentPageBackend - 1) * controller.followupData.value.pagination.pageSize}'),
+          (i, idx) => Text(
+              '${idx + 1 + (controller.followupCurrentPageBackend - 1) * controller.followupData.value.pagination.pageSize}'),
           (i, _) => Text(i.followUpDate.split("T").first),
           (i, _) => Text(i.customerName),
           (i, _) => Text(i.vehicle),
@@ -494,16 +556,25 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _ordersTable() {
     return Obx(() {
-      if (controller.isOrdersLoading.value) return const Center(child: CircularProgressIndicator());
+      if (controller.isOrdersLoading.value)
+        return const Center(child: CircularProgressIndicator());
       return ModernTable<order_model.OrderItem>(
         title: "Orders",
         rows: controller.pagedOrders,
         currentPage: controller.ordersCurrentPageBackend - 1,
         totalPages: controller.ordersTotalPages,
         onPageChanged: (page) => controller.fetchOrders(page: page),
-        columnTitles: const ["S/N", "Date", "Customer", "Total", "Remaining", "Status"],
+        columnTitles: const [
+          "S/N",
+          "Date",
+          "Customer",
+          "Total",
+          "Remaining",
+          "Status"
+        ],
         cellBuilders: [
-          (i, idx) => Text('${idx + 1 + (controller.ordersCurrentPageBackend - 1) * controller.orderData.value.pagination.pageSize}'),
+          (i, idx) => Text(
+              '${idx + 1 + (controller.ordersCurrentPageBackend - 1) * controller.orderData.value.pagination.pageSize}'),
           (i, _) => Text(i.orderDate.split("T").first),
           (i, _) => Text(i.customerName),
           (i, _) => Text(i.totalAmount.toStringAsFixed(0)),
@@ -516,7 +587,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _staffSalaryTable() {
     return Obx(() {
-      if (controller.isStaffSalaryLoading.value) return const Center(child: CircularProgressIndicator());
+      if (controller.isStaffSalaryLoading.value)
+        return const Center(child: CircularProgressIndicator());
       return ModernTable<staff_model.StaffSalaryItem>(
         title: "Staff Salary",
         rows: controller.pagedStaffSalaries,
@@ -525,7 +597,8 @@ class _DashboardPageState extends State<DashboardPage> {
         onPageChanged: (page) => controller.fetchStaffSalaries(page: page),
         columnTitles: const ["S/N", "Staff Name", "Salary", "Remaining"],
         cellBuilders: [
-          (i, idx) => Text('${idx + 1 + (controller.staffCurrentPageBackend - 1) * controller.staffData.value.pagination.pageSize}'),
+          (i, idx) => Text(
+              '${idx + 1 + (controller.staffCurrentPageBackend - 1) * controller.staffData.value.pagination.pageSize}'),
           (i, _) => Text(i.name),
           (i, _) => Text('Rs. ${i.totalSalary.toStringAsFixed(0)}'),
           (i, _) => _remainingBadge(i.remainingAmount),
@@ -540,25 +613,36 @@ class _DashboardPageState extends State<DashboardPage> {
     final Color bg;
     final Color fg;
     if (s == 'paid' || s == 'completed' || s == 'done') {
-      bg = _success.withOpacity(0.1); fg = _success;
+      bg = _success.withOpacity(0.1);
+      fg = _success;
     } else if (s == 'partial' || s == 'pending') {
-      bg = _warning.withOpacity(0.1); fg = _warning;
+      bg = _warning.withOpacity(0.1);
+      fg = _warning;
     } else {
-      bg = _danger.withOpacity(0.1); fg = _danger;
+      bg = _danger.withOpacity(0.1);
+      fg = _danger;
     }
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: SizeConfig.sw(0.007),
         vertical: SizeConfig.sh(0.004),
       ),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
       child: Text(status,
-          style: TextStyle(fontSize: SizeConfig.res(2.8), fontWeight: FontWeight.w600, color: fg)),
+          style: TextStyle(
+              fontSize: SizeConfig.res(2.8),
+              fontWeight: FontWeight.w600,
+              color: fg)),
     );
   }
 
   Widget _stockBadge(int qty) {
-    final color = qty <= 0 ? _danger : qty <= 5 ? _warning : _success;
+    final color = qty <= 0
+        ? _danger
+        : qty <= 5
+            ? _warning
+            : _success;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: SizeConfig.sw(0.007),
@@ -569,7 +653,10 @@ class _DashboardPageState extends State<DashboardPage> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text('$qty',
-          style: TextStyle(fontSize: SizeConfig.res(3), fontWeight: FontWeight.w700, color: color)),
+          style: TextStyle(
+              fontSize: SizeConfig.res(3),
+              fontWeight: FontWeight.w700,
+              color: color)),
     );
   }
 
@@ -577,15 +664,25 @@ class _DashboardPageState extends State<DashboardPage> {
     final color = amount <= 0 ? _success : _warning;
     return Text(
       'Rs. ${amount.toStringAsFixed(0)}',
-      style: TextStyle(fontSize: SizeConfig.res(3), fontWeight: FontWeight.w600, color: color),
+      style: TextStyle(
+          fontSize: SizeConfig.res(3),
+          fontWeight: FontWeight.w600,
+          color: color),
     );
   }
 
   Widget _daysChip(int days) {
-    final color = days > 30 ? _danger : days > 15 ? _warning : _textMid;
+    final color = days > 30
+        ? _danger
+        : days > 15
+            ? _warning
+            : _textMid;
     return Text(
       '$days days',
-      style: TextStyle(fontSize: SizeConfig.res(3), fontWeight: FontWeight.w600, color: color),
+      style: TextStyle(
+          fontSize: SizeConfig.res(3),
+          fontWeight: FontWeight.w600,
+          color: color),
     );
   }
 }

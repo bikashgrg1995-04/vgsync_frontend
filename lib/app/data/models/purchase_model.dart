@@ -7,10 +7,16 @@ class PurchaseModel {
   final DateTime date;
   final List<PurchaseItemModel> items;
 
-  final double discountAmount;
-  final double netTotal;
   final double grandTotal;
 
+  final double discountPercentage;
+  final double discountAmount;
+  final double amountBeforeTransitDiscount; // ✅ NEW
+
+  final double transitDiscountPercentage; // ✅ NEW
+  final double transitDiscountAmount; // ✅ NEW
+
+  final double netTotal; // final amount (transit पछिको)
   final double paidAmount;
   final double remainingAmount;
   final String status;
@@ -22,9 +28,13 @@ class PurchaseModel {
     required this.supplier,
     required this.date,
     required this.items,
-    this.discountAmount = 0.0,
-    this.netTotal = 0.0,
     this.grandTotal = 0.0,
+    this.discountPercentage = 0.0,
+    this.discountAmount = 0.0,
+    this.amountBeforeTransitDiscount = 0.0,
+    this.transitDiscountPercentage = 0.0,
+    this.transitDiscountAmount = 0.0,
+    this.netTotal = 0.0,
     this.paidAmount = 0.0,
     this.remainingAmount = 0.0,
     this.status = 'pending',
@@ -41,9 +51,17 @@ class PurchaseModel {
       items: (json['items'] as List? ?? [])
           .map((e) => PurchaseItemModel.fromJson(e))
           .toList(),
-      discountAmount: (json['discount_amount'] as num?)?.toDouble() ?? 0.0,
-      netTotal: (json['net_total'] as num?)?.toDouble() ?? 0.0,
       grandTotal: (json['grand_total'] as num?)?.toDouble() ?? 0.0,
+      discountPercentage:
+          (json['discount_percentage'] as num?)?.toDouble() ?? 0.0,
+      discountAmount: (json['discount_amount'] as num?)?.toDouble() ?? 0.0,
+      amountBeforeTransitDiscount:
+          (json['amount_before_transit_discount'] as num?)?.toDouble() ?? 0.0,
+      transitDiscountPercentage:
+          (json['transit_discount_percentage'] as num?)?.toDouble() ?? 0.0,
+      transitDiscountAmount:
+          (json['transit_discount_amount'] as num?)?.toDouble() ?? 0.0,
+      netTotal: (json['net_total'] as num?)?.toDouble() ?? 0.0,
       paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
       remainingAmount: (json['remaining_amount'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] ?? 'pending',
@@ -59,9 +77,13 @@ class PurchaseModel {
       'supplier': supplier,
       'date': date.toIso8601String(),
       'items': items.map((e) => e.toJsonForApi()).toList(),
-      'discount_amount': discountAmount,
-      'net_total': netTotal,
       'grand_total': grandTotal,
+      'discount_percentage': discountPercentage,
+      'discount_amount': discountAmount,
+      'amount_before_transit_discount': amountBeforeTransitDiscount,
+      'transit_discount_percentage': transitDiscountPercentage,
+      'transit_discount_amount': transitDiscountAmount,
+      'net_total': netTotal,
       'paid_amount': paidAmount,
       'remaining_amount': remainingAmount,
       'status': status,
@@ -76,7 +98,13 @@ class PurchaseModel {
   double get subTotal =>
       items.fold<double>(0.0, (sum, i) => sum + i.totalPrice);
 
-  double get calculatedNetTotal => subTotal - discountAmount;
+  /// Step 1: grand total बाट 20% (वा जुनसुकै) discount झिकेपछिको amount
+  double get calculatedAmountBeforeTransitDiscount =>
+      grandTotal - discountAmount;
+
+  /// Step 2: त्यो amount बाट transit discount झिकेपछिको final amount
+  double get calculatedNetTotal =>
+      amountBeforeTransitDiscount - transitDiscountAmount;
 
   bool get isPaid => remainingAmount <= 0;
 }
@@ -87,9 +115,13 @@ extension PurchaseModelCopy on PurchaseModel {
     int? supplier,
     DateTime? date,
     List<PurchaseItemModel>? items,
-    double? discountAmount,
-    double? netTotal,
     double? grandTotal,
+    double? discountPercentage,
+    double? discountAmount,
+    double? amountBeforeTransitDiscount,
+    double? transitDiscountPercentage,
+    double? transitDiscountAmount,
+    double? netTotal,
     double? paidAmount,
     double? remainingAmount,
     String? status,
@@ -101,9 +133,16 @@ extension PurchaseModelCopy on PurchaseModel {
       supplier: supplier ?? this.supplier,
       date: date ?? this.date,
       items: items ?? this.items,
-      discountAmount: discountAmount ?? this.discountAmount,
-      netTotal: netTotal ?? this.netTotal,
       grandTotal: grandTotal ?? this.grandTotal,
+      discountPercentage: discountPercentage ?? this.discountPercentage,
+      discountAmount: discountAmount ?? this.discountAmount,
+      amountBeforeTransitDiscount:
+          amountBeforeTransitDiscount ?? this.amountBeforeTransitDiscount,
+      transitDiscountPercentage:
+          transitDiscountPercentage ?? this.transitDiscountPercentage,
+      transitDiscountAmount:
+          transitDiscountAmount ?? this.transitDiscountAmount,
+      netTotal: netTotal ?? this.netTotal,
       paidAmount: paidAmount ?? this.paidAmount,
       remainingAmount: remainingAmount ?? this.remainingAmount,
       status: status ?? this.status,

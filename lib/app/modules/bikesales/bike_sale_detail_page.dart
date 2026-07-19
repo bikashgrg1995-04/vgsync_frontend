@@ -20,17 +20,17 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
   final GlobalController globalController = Get.find<GlobalController>();
 
   // ── Color aliases ──────────────────────────────────────────────────────────
-  static const _bg       = AppColors.background;
-  static const _surface  = AppColors.surface;
-  static const _primary  = AppColors.primary;
-  static const _success  = AppColors.success;
-  static const _warning  = AppColors.warning;
-  static const _danger   = AppColors.error;
-  static const _info     = AppColors.info;
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _success = AppColors.success;
+  static const _warning = AppColors.warning;
+  static const _danger = AppColors.error;
+  static const _info = AppColors.info;
   static const _textDark = AppColors.textPrimary;
-  static const _textMid  = AppColors.textSecondary;
-  static const _border   = AppColors.divider;
-  static const _shadow   = Color(0x0F000000);
+  static const _textMid = AppColors.textSecondary;
+  static const _border = AppColors.divider;
+  static const _shadow = Color(0x0F000000);
 
   @override
   void initState() {
@@ -85,7 +85,8 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: _border),
           ),
-          child: Icon(Icons.arrow_back_rounded, color: _textDark, size: SizeConfig.res(5)),
+          child: Icon(Icons.arrow_back_rounded,
+              color: _textDark, size: SizeConfig.res(5)),
         ),
       ),
       title: Obx(() {
@@ -146,7 +147,9 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+        ],
       ),
       child: Row(
         children: [
@@ -177,7 +180,8 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Status',
-                        style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+                        style: TextStyle(
+                            fontSize: SizeConfig.res(2.8), color: _textMid)),
                     SizedBox(height: SizeConfig.sh(0.004)),
                     _statusPill(isPending ? 'PENDING' : 'PAID', statusColor),
                   ],
@@ -206,7 +210,9 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: SizeConfig.res(2.8), color: _textMid)),
               Text(value,
                   style: TextStyle(
                       fontSize: SizeConfig.res(3.4),
@@ -290,8 +296,7 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
           _infoItem('Engine', sale.engineNo),
           if (sale.color != null && sale.color!.isNotEmpty)
             _infoItem('Color', sale.color!),
-          if (sale.kmDriven != null && sale.kmDriven > 0)
-            _infoItem('KM Driven', '${sale.kmDriven} km'),
+          if (sale.kmDriven > 0) _infoItem('KM Driven', '${sale.kmDriven} km'),
         ],
       ),
     );
@@ -308,12 +313,15 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
           _infoItem('Sale Type', sale.saleType.name.capitalizeFirst ?? ''),
           _infoItem('Method', sale.paymentMethod.name.toUpperCase()),
           SizedBox(height: SizeConfig.sh(0.012)),
-          _totalTile(Icons.receipt_outlined, 'Net Total', sale.netTotal, _primary),
+          _totalTile(
+              Icons.receipt_outlined, 'Net Total', sale.netTotal, _primary),
           SizedBox(height: SizeConfig.sh(0.008)),
           if (sale.saleType == SaleType.downpayment)
-            _totalTile(Icons.payment, 'Down Payment', sale.initialPaidAmount.toDouble(), _info),
+            _totalTile(Icons.payment, 'Down Payment',
+                sale.initialPaidAmount.toDouble(), _info),
           SizedBox(height: SizeConfig.sh(0.008)),
-          _totalTile(Icons.check_circle_outline, 'Total Paid', sale.paidAmount, _success),
+          _totalTile(Icons.check_circle_outline, 'Total Paid', sale.paidAmount,
+              _success),
           SizedBox(height: SizeConfig.sh(0.008)),
           _totalTile(Icons.pending_outlined, 'Remaining', sale.remainingAmount,
               isPending ? _danger : _success),
@@ -321,7 +329,8 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
             SizedBox(height: SizeConfig.sh(0.012)),
             Container(
               padding: EdgeInsets.symmetric(
-                  horizontal: SizeConfig.sw(0.01), vertical: SizeConfig.sh(0.008)),
+                  horizontal: SizeConfig.sw(0.01),
+                  vertical: SizeConfig.sh(0.008)),
               decoration: BoxDecoration(
                 color: _primary.withOpacity(0.07),
                 borderRadius: BorderRadius.circular(8),
@@ -365,7 +374,8 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
                 _cardTitle(Icons.schedule_rounded, 'EMI Schedule'),
                 Container(
                   padding: EdgeInsets.symmetric(
-                      horizontal: SizeConfig.sw(0.01), vertical: SizeConfig.sh(0.006)),
+                      horizontal: SizeConfig.sw(0.01),
+                      vertical: SizeConfig.sh(0.006)),
                   decoration: BoxDecoration(
                     color: _primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
@@ -385,7 +395,11 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
             Row(
               children: ['all', 'pending', 'paid'].map((f) {
                 final isSelected = controller.emiFilter.value == f;
-                final color = f == 'paid' ? _success : f == 'pending' ? _warning : _primary;
+                final color = f == 'paid'
+                    ? _success
+                    : f == 'pending'
+                        ? _warning
+                        : _primary;
                 return Padding(
                   padding: EdgeInsets.only(right: SizeConfig.sw(0.008)),
                   child: GestureDetector(
@@ -393,7 +407,8 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       padding: EdgeInsets.symmetric(
-                          horizontal: SizeConfig.sw(0.012), vertical: SizeConfig.sh(0.009)),
+                          horizontal: SizeConfig.sw(0.012),
+                          vertical: SizeConfig.sh(0.009)),
                       decoration: BoxDecoration(
                         color: isSelected ? color : color.withOpacity(0.07),
                         borderRadius: BorderRadius.circular(20),
@@ -430,7 +445,11 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
     final isPaid = emi.paidAmount >= emi.amountDue;
     final isPartial = emi.paidAmount > 0 && emi.paidAmount < emi.amountDue;
     final paidPercent = (emi.paidAmount / emi.amountDue).clamp(0.0, 1.0);
-    final Color statusColor = isPaid ? _success : isPartial ? _warning : _warning;
+    final Color statusColor = isPaid
+        ? _success
+        : isPartial
+            ? _warning
+            : _warning;
 
     return Container(
       margin: EdgeInsets.only(bottom: SizeConfig.sh(0.01)),
@@ -461,7 +480,9 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      isPaid ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                      isPaid
+                          ? Icons.check_circle_rounded
+                          : Icons.schedule_rounded,
                       size: SizeConfig.res(4),
                       color: statusColor,
                     ),
@@ -540,7 +561,11 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
               SizedBox(width: SizeConfig.sw(0.02)),
               _emiChip(Icons.check_circle_outline, 'Paid',
                   'Rs. ${emi.paidAmount.toStringAsFixed(0)}',
-                  color: isPaid ? _success : isPartial ? _warning : _textMid),
+                  color: isPaid
+                      ? _success
+                      : isPartial
+                          ? _warning
+                          : _textMid),
             ],
           ),
         ],
@@ -589,7 +614,9 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderColor ?? _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+        ],
       ),
       child: child,
     );
@@ -625,7 +652,8 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
           SizedBox(
             width: SizeConfig.sw(0.1),
             child: Text(label,
-                style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+                style:
+                    TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
           ),
           SizedBox(width: SizeConfig.sw(0.01)),
           Expanded(
@@ -657,7 +685,8 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label,
-                  style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+                  style: TextStyle(
+                      fontSize: SizeConfig.res(2.8), color: _textMid)),
               Text('Rs. ${value.toStringAsFixed(0)}',
                   style: TextStyle(
                       fontSize: SizeConfig.res(3.6),
@@ -688,7 +717,8 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           backgroundColor: _surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             'Update EMI #${emi.installmentNo}',
             style: TextStyle(
@@ -705,22 +735,27 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
                     keyboardType: TextInputType.number, onChanged: (v) {
                   final val = double.tryParse(v) ?? 0.0;
                   setState(() {
-                    selectedStatus =
-                        val >= emi.amountDue ? EmiStatus.paid : EmiStatus.pending;
+                    selectedStatus = val >= emi.amountDue
+                        ? EmiStatus.paid
+                        : EmiStatus.pending;
                   });
                 }),
                 SizedBox(height: SizeConfig.sh(0.016)),
-                _dialogField(dateCtrl, 'Payment Date (YYYY-MM-DD)', Icons.calendar_today_rounded),
+                _dialogField(dateCtrl, 'Payment Date (YYYY-MM-DD)',
+                    Icons.calendar_today_rounded),
                 SizedBox(height: SizeConfig.sh(0.016)),
                 DropdownButtonFormField<EMIPaymentMethod>(
                   value: selectedMethod,
-                  style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                  style: TextStyle(
+                      fontSize: SizeConfig.res(3.4), color: _textDark),
                   decoration: InputDecoration(
                     labelText: 'Payment Method',
-                    labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+                    labelStyle: TextStyle(
+                        fontSize: SizeConfig.res(3.2), color: _textMid),
                     prefixIcon: Icon(Icons.payments_outlined,
                         size: SizeConfig.res(4.5), color: _primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: _primary, width: 1.5),
@@ -731,7 +766,8 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
                     ),
                   ),
                   items: EMIPaymentMethod.values
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e.name)))
+                      .map((e) =>
+                          DropdownMenuItem(value: e, child: Text(e.name)))
                       .toList(),
                   onChanged: (v) {
                     if (v != null) setState(() => selectedMethod = v);
@@ -801,8 +837,10 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
                 onTap: isLoading
                     ? null
                     : () async {
-                        final paid = double.tryParse(amountCtrl.text) ?? emi.paidAmount;
-                        final date = DateTime.tryParse(dateCtrl.text) ?? DateTime.now();
+                        final paid =
+                            double.tryParse(amountCtrl.text) ?? emi.paidAmount;
+                        final date =
+                            DateTime.tryParse(dateCtrl.text) ?? DateTime.now();
                         await controller.updateEmiPayment(
                           emiId: emi.id,
                           paidAmount: paid,
@@ -813,8 +851,10 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
                         );
                         await controller.fetchBikeSales();
                         await controller.fetchEmiTrackers(saleId);
-                        globalController.triggerRefresh(DashboardRefreshType.all);
-                        if (Get.isDialogOpen ?? false) Get.back(closeOverlays: true);
+                        globalController
+                            .triggerRefresh(DashboardRefreshType.all);
+                        if (Get.isDialogOpen ?? false)
+                          Get.back(closeOverlays: true);
                         DesktopToast.show(
                           'EMI Updated for ${date.toIso8601String().split('T').first}',
                           backgroundColor: _success,
@@ -861,8 +901,7 @@ class _BikeSaleDetailPageState extends State<BikeSaleDetailPage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
-        prefixIcon:
-            Icon(icon, size: SizeConfig.res(4.5), color: _primary),
+        prefixIcon: Icon(icon, size: SizeConfig.res(4.5), color: _primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
