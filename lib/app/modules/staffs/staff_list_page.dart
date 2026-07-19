@@ -21,39 +21,43 @@ class _StaffListPageState extends State<StaffListPage> {
   final GlobalController globalController = Get.find<GlobalController>();
 
   // ── Color aliases ──────────────────────────────────────────────────────────
-  static const _bg       = AppColors.background;
-  static const _surface  = AppColors.surface;
-  static const _primary  = AppColors.primary;
-  static const _success  = AppColors.success;
-  static const _warning  = AppColors.warning;
-  static const _danger   = AppColors.error;
-  static const _info     = AppColors.info;
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _success = AppColors.success;
+  static const _warning = AppColors.warning;
+  static const _danger = AppColors.error;
   static const _textDark = AppColors.textPrimary;
-  static const _textMid  = AppColors.textSecondary;
-  static const _border   = AppColors.divider;
-  static const _shadow   = Color(0x0F000000);
+  static const _textMid = AppColors.textSecondary;
+  static const _border = AppColors.divider;
+  static const _shadow = Color(0x0F000000);
 
   // designation → color mapping
   static const _designationColors = {
-    'admin':       AppColors.primary,
-    'accountant':  AppColors.info,
-    'technician':  AppColors.warning,
-    'helper':      AppColors.success,
-    'sales':       AppColors.secondary,
-    'other':       AppColors.textSecondary,
+    'admin': AppColors.primary,
+    'accountant': AppColors.info,
+    'technician': AppColors.warning,
+    'helper': AppColors.success,
+    'sales': AppColors.secondary,
+    'other': AppColors.textSecondary,
   };
 
   static const _designationIcons = {
-    'admin':       Icons.admin_panel_settings_outlined,
-    'accountant':  Icons.calculate_outlined,
-    'technician':  Icons.build_outlined,
-    'helper':      Icons.handyman_outlined,
-    'sales':       Icons.storefront_outlined,
-    'other':       Icons.person_outline_rounded,
+    'admin': Icons.admin_panel_settings_outlined,
+    'accountant': Icons.calculate_outlined,
+    'technician': Icons.build_outlined,
+    'helper': Icons.handyman_outlined,
+    'sales': Icons.storefront_outlined,
+    'other': Icons.person_outline_rounded,
   };
 
   final List<String> designations = [
-    'admin', 'accountant', 'technician', 'helper', 'sales', 'other',
+    'admin',
+    'accountant',
+    'technician',
+    'helper',
+    'sales',
+    'other',
   ];
   final List<String> salaryModes = ['daily', 'monthly'];
 
@@ -61,7 +65,8 @@ class _StaffListPageState extends State<StaffListPage> {
       _designationColors[designation.toLowerCase()] ?? _textMid;
 
   IconData _designationIcon(String designation) =>
-      _designationIcons[designation.toLowerCase()] ?? Icons.person_outline_rounded;
+      _designationIcons[designation.toLowerCase()] ??
+      Icons.person_outline_rounded;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +77,8 @@ class _StaffListPageState extends State<StaffListPage> {
         onPressed: () => openStaffDialog(),
         icon: const Icon(Icons.add, color: AppColors.surface),
         label: const Text('Add Staff',
-            style: TextStyle(color: AppColors.surface, fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                color: AppColors.surface, fontWeight: FontWeight.w600)),
         backgroundColor: _primary,
         elevation: 2,
       ),
@@ -118,7 +124,9 @@ class _StaffListPageState extends State<StaffListPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
+        ],
       ),
       child: Row(
         children: [
@@ -133,13 +141,17 @@ class _StaffListPageState extends State<StaffListPage> {
               ),
               child: TextField(
                 controller: controller.searchController,
-                style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                style:
+                    TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
                 decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
+                  prefixIcon: Icon(Icons.search,
+                      color: _textMid, size: SizeConfig.res(5)),
                   hintText: 'Search staff...',
-                  hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
+                  hintStyle:
+                      TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -196,18 +208,20 @@ class _StaffListPageState extends State<StaffListPage> {
         return Center(child: CircularProgressIndicator(color: _primary));
       }
 
-      final filtered = controller.filterStaffs(
-          query: controller.searchController.text);
+      final filtered =
+          controller.filterStaffs(query: controller.searchController.text);
 
       if (filtered.isEmpty) {
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.people_outline, size: SizeConfig.res(18), color: _border),
+              Icon(Icons.people_outline,
+                  size: SizeConfig.res(18), color: _border),
               SizedBox(height: SizeConfig.sh(0.015)),
               Text('No staff found',
-                  style: TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
+                  style:
+                      TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
             ],
           ),
         );
@@ -226,8 +240,10 @@ class _StaffListPageState extends State<StaffListPage> {
 
   Widget _staffTile(StaffModel staff, int index) {
     final desgColor = _designationColor(staff.designation);
-    final desgIcon  = _designationIcon(staff.designation);
-    final initials  = staff.name.trim().split(' ')
+    final desgIcon = _designationIcon(staff.designation);
+    final initials = staff.name
+        .trim()
+        .split(' ')
         .map((w) => w.isNotEmpty ? w[0] : '')
         .take(2)
         .join()
@@ -247,7 +263,8 @@ class _StaffListPageState extends State<StaffListPage> {
               foregroundColor: _surface,
               icon: Icons.edit_rounded,
               label: 'Edit',
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.horizontal(left: Radius.circular(12)),
             ),
             SlidableAction(
               onPressed: (_) => controller.deleteStaff(staff.id ?? 0),
@@ -255,7 +272,8 @@ class _StaffListPageState extends State<StaffListPage> {
               foregroundColor: _surface,
               icon: Icons.delete_rounded,
               label: 'Delete',
-              borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.horizontal(right: Radius.circular(12)),
             ),
           ],
         ),
@@ -267,7 +285,9 @@ class _StaffListPageState extends State<StaffListPage> {
               color: _surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: _border),
-              boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+              boxShadow: const [
+                BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+              ],
             ),
             child: Row(
               children: [
@@ -278,7 +298,8 @@ class _StaffListPageState extends State<StaffListPage> {
                   decoration: BoxDecoration(
                     color: desgColor.withOpacity(0.12),
                     shape: BoxShape.circle,
-                    border: Border.all(color: desgColor.withOpacity(0.3), width: 1.5),
+                    border: Border.all(
+                        color: desgColor.withOpacity(0.3), width: 1.5),
                   ),
                   alignment: Alignment.center,
                   child: Text(initials,
@@ -307,7 +328,8 @@ class _StaffListPageState extends State<StaffListPage> {
                           ),
                           Row(
                             children: [
-                              _designationBadge(staff.designation, desgColor, desgIcon),
+                              _designationBadge(
+                                  staff.designation, desgColor, desgIcon),
                               SizedBox(width: SizeConfig.sw(0.006)),
                               _salaryModeBadge(staff.salaryMode),
                               SizedBox(width: SizeConfig.sw(0.006)),
@@ -324,8 +346,10 @@ class _StaffListPageState extends State<StaffListPage> {
                           SizedBox(width: SizeConfig.sw(0.004)),
                           Text(staff.phone,
                               style: TextStyle(
-                                  fontSize: SizeConfig.res(3.2), color: _textMid)),
-                          if (staff.email != null && staff.email!.isNotEmpty) ...[
+                                  fontSize: SizeConfig.res(3.2),
+                                  color: _textMid)),
+                          if (staff.email != null &&
+                              staff.email!.isNotEmpty) ...[
                             SizedBox(width: SizeConfig.sw(0.016)),
                             Icon(Icons.email_outlined,
                                 size: SizeConfig.res(3.2), color: _textMid),
@@ -333,13 +357,15 @@ class _StaffListPageState extends State<StaffListPage> {
                             Expanded(
                               child: Text(staff.email!,
                                   style: TextStyle(
-                                      fontSize: SizeConfig.res(3.2), color: _textMid),
+                                      fontSize: SizeConfig.res(3.2),
+                                      color: _textMid),
                                   overflow: TextOverflow.ellipsis),
                             ),
                           ],
                         ],
                       ),
-                      if (staff.address != null && staff.address!.isNotEmpty) ...[
+                      if (staff.address != null &&
+                          staff.address!.isNotEmpty) ...[
                         SizedBox(height: SizeConfig.sh(0.004)),
                         Row(
                           children: [
@@ -349,7 +375,8 @@ class _StaffListPageState extends State<StaffListPage> {
                             Expanded(
                               child: Text(staff.address!,
                                   style: TextStyle(
-                                      fontSize: SizeConfig.res(3.2), color: _textMid),
+                                      fontSize: SizeConfig.res(3.2),
+                                      color: _textMid),
                                   overflow: TextOverflow.ellipsis),
                             ),
                           ],
@@ -456,7 +483,8 @@ class _StaffListPageState extends State<StaffListPage> {
             children: [
               _formSection('Personal Info', Icons.person_outline_rounded),
               SizedBox(height: SizeConfig.sh(0.012)),
-              _field(controller.nameController, 'Full Name', Icons.person_outline_rounded),
+              _field(controller.nameController, 'Full Name',
+                  Icons.person_outline_rounded),
               SizedBox(height: SizeConfig.sh(0.012)),
               _field(controller.phoneController, 'Phone', Icons.phone_outlined,
                   keyboardType: TextInputType.phone),
@@ -464,12 +492,13 @@ class _StaffListPageState extends State<StaffListPage> {
               _field(controller.emailController, 'Email', Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress),
               SizedBox(height: SizeConfig.sh(0.012)),
-              _field(controller.addressController, 'Address', Icons.location_on_outlined),
+              _field(controller.addressController, 'Address',
+                  Icons.location_on_outlined),
               SizedBox(height: SizeConfig.sh(0.02)),
               _formSection('Employment Info', Icons.work_outline_rounded),
               SizedBox(height: SizeConfig.sh(0.012)),
-              _styledDropdown(
-                  controller.designationController, designations, 'Designation'),
+              _styledDropdown(controller.designationController, designations,
+                  'Designation'),
               SizedBox(height: SizeConfig.sh(0.012)),
               _styledDropdown(
                   controller.salaryModeController, salaryModes, 'Salary Mode'),
@@ -506,8 +535,9 @@ class _StaffListPageState extends State<StaffListPage> {
             ],
           ),
         ),
-        onSave: () async =>
-            isEdit ? await controller.updateStaff(staff) : await controller.addStaff(),
+        onSave: () async => isEdit
+            ? await controller.updateStaff(staff)
+            : await controller.addStaff(),
         onDelete: isEdit ? () => controller.deleteStaff(staff.id ?? 0) : null,
       ),
     );

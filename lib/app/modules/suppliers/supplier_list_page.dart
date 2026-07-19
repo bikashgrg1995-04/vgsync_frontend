@@ -12,16 +12,15 @@ class SupplierListPage extends StatelessWidget {
 
   final SupplierController controller = Get.find<SupplierController>();
 
-  static const _bg       = AppColors.background;
-  static const _surface  = AppColors.surface;
-  static const _primary  = AppColors.primary;
-  static const _warning  = AppColors.warning;
-  static const _danger   = AppColors.error;
-  static const _success  = AppColors.success;
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _warning = AppColors.warning;
+  static const _danger = AppColors.error;
   static const _textDark = AppColors.textPrimary;
-  static const _textMid  = AppColors.textSecondary;
-  static const _border   = AppColors.divider;
-  static const _shadow   = Color(0x0F000000);
+  static const _textMid = AppColors.textSecondary;
+  static const _border = AppColors.divider;
+  static const _shadow = Color(0x0F000000);
 
   // avatar color cycle
   static const _avatarColors = [
@@ -41,7 +40,8 @@ class SupplierListPage extends StatelessWidget {
         onPressed: () => openSupplierDialog(),
         icon: const Icon(Icons.add, color: AppColors.surface),
         label: const Text('Add Supplier',
-            style: TextStyle(color: AppColors.surface, fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                color: AppColors.surface, fontWeight: FontWeight.w600)),
         backgroundColor: _primary,
         elevation: 2,
       ),
@@ -85,7 +85,9 @@ class SupplierListPage extends StatelessWidget {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
+        ],
       ),
       child: Row(
         children: [
@@ -100,13 +102,17 @@ class SupplierListPage extends StatelessWidget {
               ),
               child: TextField(
                 controller: controller.searchController,
-                style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                style:
+                    TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
                 decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
+                  prefixIcon: Icon(Icons.search,
+                      color: _textMid, size: SizeConfig.res(5)),
                   hintText: 'Search suppliers...',
-                  hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
+                  hintStyle:
+                      TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
                 ),
                 onChanged: (_) => controller.suppliers.refresh(),
               ),
@@ -171,7 +177,8 @@ class SupplierListPage extends StatelessWidget {
                   size: SizeConfig.res(18), color: _border),
               SizedBox(height: SizeConfig.sh(0.015)),
               Text('No suppliers found',
-                  style: TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
+                  style:
+                      TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
             ],
           ),
         );
@@ -184,7 +191,13 @@ class SupplierListPage extends StatelessWidget {
           final s = filtered[index];
           final avatarColor = _avatarColors[index % _avatarColors.length];
           final initials = s.name.isNotEmpty
-              ? s.name.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
+              ? s.name
+                  .trim()
+                  .split(' ')
+                  .map((w) => w[0])
+                  .take(2)
+                  .join()
+                  .toUpperCase()
               : '?';
 
           return Padding(
@@ -222,7 +235,10 @@ class SupplierListPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: _border),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x0F000000), blurRadius: 6, offset: Offset(0, 2))
+                    BoxShadow(
+                        color: Color(0x0F000000),
+                        blurRadius: 6,
+                        offset: Offset(0, 2))
                   ],
                 ),
                 child: Row(
@@ -337,15 +353,19 @@ class SupplierListPage extends StatelessWidget {
         height: 0.65,
         content: Column(
           children: [
-            _dialogField(controller.nameController, 'Name', Icons.person_outline_rounded),
+            _dialogField(controller.nameController, 'Name',
+                Icons.person_outline_rounded),
             SizedBox(height: SizeConfig.sh(0.02)),
-            _dialogField(controller.contactController, 'Contact', Icons.phone_outlined,
+            _dialogField(
+                controller.contactController, 'Contact', Icons.phone_outlined,
                 keyboardType: TextInputType.phone),
             SizedBox(height: SizeConfig.sh(0.02)),
-            _dialogField(controller.emailController, 'Email', Icons.email_outlined,
+            _dialogField(
+                controller.emailController, 'Email', Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress),
             SizedBox(height: SizeConfig.sh(0.02)),
-            _dialogField(controller.addressController, 'Address', Icons.location_on_outlined),
+            _dialogField(controller.addressController, 'Address',
+                Icons.location_on_outlined),
           ],
         ),
         onSave: () => isEdit

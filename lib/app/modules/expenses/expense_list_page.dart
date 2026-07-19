@@ -5,7 +5,6 @@ import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/data/models/expense_model.dart';
 import 'package:vgsync_frontend/app/modules/expenses/expense_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/common_date_picker.dart';
-import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_form_dialog.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_notification.dart';
 import 'package:vgsync_frontend/utils/size_config.dart';
@@ -24,35 +23,42 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
   final GlobalController globalController = Get.find<GlobalController>();
 
   // ── Color aliases ──────────────────────────────────────────────────────────
-  static const _bg       = AppColors.background;
-  static const _surface  = AppColors.surface;
-  static const _primary  = AppColors.primary;
-  static const _success  = AppColors.success;
-  static const _warning  = AppColors.warning;
-  static const _danger   = AppColors.error;
-  static const _info     = AppColors.info;
-  static const _secondary = AppColors.secondary;
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _success = AppColors.success;
+  static const _warning = AppColors.warning;
+  static const _danger = AppColors.error;
+  static const _info = AppColors.info;
   static const _textDark = AppColors.textPrimary;
-  static const _textMid  = AppColors.textSecondary;
-  static const _border   = AppColors.divider;
-  static const _shadow   = Color(0x0F000000);
+  static const _textMid = AppColors.textSecondary;
+  static const _border = AppColors.divider;
+  static const _shadow = Color(0x0F000000);
 
   // expense type → color
   Color _typeColor(String type) {
     switch (type.toLowerCase()) {
-      case 'salary':      return _primary;
-      case 'operational': return _warning;
-      case 'other':       return _info;
-      default:            return _textMid;
+      case 'salary':
+        return _primary;
+      case 'operational':
+        return _warning;
+      case 'other':
+        return _info;
+      default:
+        return _textMid;
     }
   }
 
   IconData _typeIcon(String type) {
     switch (type.toLowerCase()) {
-      case 'salary':      return Icons.people_outline;
-      case 'operational': return Icons.settings_outlined;
-      case 'other':       return Icons.category_outlined;
-      default:            return Icons.receipt_outlined;
+      case 'salary':
+        return Icons.people_outline;
+      case 'operational':
+        return Icons.settings_outlined;
+      case 'other':
+        return Icons.category_outlined;
+      default:
+        return Icons.receipt_outlined;
     }
   }
 
@@ -62,7 +68,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => controller.fetchExpenses());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => controller.fetchExpenses());
   }
 
   @override
@@ -74,7 +81,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         onPressed: () => openExpenseDialog(),
         icon: const Icon(Icons.add, color: AppColors.surface),
         label: const Text('Add Expense',
-            style: TextStyle(color: AppColors.surface, fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                color: AppColors.surface, fontWeight: FontWeight.w600)),
         backgroundColor: _primary,
         elevation: 2,
       ),
@@ -124,7 +132,9 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
+        ],
       ),
       child: Row(
         children: [
@@ -139,13 +149,17 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
               ),
               child: TextField(
                 controller: controller.searchController,
-                style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                style:
+                    TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
                 decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
+                  prefixIcon: Icon(Icons.search,
+                      color: _textMid, size: SizeConfig.res(5)),
                   hintText: 'Search expenses...',
-                  hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
+                  hintStyle:
+                      TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
                 ),
                 onChanged: (v) => controller.searchQuery.value = v,
               ),
@@ -203,7 +217,9 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -308,7 +324,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
 
       return Row(
         children: [
-          _summaryTile(Icons.account_balance_wallet_outlined, 'Total', total, _primary),
+          _summaryTile(
+              Icons.account_balance_wallet_outlined, 'Total', total, _primary),
           SizedBox(width: SizeConfig.sw(0.01)),
           _summaryTile(Icons.payments_outlined, 'Cash', cash, _success),
           SizedBox(width: SizeConfig.sw(0.01)),
@@ -380,7 +397,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
                   size: SizeConfig.res(18), color: _border),
               SizedBox(height: SizeConfig.sh(0.015)),
               Text('No expenses found',
-                  style: TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
+                  style:
+                      TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
             ],
           ),
         );
@@ -532,7 +550,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
                           Expanded(
                             child: Text(expense.note!,
                                 style: TextStyle(
-                                    fontSize: SizeConfig.res(3), color: _textMid),
+                                    fontSize: SizeConfig.res(3),
+                                    color: _textMid),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis),
                           ),
@@ -683,8 +702,8 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
     );
   }
 
-  Widget _dialogDropdown(
-      RxString rx, String label, List<String> options, {required IconData icon}) {
+  Widget _dialogDropdown(RxString rx, String label, List<String> options,
+      {required IconData icon}) {
     return Obx(() => DropdownButtonFormField<String>(
           value: options.contains(rx.value) ? rx.value : null,
           style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
@@ -693,8 +712,7 @@ class _ExpenseListPageState extends State<ExpenseListPage> {
             labelStyle:
                 TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
             prefixIcon: Icon(icon, size: SizeConfig.res(4.5), color: _primary),
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: _primary, width: 1.5)),

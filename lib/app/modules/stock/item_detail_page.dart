@@ -57,7 +57,8 @@ class StockDetailPage extends StatelessWidget {
           backgroundColor: Colors.blueGrey,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.black26),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                size: 18, color: Colors.black26),
             onPressed: () => Get.back(),
           ),
           title: Text(
@@ -232,7 +233,7 @@ class StockDetailPage extends StatelessWidget {
       children: [
         _row('Item No', stock.itemNo),
         _row('Group', stock.group.isEmpty ? '—' : stock.group),
-        _row('Model', stock.model?.isEmpty ?? true ? '—' : stock.model!),
+        _row('Model', stock.model.isEmpty ? '—' : stock.model),
       ],
     );
   }
@@ -271,7 +272,8 @@ class StockDetailPage extends StatelessWidget {
       title: 'Location',
       icon: Icons.location_on_outlined,
       children: [
-        _row('Block / Shelf', stock.block?.isEmpty ?? true ? '—' : stock.block!),
+        _row(
+            'Block / Shelf', stock.block?.isEmpty ?? true ? '—' : stock.block!),
       ],
     );
   }
@@ -431,8 +433,8 @@ class StockDetailPage extends StatelessWidget {
                     const SizedBox(width: 12),
                     const Text(
                       'Edit Stock',
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const Spacer(),
                     IconButton(
@@ -452,22 +454,21 @@ class StockDetailPage extends StatelessWidget {
                 buildTextField(
                     controller.nameController, "Name *", Icons.label),
                 SizedBox(height: SizeConfig.sh(0.015)),
-                buildTextField(controller.modelController, "Model",
-                    Icons.model_training),
+                buildTextField(
+                    controller.modelController, "Model", Icons.model_training),
                 SizedBox(height: SizeConfig.sh(0.015)),
 
                 // Category dropdown
                 Obx(() {
-                  final selectedId =
-                      controller.categorySelectController.text.isNotEmpty
-                          ? int.tryParse(
-                              controller.categorySelectController.text)
-                          : null;
+                  final selectedId = controller
+                          .categorySelectController.text.isNotEmpty
+                      ? int.tryParse(controller.categorySelectController.text)
+                      : null;
                   return DropdownButtonFormField<int>(
                     value: selectedId,
                     items: categoryCtrl.categories
-                        .map((c) => DropdownMenuItem(
-                            value: c.id, child: Text(c.name)))
+                        .map((c) =>
+                            DropdownMenuItem(value: c.id, child: Text(c.name)))
                         .toList(),
                     onChanged: (value) {
                       if (value != null) {

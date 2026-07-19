@@ -24,16 +24,16 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
   final StaffController staffController = Get.find();
 
   // ── Color aliases ─────────────────────────────────────────────────────────
-  static const _bg       = AppColors.background;
-  static const _surface  = AppColors.surface;
-  static const _primary  = AppColors.primary;
-  static const _success  = AppColors.success;
-  static const _warning  = AppColors.warning;
-  static const _danger   = AppColors.error;
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _success = AppColors.success;
+  static const _warning = AppColors.warning;
+  static const _danger = AppColors.error;
   static const _textDark = AppColors.textPrimary;
-  static const _textMid  = AppColors.textSecondary;
-  static const _border   = AppColors.divider;
-  static const _shadow   = Color(0x0F000000);
+  static const _textMid = AppColors.textSecondary;
+  static const _border = AppColors.divider;
+  static const _shadow = Color(0x0F000000);
 
   @override
   void initState() {
@@ -46,9 +46,12 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'paid':    return _success;
-      case 'partial': return _warning;
-      default:        return _danger;
+      case 'paid':
+        return _success;
+      case 'partial':
+        return _warning;
+      default:
+        return _danger;
     }
   }
 
@@ -92,7 +95,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: _border),
           ),
-          child: Icon(Icons.arrow_back_rounded, color: _textDark, size: SizeConfig.res(5)),
+          child: Icon(Icons.arrow_back_rounded,
+              color: _textDark, size: SizeConfig.res(5)),
         ),
       ),
       title: Column(
@@ -132,7 +136,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.save_rounded, size: SizeConfig.res(4), color: _surface),
+                    Icon(Icons.save_rounded,
+                        size: SizeConfig.res(4), color: _surface),
                     SizedBox(width: SizeConfig.sw(0.005)),
                     Text(
                       'Save',
@@ -168,7 +173,9 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+        ],
       ),
       child: Row(
         children: [
@@ -213,7 +220,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Status',
-                        style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+                        style: TextStyle(
+                            fontSize: SizeConfig.res(2.8), color: _textMid)),
                     SizedBox(height: SizeConfig.sh(0.004)),
                     Container(
                       padding: EdgeInsets.symmetric(
@@ -223,7 +231,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                       decoration: BoxDecoration(
                         color: _statusColor(status).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _statusColor(status).withOpacity(0.3)),
+                        border: Border.all(
+                            color: _statusColor(status).withOpacity(0.3)),
                       ),
                       child: Text(
                         status.replaceAll('_', ' ').toUpperCase(),
@@ -245,7 +254,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
     );
   }
 
-  Widget _infoTile({required IconData icon, required String label, required String value}) {
+  Widget _infoTile(
+      {required IconData icon, required String label, required String value}) {
     return Expanded(
       child: Row(
         children: [
@@ -261,7 +271,9 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: SizeConfig.res(2.8), color: _textMid)),
               Text(
                 value,
                 style: TextStyle(
@@ -295,7 +307,9 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+        ],
       ),
       child: Column(
         children: [
@@ -323,7 +337,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
       decoration: InputDecoration(
         labelText: 'Purchase Date',
         labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
-        suffixIcon: Icon(Icons.calendar_today_rounded, size: SizeConfig.res(4.5), color: _primary),
+        suffixIcon: Icon(Icons.calendar_today_rounded,
+            size: SizeConfig.res(4.5), color: _primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -413,7 +428,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
             style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
             decoration: InputDecoration(
               labelText: 'Paid Amount',
-              labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+              labelStyle:
+                  TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
               prefixIcon: Padding(
                 padding: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.008)),
                 child: Text(
@@ -425,8 +441,10 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                   ),
                 ),
               ),
-              prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              prefixIconConstraints:
+                  const BoxConstraints(minWidth: 0, minHeight: 0),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: _success, width: 1.5),
@@ -456,7 +474,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add_circle_outline_rounded, size: SizeConfig.res(4.5), color: _primary),
+                Icon(Icons.add_circle_outline_rounded,
+                    size: SizeConfig.res(4.5), color: _primary),
                 SizedBox(width: SizeConfig.sw(0.006)),
                 Text(
                   'Add Item',
@@ -482,7 +501,9 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
           color: _surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: _border),
-          boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+          boxShadow: const [
+            BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+          ],
         ),
         child: Column(
           children: [
@@ -575,7 +596,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
               ),
               decoration: BoxDecoration(
                 color: isEven ? _bg : _surface,
-                border: Border(bottom: BorderSide(color: _border.withOpacity(0.5))),
+                border:
+                    Border(bottom: BorderSide(color: _border.withOpacity(0.5))),
               ),
               child: Row(
                 children: [
@@ -610,7 +632,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                       controller: item.quantityController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
+                      style: TextStyle(
+                          fontSize: SizeConfig.res(3.2), color: _textDark),
                       decoration: InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(
@@ -623,7 +646,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: _primary, width: 1.5),
+                          borderSide:
+                              const BorderSide(color: _primary, width: 1.5),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -641,7 +665,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                       controller: item.priceController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
+                      style: TextStyle(
+                          fontSize: SizeConfig.res(3.2), color: _textDark),
                       decoration: InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(
@@ -654,7 +679,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: _primary, width: 1.5),
+                          borderSide:
+                              const BorderSide(color: _primary, width: 1.5),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -701,7 +727,9 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
             color: _surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _border),
-            boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+            boxShadow: const [
+              BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+            ],
           ),
           child: Row(
             children: [
@@ -762,7 +790,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label,
-                  style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+                  style: TextStyle(
+                      fontSize: SizeConfig.res(2.8), color: _textMid)),
               SizedBox(height: SizeConfig.sh(0.003)),
               Text(
                 'Rs. ${value.toStringAsFixed(0)}',
@@ -801,147 +830,165 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
     final searchCtrl = TextEditingController();
     final StockModel? selected = await showDialog<StockModel>(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: _surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Select Stock Item',
-          style: TextStyle(
-            fontSize: SizeConfig.res(4.5),
-            fontWeight: FontWeight.w700,
-            color: _textDark,
+      builder: (_) => StatefulBuilder(
+        builder: (_, setState) => AlertDialog(
+          backgroundColor: _surface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Select Stock Item',
+            style: TextStyle(
+              fontSize: SizeConfig.res(4.5),
+              fontWeight: FontWeight.w700,
+              color: _textDark,
+            ),
           ),
-        ),
-        content: SizedBox(
-          width: SizeConfig.sw(0.4),
-          height: SizeConfig.sh(0.6),
-          child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: _bg,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _border),
-                ),
-                child: TextField(
-                  controller: searchCtrl,
-                  style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
-                  decoration: InputDecoration(
-                    hintText: 'Search stock...',
-                    hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
-                    prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+          content: SizedBox(
+            width: SizeConfig.sw(0.4),
+            height: SizeConfig.sh(0.6),
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _border),
                   ),
-                  onChanged: (_) => (searchCtrl).notifyListeners(),
+                  child: TextField(
+                    controller: searchCtrl,
+                    style: TextStyle(
+                        fontSize: SizeConfig.res(3.4), color: _textDark),
+                    decoration: InputDecoration(
+                      hintText: 'Search stock...',
+                      hintStyle: TextStyle(
+                          color: _textMid, fontSize: SizeConfig.res(3.4)),
+                      prefixIcon: Icon(Icons.search,
+                          color: _textMid, size: SizeConfig.res(5)),
+                      border: InputBorder.none,
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                    ),
+                    onChanged: (_) => setState(() {
+                      stockController.searchQuery.value = searchCtrl.text;
+                    }),
+                  ),
                 ),
-              ),
-              SizedBox(height: SizeConfig.sh(0.012)),
-              Expanded(
-                child: Obx(() {
-                  final filtered = stockController.stocks
-                      .where((s) =>
-                          s.name.toLowerCase().contains(searchCtrl.text.toLowerCase()) ||
-                          s.itemNo.toLowerCase().contains(searchCtrl.text.toLowerCase()))
-                      .toList();
-                  if (filtered.isEmpty) {
-                    return Center(
-                      child: Text('No stock found',
-                          style: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.5))),
-                    );
-                  }
-                  return ListView.builder(
-                    itemCount: filtered.length,
-                    itemBuilder: (_, i) {
-                      final s = filtered[i];
-                      final stockColor = s.stock <= 0
-                          ? _danger
-                          : s.stock <= 5
-                              ? _warning
-                              : _success;
-                      return Container(
-                        margin: EdgeInsets.only(bottom: SizeConfig.sh(0.008)),
-                        decoration: BoxDecoration(
-                          color: _bg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _border),
-                        ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () => Navigator.pop(context, s),
-                          child: Padding(
-                            padding: EdgeInsets.all(SizeConfig.res(3.5)),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                SizedBox(height: SizeConfig.sh(0.012)),
+                Expanded(
+                  child: Obx(() {
+                    final filtered = stockController.stocks
+                        .where((s) =>
+                            s.name
+                                .toLowerCase()
+                                .contains(searchCtrl.text.toLowerCase()) ||
+                            s.itemNo
+                                .toLowerCase()
+                                .contains(searchCtrl.text.toLowerCase()))
+                        .toList();
+                    if (filtered.isEmpty) {
+                      return Center(
+                        child: Text('No stock found',
+                            style: TextStyle(
+                                color: _textMid,
+                                fontSize: SizeConfig.res(3.5))),
+                      );
+                    }
+                    return ListView.builder(
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) {
+                        final s = filtered[i];
+                        final stockColor = s.stock <= 0
+                            ? _danger
+                            : s.stock <= 5
+                                ? _warning
+                                : _success;
+                        return Container(
+                          margin: EdgeInsets.only(bottom: SizeConfig.sh(0.008)),
+                          decoration: BoxDecoration(
+                            color: _bg,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _border),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => Navigator.pop(context, s),
+                            child: Padding(
+                              padding: EdgeInsets.all(SizeConfig.res(3.5)),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          s.name,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: SizeConfig.res(3.6),
+                                            color: _textDark,
+                                          ),
+                                        ),
+                                        Text(
+                                          'No: ${s.itemNo}',
+                                          style: TextStyle(
+                                              fontSize: SizeConfig.res(3),
+                                              color: _textMid),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: SizeConfig.sw(0.008),
+                                      vertical: SizeConfig.sh(0.005),
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: stockColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Stock: ${s.stock}',
+                                      style: TextStyle(
+                                        fontSize: SizeConfig.res(3),
+                                        fontWeight: FontWeight.w700,
+                                        color: stockColor,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: SizeConfig.sw(0.012)),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
-                                        s.name,
+                                        'Buy: Rs.${s.purchasePrice.toStringAsFixed(0)}',
                                         style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: SizeConfig.res(3.6),
+                                          fontSize: SizeConfig.res(3.2),
+                                          fontWeight: FontWeight.w600,
                                           color: _textDark,
                                         ),
                                       ),
                                       Text(
-                                        'No: ${s.itemNo}',
-                                        style: TextStyle(fontSize: SizeConfig.res(3), color: _textMid),
+                                        'Sell: Rs.${s.salePrice.toStringAsFixed(0)}',
+                                        style: TextStyle(
+                                          fontSize: SizeConfig.res(3),
+                                          color: _primary,
+                                        ),
                                       ),
                                     ],
                                   ),
-                                ),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: SizeConfig.sw(0.008),
-                                    vertical: SizeConfig.sh(0.005),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: stockColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'Stock: ${s.stock}',
-                                    style: TextStyle(
-                                      fontSize: SizeConfig.res(3),
-                                      fontWeight: FontWeight.w700,
-                                      color: stockColor,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: SizeConfig.sw(0.012)),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'Buy: Rs.${s.purchasePrice.toStringAsFixed(0)}',
-                                      style: TextStyle(
-                                        fontSize: SizeConfig.res(3.2),
-                                        fontWeight: FontWeight.w600,
-                                        color: _textDark,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Sell: Rs.${s.salePrice.toStringAsFixed(0)}',
-                                      style: TextStyle(
-                                        fontSize: SizeConfig.res(3),
-                                        color: _primary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  );
-                }),
-              ),
-            ],
+                        );
+                      },
+                    );
+                  }),
+                ),
+              ],
+            ),
           ),
         ),
       ),

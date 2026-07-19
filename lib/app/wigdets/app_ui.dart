@@ -8,18 +8,18 @@ import '../themes/app_colors.dart';
 //  COLOR CONSTANTS  (import once, use everywhere)
 // ═══════════════════════════════════════════════════════════════
 class AC {
-  static const bg       = AppColors.background;
-  static const surface  = AppColors.surface;
-  static const primary  = AppColors.primary;
-  static const success  = AppColors.success;
-  static const warning  = AppColors.warning;
-  static const danger   = AppColors.error;
-  static const info     = AppColors.info;
+  static const bg = AppColors.background;
+  static const surface = AppColors.surface;
+  static const primary = AppColors.primary;
+  static const success = AppColors.success;
+  static const warning = AppColors.warning;
+  static const danger = AppColors.error;
+  static const info = AppColors.info;
   static const secondary = AppColors.secondary;
   static const textDark = AppColors.textPrimary;
-  static const textMid  = AppColors.textSecondary;
-  static const border   = AppColors.divider;
-  static const shadow   = Color(0x0F000000);
+  static const textMid = AppColors.textSecondary;
+  static const border = AppColors.divider;
+  static const shadow = Color(0x0F000000);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -76,7 +76,9 @@ class AppCard extends StatelessWidget {
         color: bgColor ?? AC.surface,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: borderColor ?? AC.border),
-        boxShadow: const [BoxShadow(color: AC.shadow, blurRadius: 6, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: AC.shadow, blurRadius: 6, offset: Offset(0, 2))
+        ],
       ),
       child: child,
     );
@@ -115,13 +117,17 @@ class AppSearchHeader extends StatelessWidget {
               ),
               child: TextField(
                 controller: controller,
-                style: TextStyle(fontSize: SizeConfig.res(3.4), color: AC.textDark),
+                style: TextStyle(
+                    fontSize: SizeConfig.res(3.4), color: AC.textDark),
                 decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.search, color: AC.textMid, size: SizeConfig.res(5)),
+                  prefixIcon: Icon(Icons.search,
+                      color: AC.textMid, size: SizeConfig.res(5)),
                   hintText: hint,
-                  hintStyle: TextStyle(color: AC.textMid, fontSize: SizeConfig.res(3.4)),
+                  hintStyle: TextStyle(
+                      color: AC.textMid, fontSize: SizeConfig.res(3.4)),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
                 ),
                 onChanged: onChanged,
               ),
@@ -269,7 +275,8 @@ class AppBadge extends StatelessWidget {
   final Color color;
   final IconData? icon;
 
-  const AppBadge({super.key, required this.label, required this.color, this.icon});
+  const AppBadge(
+      {super.key, required this.label, required this.color, this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +336,8 @@ class AppIconBox extends StatelessWidget {
   final Color color;
   final double? size;
 
-  const AppIconBox({super.key, required this.icon, required this.color, this.size});
+  const AppIconBox(
+      {super.key, required this.icon, required this.color, this.size});
 
   @override
   Widget build(BuildContext context) {
@@ -477,8 +485,7 @@ class AppTotalTile extends StatelessWidget {
                 Text('Rs. ${value.toStringAsFixed(0)}',
                     style: TextStyle(
                         fontSize: SizeConfig.res(isBold ? 4 : 3.6),
-                        fontWeight:
-                            isBold ? FontWeight.w800 : FontWeight.w600,
+                        fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
                         color: color),
                     overflow: TextOverflow.ellipsis),
               ],
@@ -568,8 +575,7 @@ class AppTextField extends StatelessWidget {
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle:
-            TextStyle(fontSize: SizeConfig.res(3.2), color: AC.textMid),
+        labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: AC.textMid),
         prefixIcon: Icon(icon,
             size: SizeConfig.res(4.5),
             color: enabled ? AC.primary : AC.textMid),
@@ -621,8 +627,7 @@ class AppDropdown<T> extends StatelessWidget {
       style: TextStyle(fontSize: SizeConfig.res(3.4), color: AC.textDark),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle:
-            TextStyle(fontSize: SizeConfig.res(3.2), color: AC.textMid),
+        labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: AC.textMid),
         prefixIcon: icon != null
             ? Icon(icon, size: SizeConfig.res(4.5), color: AC.primary)
             : null,
@@ -860,8 +865,7 @@ Widget appFab({required String label, required VoidCallback onPressed}) {
     onPressed: onPressed,
     icon: const Icon(Icons.add, color: AC.surface),
     label: Text(label,
-        style: const TextStyle(
-            color: AC.surface, fontWeight: FontWeight.w600)),
+        style: const TextStyle(color: AC.surface, fontWeight: FontWeight.w600)),
     backgroundColor: AC.primary,
     elevation: 2,
   );
@@ -897,14 +901,11 @@ class AppFilterChips extends StatelessWidget {
                   horizontal: SizeConfig.sw(0.012),
                   vertical: SizeConfig.sh(0.010)),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? chip.color
-                    : chip.color.withOpacity(0.07),
+                color: isSelected ? chip.color : chip.color.withOpacity(0.07),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: isSelected
-                        ? chip.color
-                        : chip.color.withOpacity(0.3)),
+                    color:
+                        isSelected ? chip.color : chip.color.withOpacity(0.3)),
               ),
               child: Text(chip.label,
                   style: TextStyle(
@@ -928,15 +929,15 @@ class _ChipItem {
 
 // ─── helpers to build chip lists cleanly ───────────────────────
 List<_ChipItem> statusChips() => [
-      _ChipItem('All',      'all',      AC.primary),
-      _ChipItem('Paid',     'paid',     AC.success),
-      _ChipItem('Partial',  'partial',  AC.warning),
+      _ChipItem('All', 'all', AC.primary),
+      _ChipItem('Paid', 'paid', AC.success),
+      _ChipItem('Partial', 'partial', AC.warning),
       _ChipItem('Not Paid', 'not_paid', AC.danger),
     ];
 
 List<_ChipItem> orderChips() => [
-      _ChipItem('All',       'all',       AC.primary),
-      _ChipItem('Pending',   'pending',   AC.warning),
-      _ChipItem('Received',  'received',  AC.info),
+      _ChipItem('All', 'all', AC.primary),
+      _ChipItem('Pending', 'pending', AC.warning),
+      _ChipItem('Received', 'received', AC.info),
       _ChipItem('Completed', 'completed', AC.success),
     ];

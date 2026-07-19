@@ -1,9 +1,14 @@
 // app/modules/stock/stock_list_page.dart
 
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
+import 'package:vgsync_frontend/app/data/services/api_service.dart';
 import 'package:vgsync_frontend/app/modules/categories/category_controller.dart';
 import 'package:vgsync_frontend/app/modules/stock/item_detail_page.dart';
 import 'package:vgsync_frontend/app/wigdets/common_widgets.dart';
@@ -26,53 +31,19 @@ class _StockListPageState extends State<StockListPage> {
   final GlobalController globalController = Get.find<GlobalController>();
 
   // ── Colors (all const — no runtime allocation) ────────────────────────────
-  static const _bg           = AppColors.background;
-  static const _surface      = AppColors.surface;
-  static const _primary      = AppColors.primary;
-  static const _success      = AppColors.success;
-  static const _warning      = Color(0xFFF59E0B);
-  static const _danger       = AppColors.error;
-  static const _textDark     = AppColors.textPrimary;
-  static const _textMid      = AppColors.textSecondary;
-  static const _border       = Color(0xFFE5E7EB);
-  static const _shadow       = Color(0x0F000000);
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _danger = AppColors.error;
+  static const _textDark = AppColors.textPrimary;
+  static const _textMid = AppColors.textSecondary;
+  static const _border = Color(0xFFE5E7EB);
+  static const _shadow = Color(0x0F000000);
   static const _primaryLight = Color(0xFFEEF2FF);
 
-  // ── Pre-computed semi-transparent colors (avoids withOpacity per frame) ───
-  static const _dangerBorder   = Color(0x4DDA0B0B); // danger @ 0.3
-  static const _dangerBg       = Color(0x1ADA0B0B); // danger @ 0.1
-  static const _warningBorder  = Color(0x4DF59E0B); // warning @ 0.3
-  static const _warningBg      = Color(0x1AF59E0B); // warning @ 0.1
-  static const _successBorder  = Color(0x4D22C55E); // success @ 0.3  ← adjust to your AppColors.success hex
-  static const _successBg      = Color(0x1A22C55E); // success @ 0.1
-
-  // ── Cached decoration objects (built once, reused) ────────────────────────
-  static const _tileBoxShadow = [
-    BoxShadow(color: _shadow, blurRadius: 4, offset: Offset(0, 1))
-  ];
   static const _headerBoxShadow = [
     BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
   ];
-
-  // Cached tile decorations (out-of-stock / low / normal)
-  static final _tileDecorNormal = BoxDecoration(
-    color: _surface,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: _border),
-    boxShadow: _tileBoxShadow,
-  );
-  static final _tileDecorLow = BoxDecoration(
-    color: _surface,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: _warningBorder),
-    boxShadow: _tileBoxShadow,
-  );
-  static final _tileDecorOut = BoxDecoration(
-    color: _surface,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: _dangerBorder),
-    boxShadow: _tileBoxShadow,
-  );
 
   @override
   void initState() {
@@ -160,9 +131,11 @@ class _StockListPageState extends State<StockListPage> {
               onChanged: (_) => stockController.stocks.refresh(),
               style: TextStyle(fontSize: SizeConfig.res(3.5)),
               decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(4.5)),
+                prefixIcon: Icon(Icons.search,
+                    color: _textMid, size: SizeConfig.res(4.5)),
                 hintText: 'Search by name or item no...',
-                hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.2)),
+                hintStyle:
+                    TextStyle(color: _textMid, fontSize: SizeConfig.res(3.2)),
                 isDense: true,
                 filled: true,
                 fillColor: _bg,
@@ -186,7 +159,10 @@ class _StockListPageState extends State<StockListPage> {
             ),
           ),
           SizedBox(width: SizeConfig.sw(0.01)),
-          _iconBtn(icon: Icons.refresh_rounded, tooltip: 'Refresh', onTap: stockController.refreshStock),
+          _iconBtn(
+              icon: Icons.refresh_rounded,
+              tooltip: 'Refresh',
+              onTap: stockController.refreshStock),
           SizedBox(width: SizeConfig.sw(0.008)),
           _outlineBtn(
             icon: Icons.upload_file_outlined,
@@ -205,6 +181,12 @@ class _StockListPageState extends State<StockListPage> {
                 },
               );
             },
+          ),
+          SizedBox(width: SizeConfig.sw(0.008)),
+          _outlineBtn(
+            icon: Icons.import_export,
+            label: 'Export',
+            onTap: () => _exportStockExcel(),
           ),
           SizedBox(width: SizeConfig.sw(0.008)),
           _outlineBtn(
@@ -258,7 +240,8 @@ class _StockListPageState extends State<StockListPage> {
                   size: SizeConfig.res(15), color: Colors.grey.shade300),
               SizedBox(height: SizeConfig.sh(0.015)),
               Text('No stocks found',
-                  style: TextStyle(color: _textMid, fontSize: SizeConfig.res(4))),
+                  style:
+                      TextStyle(color: _textMid, fontSize: SizeConfig.res(4))),
             ],
           ),
         );
@@ -276,9 +259,9 @@ class _StockListPageState extends State<StockListPage> {
         itemBuilder: (_, index) => _StockTile(
           stock: filtered[index],
           index: index,
-          onTap: (s) => Get.to(() => StockDetailPage(stockId: s.id!)),
+          onTap: (s) => Get.to(() => StockDetailPage(stockId: s.id)),
           onEdit: openEditDialog,
-          onDelete: (s) => stockController.deleteStock(context, s.id ?? 0),
+          onDelete: (s) => stockController.deleteStock(context, s.id),
         ),
       );
     });
@@ -318,7 +301,9 @@ class _StockListPageState extends State<StockListPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        isEditMode ? Icons.edit_outlined : Icons.add_box_outlined,
+                        isEditMode
+                            ? Icons.edit_outlined
+                            : Icons.add_box_outlined,
                         color: _primary,
                         size: SizeConfig.res(5),
                       ),
@@ -327,7 +312,8 @@ class _StockListPageState extends State<StockListPage> {
                     Text(
                       isEditMode ? 'Edit Stock' : 'Add Stock',
                       style: TextStyle(
-                          fontSize: SizeConfig.res(5), fontWeight: FontWeight.w700),
+                          fontSize: SizeConfig.res(5),
+                          fontWeight: FontWeight.w700),
                     ),
                     const Spacer(),
                     IconButton(
@@ -340,30 +326,39 @@ class _StockListPageState extends State<StockListPage> {
                 const Divider(),
                 SizedBox(height: SizeConfig.sh(0.018)),
                 _dialogRow(
-                  buildTextField(stockController.itemNoController, "Item No *", Icons.confirmation_number),
-                  buildTextField(stockController.nameController, "Name *", Icons.label),
+                  buildTextField(stockController.itemNoController, "Item No *",
+                      Icons.confirmation_number),
+                  buildTextField(
+                      stockController.nameController, "Name *", Icons.label),
                 ),
                 SizedBox(height: SizeConfig.sh(0.015)),
                 _dialogRow(
-                  buildTextField(stockController.modelController, "Model", Icons.model_training),
+                  buildTextField(stockController.modelController, "Model",
+                      Icons.model_training),
                   Obx(() {
-                    final selectedId = stockController.categorySelectController.text.isNotEmpty
-                        ? int.tryParse(stockController.categorySelectController.text)
-                        : null;
+                    final selectedId =
+                        stockController.categorySelectController.text.isNotEmpty
+                            ? int.tryParse(
+                                stockController.categorySelectController.text)
+                            : null;
                     return DropdownButtonFormField<int>(
                       value: selectedId,
                       items: categoryCtrl.categories
-                          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                          .map((c) => DropdownMenuItem(
+                              value: c.id, child: Text(c.name)))
                           .toList(),
                       onChanged: (value) {
                         if (value != null) {
-                          stockController.categorySelectController.text = value.toString();
+                          stockController.categorySelectController.text =
+                              value.toString();
                         }
                       },
                       decoration: InputDecoration(
                         labelText: "Category",
-                        prefixIcon: Icon(Icons.category_outlined, size: SizeConfig.res(4.5)),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        prefixIcon: Icon(Icons.category_outlined,
+                            size: SizeConfig.res(4.5)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: SizeConfig.sw(0.01),
                           vertical: SizeConfig.sh(0.016),
@@ -374,19 +369,20 @@ class _StockListPageState extends State<StockListPage> {
                 ),
                 SizedBox(height: SizeConfig.sh(0.015)),
                 _dialogRow(
-                  buildTextField(stockController.stockQtyController, "Stock Qty", Icons.inventory,
+                  buildTextField(stockController.stockQtyController,
+                      "Stock Qty", Icons.inventory,
                       keyboardType: TextInputType.number),
-                  buildTextField(stockController.purchasePriceController, "Purchase Price",
-                      Icons.price_change,
+                  buildTextField(stockController.purchasePriceController,
+                      "Purchase Price", Icons.price_change,
                       keyboardType: TextInputType.number),
                 ),
                 SizedBox(height: SizeConfig.sh(0.015)),
                 _dialogRow(
-                  buildTextField(stockController.salePriceController, "Sale Price (13% VAT)",
-                      Icons.sell,
+                  buildTextField(stockController.salePriceController,
+                      "Sale Price (13% VAT)", Icons.sell,
                       keyboardType: TextInputType.number, readOnly: true),
-                  buildTextField(
-                      stockController.blockController, "Block / Location", Icons.location_on_outlined),
+                  buildTextField(stockController.blockController,
+                      "Block / Location", Icons.location_on_outlined),
                 ),
                 SizedBox(height: SizeConfig.sh(0.025)),
                 Row(
@@ -394,19 +390,22 @@ class _StockListPageState extends State<StockListPage> {
                   children: [
                     TextButton(
                       onPressed: () => Get.back(),
-                      child: Text('Cancel', style: TextStyle(fontSize: SizeConfig.res(3.5))),
+                      child: Text('Cancel',
+                          style: TextStyle(fontSize: SizeConfig.res(3.5))),
                     ),
                     if (isEditMode) ...[
                       SizedBox(width: SizeConfig.sw(0.008)),
                       OutlinedButton.icon(
                         onPressed: () {
                           if (stock != null) {
-                            stockController.deleteStock(context, stock.id ?? 0);
+                            stockController.deleteStock(context, stock.id);
                           }
                         },
-                        icon: Icon(Icons.delete_outline, size: SizeConfig.res(4), color: _danger),
+                        icon: Icon(Icons.delete_outline,
+                            size: SizeConfig.res(4), color: _danger),
                         label: Text('Delete',
-                            style: TextStyle(color: _danger, fontSize: SizeConfig.res(3.5))),
+                            style: TextStyle(
+                                color: _danger, fontSize: SizeConfig.res(3.5))),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: _danger),
                           padding: EdgeInsets.symmetric(
@@ -425,16 +424,20 @@ class _StockListPageState extends State<StockListPage> {
                           await stockController.addStock();
                         }
                       },
-                      icon: Icon(Icons.save_outlined, size: SizeConfig.res(4), color: Colors.white),
+                      icon: Icon(Icons.save_outlined,
+                          size: SizeConfig.res(4), color: Colors.white),
                       label: Text('Save',
-                          style: TextStyle(color: Colors.white, fontSize: SizeConfig.res(3.5))),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: SizeConfig.res(3.5))),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _primary,
                         padding: EdgeInsets.symmetric(
                           horizontal: SizeConfig.sw(0.015),
                           vertical: SizeConfig.sh(0.012),
                         ),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
                   ],
@@ -457,7 +460,10 @@ class _StockListPageState extends State<StockListPage> {
     );
   }
 
-  Widget _iconBtn({required IconData icon, required String tooltip, required VoidCallback onTap}) {
+  Widget _iconBtn(
+      {required IconData icon,
+      required String tooltip,
+      required VoidCallback onTap}) {
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -475,7 +481,10 @@ class _StockListPageState extends State<StockListPage> {
     );
   }
 
-  Widget _outlineBtn({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _outlineBtn(
+      {required IconData icon,
+      required String label,
+      required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -504,6 +513,51 @@ class _StockListPageState extends State<StockListPage> {
       ),
     );
   }
+
+  Future<void> _exportStockExcel() async {
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      final response = await ApiService.dio.get(
+        '/export/stock-excel/',
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      if (Get.isDialogOpen ?? false) Get.back();
+      await Future.delayed(const Duration(milliseconds: 250));
+
+      final savePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Stock Excel',
+        fileName: 'stock_export.xlsx',
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+      );
+
+      if (savePath != null) {
+        final file = File(savePath);
+        await file.writeAsBytes(response.data);
+        _showResult('Stock exported successfully', isError: false);
+      }
+    } catch (e) {
+      if (Get.isDialogOpen ?? false) Get.back();
+      await Future.delayed(const Duration(milliseconds: 250));
+      _showResult('Export failed: $e', isError: true);
+    }
+  }
+
+  void _showResult(String message, {required bool isError}) {
+    final overlayState = Get.overlayContext;
+    if (overlayState == null) return; // overlay ready नभए silently skip
+    Get.snackbar(
+      isError ? 'Error' : 'Success',
+      message,
+      backgroundColor: isError ? AppColors.error : AppColors.success,
+      colorText: Colors.white,
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -527,38 +581,38 @@ class _StockTile extends StatelessWidget {
   final void Function(StockModel) onDelete;
 
   // ── Const colors (same as parent — duplicated here so widget is self-contained)
-  static const _primary      = AppColors.primary;
-  static const _success      = AppColors.success;
-  static const _warning      = Color(0xFFF59E0B);
-  static const _danger       = AppColors.error;
-  static const _textDark     = AppColors.textPrimary;
-  static const _textMid      = AppColors.textSecondary;
+  static const _primary = AppColors.primary;
+  static const _danger = AppColors.error;
+  static const _textDark = AppColors.textPrimary;
+  static const _textMid = AppColors.textSecondary;
   static const _primaryLight = Color(0xFFEEF2FF);
 
-  static const _dangerBorder  = Color(0x4DDA0B0B);
-  static const _dangerBg      = Color(0x1ADA0B0B);
+  static const _dangerBorder = Color(0x4DDA0B0B);
   static const _warningBorder = Color(0x4DF59E0B);
-  static const _warningBg     = Color(0x1AF59E0B);
-  static const _successBorder = Color(0x4D22C55E);
-  static const _successBg     = Color(0x1A22C55E);
-  static const _border        = Color(0xFFE5E7EB);
-  static const _surface       = AppColors.surface;
-  static const _shadow        = Color(0x0F000000);
+  static const _border = Color(0xFFE5E7EB);
+  static const _surface = AppColors.surface;
+  static const _shadow = Color(0x0F000000);
 
   static const _tileBoxShadow = [
     BoxShadow(color: _shadow, blurRadius: 4, offset: Offset(0, 1))
   ];
   static final _tileDecorNormal = BoxDecoration(
-    color: _surface, borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: _border), boxShadow: _tileBoxShadow,
+    color: _surface,
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: _border),
+    boxShadow: _tileBoxShadow,
   );
   static final _tileDecorLow = BoxDecoration(
-    color: _surface, borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: _warningBorder), boxShadow: _tileBoxShadow,
+    color: _surface,
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: _warningBorder),
+    boxShadow: _tileBoxShadow,
   );
   static final _tileDecorOut = BoxDecoration(
-    color: _surface, borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: _dangerBorder), boxShadow: _tileBoxShadow,
+    color: _surface,
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: _dangerBorder),
+    boxShadow: _tileBoxShadow,
   );
 
   @override
@@ -578,7 +632,8 @@ class _StockTile extends StatelessWidget {
             foregroundColor: Colors.white,
             icon: Icons.edit_outlined,
             label: 'Edit',
-            borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+            borderRadius:
+                const BorderRadius.horizontal(left: Radius.circular(12)),
           ),
           SlidableAction(
             onPressed: (_) => onDelete(stock),
@@ -586,7 +641,8 @@ class _StockTile extends StatelessWidget {
             foregroundColor: Colors.white,
             icon: Icons.delete_outline,
             label: 'Delete',
-            borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+            borderRadius:
+                const BorderRadius.horizontal(right: Radius.circular(12)),
           ),
         ],
       ),
@@ -667,7 +723,8 @@ class _StockTile extends StatelessWidget {
                   SizedBox(height: SizeConfig.sh(0.003)),
                   Text(
                     'Purchase: Rs. ${stock.purchasePrice.toStringAsFixed(0)}',
-                    style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid),
+                    style: TextStyle(
+                        fontSize: SizeConfig.res(2.8), color: _textMid),
                   ),
                 ],
               ),
@@ -688,7 +745,8 @@ class _StockTile extends StatelessWidget {
       children: [
         Icon(icon, size: SizeConfig.res(2.8), color: _textMid),
         SizedBox(width: SizeConfig.sw(0.003)),
-        Text(text, style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
+        Text(text,
+            style: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid)),
       ],
     );
   }
@@ -699,28 +757,45 @@ class _StockTile extends StatelessWidget {
 //         rebuild हुँदैन यदि qty/isOut/isLow change भएन भने
 // ═══════════════════════════════════════════════════════════════════════════
 class _StockBadge extends StatelessWidget {
-  const _StockBadge({required this.qty, required this.isOut, required this.isLow});
+  const _StockBadge(
+      {required this.qty, required this.isOut, required this.isLow});
 
   final int qty;
   final bool isOut;
   final bool isLow;
 
-  static const _success      = AppColors.success;
-  static const _warning      = Color(0xFFF59E0B);
-  static const _danger       = AppColors.error;
-  static const _dangerBg     = Color(0x1ADA0B0B);
+  static const _success = AppColors.success;
+  static const _warning = Color(0xFFF59E0B);
+  static const _danger = AppColors.error;
+  static const _dangerBg = Color(0x1ADA0B0B);
   static const _dangerBorder = Color(0x4DDA0B0B);
-  static const _warningBg    = Color(0x1AF59E0B);
-  static const _warningBorder= Color(0x4DF59E0B);
-  static const _successBg    = Color(0x1A22C55E);
-  static const _successBorder= Color(0x4D22C55E);
+  static const _warningBg = Color(0x1AF59E0B);
+  static const _warningBorder = Color(0x4DF59E0B);
+  static const _successBg = Color(0x1A22C55E);
+  static const _successBorder = Color(0x4D22C55E);
 
   @override
   Widget build(BuildContext context) {
-    final Color color      = isOut ? _danger  : isLow ? _warning  : _success;
-    final Color bgColor    = isOut ? _dangerBg: isLow ? _warningBg: _successBg;
-    final Color bdrColor   = isOut ? _dangerBorder: isLow ? _warningBorder: _successBorder;
-    final String label     = isOut ? 'Out'    : isLow ? 'Low'     : 'In Stock';
+    final Color color = isOut
+        ? _danger
+        : isLow
+            ? _warning
+            : _success;
+    final Color bgColor = isOut
+        ? _dangerBg
+        : isLow
+            ? _warningBg
+            : _successBg;
+    final Color bdrColor = isOut
+        ? _dangerBorder
+        : isLow
+            ? _warningBorder
+            : _successBorder;
+    final String label = isOut
+        ? 'Out'
+        : isLow
+            ? 'Low'
+            : 'In Stock';
 
     return Container(
       padding: EdgeInsets.symmetric(
