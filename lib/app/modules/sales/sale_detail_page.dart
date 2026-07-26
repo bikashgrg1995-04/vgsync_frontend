@@ -57,7 +57,10 @@ class SaleDetailPage extends StatelessWidget {
             SizedBox(height: SizeConfig.sh(0.018)),
             _summaryCard(),
             SizedBox(height: SizeConfig.sh(0.018)),
-            if (sale.isServicing) ...[
+            if (sale.isfittingJob) ...[
+              _fittingCard(), // 👈 NEW
+              SizedBox(height: SizeConfig.sh(0.018)),
+            ] else if (sale.isServicing) ...[
               _servicingCard(),
               SizedBox(height: SizeConfig.sh(0.018)),
             ],
@@ -67,6 +70,27 @@ class SaleDetailPage extends StatelessWidget {
             SizedBox(height: SizeConfig.sh(0.03)),
           ],
         ),
+      ),
+    );
+  }
+
+  // ── Fitting card ───────────────────────────────────────────────────────────
+  Widget _fittingCard() {
+    return _card(
+      borderColor: _warning.withOpacity(0.3),
+      bgColor: _warning.withOpacity(0.03),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _cardTitle(Icons.handyman_rounded, 'Fitting Details',
+              color: _warning),
+          SizedBox(height: SizeConfig.sh(0.016)),
+          _infoGrid([
+            _InfoItem('Technician', sale.technicianName ?? '-'),
+            _InfoItem('Labour / Fitting Charge',
+                'Rs. ${sale.labourCharge.toStringAsFixed(2)}'),
+          ]),
+        ],
       ),
     );
   }
@@ -425,7 +449,7 @@ class SaleDetailPage extends StatelessWidget {
                   SizedBox(
                     width: SizeConfig.sw(0.08),
                     child: Text(
-                      '${i.quantity} × ${i.salePrice.toStringAsFixed(0)}',
+                      '${i.quantity} × ${i.salePrice.toStringAsFixed(2)}',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize: SizeConfig.res(3.2), color: _textMid),
@@ -434,7 +458,7 @@ class SaleDetailPage extends StatelessWidget {
                   SizedBox(
                     width: SizeConfig.sw(0.09),
                     child: Text(
-                      'Rs. ${(i.quantity * i.salePrice).toStringAsFixed(0)}',
+                      'Rs. ${(i.quantity * i.salePrice).toStringAsFixed(2)}',
                       textAlign: TextAlign.right,
                       style: TextStyle(
                           fontSize: SizeConfig.res(3.4),
@@ -476,7 +500,7 @@ class SaleDetailPage extends StatelessWidget {
             _InfoItem('Job Card No', sale.jobCardNo ?? '-'),
             _InfoItem('Technician', sale.technicianName ?? '-'),
             _InfoItem(
-                'Labour Charge', 'Rs. ${sale.labourCharge.toStringAsFixed(0)}'),
+                'Labour Charge', 'Rs. ${sale.labourCharge.toStringAsFixed(2)}'),
             _InfoItem('Job Done', sale.jobDoneOnVehicle ?? '-'),
           ]),
           SizedBox(height: SizeConfig.sh(0.016)),
@@ -607,7 +631,7 @@ class SaleDetailPage extends StatelessWidget {
                     style: TextStyle(
                         fontSize: SizeConfig.res(2.8), color: _textMid)),
                 SizedBox(height: SizeConfig.sh(0.003)),
-                Text('Rs. ${value.toStringAsFixed(0)}',
+                Text('Rs. ${value.toStringAsFixed(2)}',
                     style: TextStyle(
                         fontSize: SizeConfig.res(isBold ? 4 : 3.6),
                         fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
@@ -702,6 +726,7 @@ class SaleDetailPage extends StatelessWidget {
     controller.clearForm();
     if (isEdit) controller.fillForEdit(sale);
     controller.isServicing.value = sale?.isServicing ?? false;
+    controller.isfittingJob.value = sale?.isfittingJob ?? false;
 
     final staffSelected = (sale?.handledBy ?? 0).obs;
     const paidFromOptions = ['cash', 'online', 'bank'];
@@ -711,14 +736,15 @@ class SaleDetailPage extends StatelessWidget {
             : 'cash';
     final paidFrom = initialPaidFrom.obs;
 
-    controller.discountAmountController.text = (sale?.discountAmount ?? 0).toStringAsFixed(2);
+    controller.discountAmountController.text =
+        (sale?.discountAmount ?? 0).toStringAsFixed(2);
     controller.updateTotals();
 
     Get.dialog(
       CustomFormDialog(
         title: isEdit ? 'Edit Sale' : 'Add Sale',
         isEditMode: isEdit,
-        width: 0.6,
+        width: 0.8,
         height: 0.9,
         content: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -749,14 +775,16 @@ class SaleDetailPage extends StatelessWidget {
                 children: [
                   SizedBox(
                       width: SizeConfig.sw(0.1),
-                      child: _styledDatePicker(context, 'Sale Date', controller.saleDate,
+                      child: _styledDatePicker(
+                          context, 'Sale Date', controller.saleDate,
                           required: true)),
                   SizedBox(width: SizeConfig.sw(0.02)),
                   SizedBox(
                     width: SizeConfig.sw(0.15),
                     child: Obx(() {
-                      if (staffController.staffs.isEmpty)
+                      if (staffController.staffs.isEmpty) {
                         return const SizedBox();
+                      }
                       if (staffSelected.value == 0) {
                         staffSelected.value = staffController.staffs.first.id!;
                       }
@@ -776,10 +804,17 @@ class SaleDetailPage extends StatelessWidget {
                     width: SizeConfig.sw(0.15),
                     child: Obx(() => _servicingSwitch()),
                   ),
+                  SizedBox(width: SizeConfig.sw(0.02)), // 👈 NEW
+                  SizedBox(
+                    // 👈 NEW
+                    width: SizeConfig.sw(0.15), // 👈 NEW
+                    child: Obx(() => _fittingOnlySwitch()), // 👈 NEW
+                  ), // 👈 NEW
                 ],
               ),
               SizedBox(height: SizeConfig.sh(0.02)),
               Obx(() {
+                if (controller.isfittingJob.value) return _fittingOnlySection();
                 if (!controller.isServicing.value) return const SizedBox();
                 return _servicingSection(context);
               }),
@@ -915,7 +950,8 @@ class SaleDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _styledDatePicker(BuildContext context,String label, Rx<DateTime?> dateField,
+  Widget _styledDatePicker(
+      BuildContext context, String label, Rx<DateTime?> dateField,
       {bool required = false}) {
     return Obx(() => GestureDetector(
           onTap: () async {
@@ -1018,9 +1054,129 @@ class SaleDetailPage extends StatelessWidget {
         ),
         value: controller.isServicing.value,
         activeColor: _info,
-        onChanged: (v) => controller.isServicing.value = v,
+        onChanged: (v) {
+          controller.isServicing.value = v;
+          if (v) {
+            controller.isfittingJob.value =
+                false; // 👈 NEW — mutually exclusive
+          }
+        },
         dense: true,
         contentPadding: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.008)),
+      ),
+    );
+  }
+
+  Widget _fittingOnlySwitch() {
+    return Container(
+      decoration: BoxDecoration(
+        color: controller.isfittingJob.value ? _warning.withOpacity(0.08) : _bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: controller.isfittingJob.value
+              ? _warning.withOpacity(0.3)
+              : _border,
+        ),
+      ),
+      child: SwitchListTile(
+        title: Text(
+          'Fitting Only',
+          style: TextStyle(
+              fontSize: SizeConfig.res(3.2),
+              color: controller.isfittingJob.value ? _warning : _textMid,
+              fontWeight: FontWeight.w600),
+        ),
+        value: controller.isfittingJob.value,
+        activeColor: _warning,
+        onChanged: (v) {
+          controller.isfittingJob.value = v;
+          if (v) controller.isServicing.value = false; // mutually exclusive
+        },
+        dense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.008)),
+      ),
+    );
+  }
+
+  Widget _fittingOnlySection() {
+    return Container(
+      margin: EdgeInsets.only(bottom: SizeConfig.sh(0.015)),
+      padding: EdgeInsets.all(SizeConfig.res(4)),
+      decoration: BoxDecoration(
+        color: _warning.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _warning.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(SizeConfig.res(2)),
+                    decoration: BoxDecoration(
+                        color: _warning.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Icon(Icons.handyman_rounded,
+                        color: _warning, size: SizeConfig.res(4.5)),
+                  ),
+                  SizedBox(width: SizeConfig.sw(0.01)),
+                  Text('Fitting Charge',
+                      style: TextStyle(
+                          fontSize: SizeConfig.res(4),
+                          fontWeight: FontWeight.w700,
+                          color: _textDark)),
+                ],
+              ),
+              SizedBox(height: SizeConfig.sh(0.016)),
+              SizedBox(
+                width: SizeConfig.sw(0.2),
+                child: _styledField(
+                  'Labour / Fitting Charge',
+                  controller.labourChargeController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => controller.updateTotals(),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(width: SizeConfig.sw(0.04)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(SizeConfig.res(2)),
+                    decoration: BoxDecoration(
+                        color: _warning.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Icon(Icons.handyman_rounded,
+                        color: _warning, size: SizeConfig.res(4.5)),
+                  ),
+                  SizedBox(width: SizeConfig.sw(0.01)),
+                  Text('Technician',
+                      style: TextStyle(
+                          fontSize: SizeConfig.res(4),
+                          fontWeight: FontWeight.w700,
+                          color: _textDark)),
+                ],
+              ),
+              SizedBox(height: SizeConfig.sh(0.016)),
+              SizedBox(
+                width: SizeConfig.sw(0.2),
+                child: _styledField(
+                  'Technician',
+                  controller.technicianNameController,
+                  keyboardType: TextInputType.text,
+                  onChanged: (_) => controller.updateTotals(),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1082,7 +1238,8 @@ class SaleDetailPage extends StatelessWidget {
             _styledField('Labour Charge', controller.labourChargeController,
                 keyboardType: TextInputType.number,
                 onChanged: (_) => controller.updateTotals()),
-            _styledDatePicker(context, 'Received Date', controller.receivedDate),
+            _styledDatePicker(
+                context, 'Received Date', controller.receivedDate),
           ),
           SizedBox(height: SizeConfig.sh(0.01)),
           _twoCol(
@@ -1256,7 +1413,7 @@ class SaleDetailPage extends StatelessWidget {
           Obx(() => SizedBox(
                 width: SizeConfig.sw(0.09),
                 child: Text(
-                  'Rs. ${ctrl.totalPrice.value.toStringAsFixed(0)}',
+                  'Rs. ${ctrl.totalPrice.value.toStringAsFixed(2)}',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       fontSize: SizeConfig.res(3.2),
@@ -1307,8 +1464,7 @@ class SaleDetailPage extends StatelessWidget {
                           controller: controller.discountAmountController,
                           keyboardType: TextInputType.number,
                           style: TextStyle(
-                              fontSize: SizeConfig.res(3.2),
-                              color: _textDark),
+                              fontSize: SizeConfig.res(3.2), color: _textDark),
                           decoration: InputDecoration(
                             isDense: true,
                             border: OutlineInputBorder(
@@ -1325,7 +1481,6 @@ class SaleDetailPage extends StatelessWidget {
                           onChanged: (_) => controller.updateTotals(),
                         ),
                       ),
-                     
                     ],
                   ),
                   SizedBox(width: SizeConfig.sw(0.04)),
@@ -1619,13 +1774,13 @@ class SaleDetailPage extends StatelessWidget {
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
-                                          'Buy: Rs.${s.purchasePrice.toStringAsFixed(0)}',
+                                          'Buy: Rs.${s.purchasePrice.toStringAsFixed(2)}',
                                           style: TextStyle(
                                               fontSize: SizeConfig.res(3.2),
                                               fontWeight: FontWeight.w600,
                                               color: _textDark)),
                                       Text(
-                                          'Sell: Rs.${s.salePrice.toStringAsFixed(0)}',
+                                          'Sell: Rs.${s.salePrice.toStringAsFixed(2)}',
                                           style: TextStyle(
                                               fontSize: SizeConfig.res(3),
                                               color: _primary)),

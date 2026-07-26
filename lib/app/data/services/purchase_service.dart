@@ -13,11 +13,10 @@ class PurchaseService {
 
   Future<List<PurchaseModel>> getPurchases() async {
     final res = await _dio.get("/purchases/");
-    
+
     return _extractList(res.data)
         .map((e) => PurchaseModel.fromJson(e))
         .toList();
-
   }
 
   Future<PurchaseModel> createPurchase(PurchaseModel purchase) async {
@@ -39,5 +38,21 @@ class PurchaseService {
 
   Future<void> deletePurchase(int id) async {
     await _dio.delete("/purchases/$id/");
+  }
+
+  // 👈 थप्नुस्
+  Future<PurchaseItemModel> returnPurchaseItem({
+    required int purchaseItemId,
+    required int quantity,
+    String? reason,
+  }) async {
+    final res = await _dio.post(
+      "/purchase-items/$purchaseItemId/return/",
+      data: {
+        'quantity': quantity,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      },
+    );
+    return PurchaseItemModel.fromJson(res.data);
   }
 }

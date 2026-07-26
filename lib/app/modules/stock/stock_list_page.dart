@@ -73,6 +73,8 @@ class _StockListPageState extends State<StockListPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
+            SizedBox(height: SizeConfig.sh(0.01)),
+            _buildSummaryBar(),
             SizedBox(height: SizeConfig.sh(0.02)),
             Expanded(child: _buildList()),
           ],
@@ -209,6 +211,142 @@ class _StockListPageState extends State<StockListPage> {
         ],
       ),
     );
+  }
+
+// Header ko tala ya search row ko tala thapnu paryo — ek pallai summary bar
+  Widget _buildSummaryBar() {
+    return Obx(() {
+      final stocks = stockController.stocks;
+      final total = stocks.length;
+      final lowCount = stocks.where((s) => s.stock > 0 && s.stock <= 5).length;
+      final outCount = stocks.where((s) => s.stock <= 0).length;
+      final totalQty = stockController.totalStockQty;
+      final totalAmount = stockController.totalStockAmount;
+
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(
+          horizontal: SizeConfig.res(3.5),
+          vertical: SizeConfig.sh(0.012),
+        ),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _border),
+          boxShadow: _headerBoxShadow,
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _summaryChip(
+                icon: Icons.inventory_2_outlined,
+                label: 'Total Items',
+                value: '$total',
+                color: _primary,
+              ),
+              _summaryDivider(),
+              _summaryChip(
+                icon: Icons.numbers,
+                label: 'Total Qty',
+                value: '$totalQty',
+                color: _primary,
+              ),
+              _summaryDivider(),
+              _summaryChip(
+                icon: Icons.payments_outlined,
+                label: 'Total Value',
+                value: 'Rs. ${_formatAmount(totalAmount)}',
+                color: AppColors.success,
+              ),
+              if (lowCount > 0) ...[
+                _summaryDivider(),
+                _summaryChip(
+                  icon: Icons.warning_amber_outlined,
+                  label: 'Low Stock',
+                  value: '$lowCount',
+                  color: const Color(0xFFF59E0B),
+                ),
+              ],
+              if (outCount > 0) ...[
+                _summaryDivider(),
+                _summaryChip(
+                  icon: Icons.dangerous_outlined,
+                  label: 'Out of Stock',
+                  value: '$outCount',
+                  color: _danger,
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _summaryDivider() {
+    return Container(
+      height: SizeConfig.res(7),
+      width: 1,
+      margin: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.014)),
+      color: _border,
+    );
+  }
+
+  Widget _summaryChip({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: EdgeInsets.all(SizeConfig.res(1.8)),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: SizeConfig.res(4), color: color),
+        ),
+        SizedBox(width: SizeConfig.sw(0.007)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: SizeConfig.res(3.6),
+                fontWeight: FontWeight.w800,
+                color: _textDark,
+                height: 1.1,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: SizeConfig.res(2.4),
+                color: _textMid,
+                height: 1.1,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _formatAmount(double amount) {
+    // 1234567 -> 12,34,567 (Nepali comma style) — simple version below (standard grouping)
+    final s = amount.toStringAsFixed(0);
+    final buffer = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i != 0 && (s.length - i) % 3 == 0) buffer.write(',');
+      buffer.write(s[i]);
+    }
+    return buffer.toString();
   }
 
   // ── STOCK LIST ─────────────────────────────────────────────────────────────

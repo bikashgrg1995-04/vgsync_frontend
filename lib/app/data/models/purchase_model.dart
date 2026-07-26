@@ -162,6 +162,9 @@ class PurchaseItemModel {
   final double price;
   final double totalPrice;
   final String? itemName;
+  final int returnedQuantity; // 👈 थप्नुस्
+  final DateTime? returnedAt; // 👈 थप्नुस्
+  final String? returnReason; // 👈 थप्नुस्
 
   PurchaseItemModel({
     this.id = 0,
@@ -170,7 +173,16 @@ class PurchaseItemModel {
     required this.price,
     double? totalPrice,
     this.itemName,
+    this.returnedQuantity = 0,
+    this.returnedAt,
+    this.returnReason,
   }) : totalPrice = totalPrice ?? quantity * price;
+
+  int get remainingQuantity => quantity - returnedQuantity; // 👈 थप्नुस्
+  bool get isFullyReturned => remainingQuantity <= 0; // 👈 थप्नुस्
+  bool get isPartiallyReturned =>
+      returnedQuantity > 0 && !isFullyReturned; // 👈 थप्नुस्
+  bool get hasReturn => returnedQuantity > 0; // 👈 थप्नुस्
 
   // ---------------- FROM JSON ----------------
   factory PurchaseItemModel.fromJson(Map<String, dynamic> json) {
@@ -184,6 +196,11 @@ class PurchaseItemModel {
       price: price,
       totalPrice: (json['total_price'] as num?)?.toDouble() ?? qty * price,
       itemName: json['item_name'],
+      returnedQuantity: json['returned_quantity'] ?? 0,
+      returnedAt: json['returned_at'] != null // 👈 थप्नुस्
+          ? DateTime.tryParse(json['returned_at'])
+          : null,
+      returnReason: json['return_reason'],
     );
   }
 
@@ -196,6 +213,9 @@ class PurchaseItemModel {
       'price': price,
       'total_price': totalPrice,
       'item_name': itemName,
+      'returned_quantity': returnedQuantity,
+      'returned_at': returnedAt?.toIso8601String(),
+      'return_reason': returnReason,
     };
   }
 

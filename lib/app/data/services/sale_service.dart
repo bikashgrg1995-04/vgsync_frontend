@@ -45,4 +45,25 @@ class SaleService {
   Future<void> deleteSale(int id) async {
     await _dio.delete('/sales/$id/');
   }
+
+  /// ================= RETURN SALE ITEM =================
+  Future<SaleItemModel> returnSaleItem({
+    required int saleItemId,
+    required int quantity,
+    String? reason,
+  }) async {
+    final res = await _dio.post(
+      "/sale-items/$saleItemId/return/",
+      data: {
+        "quantity": quantity,
+        "reason": reason ?? '',
+      },
+    );
+
+    if (res.statusCode != 200) {
+      throw Exception("Return failed: ${res.data}");
+    }
+
+    return SaleItemModel.fromJson(res.data);
+  }
 }

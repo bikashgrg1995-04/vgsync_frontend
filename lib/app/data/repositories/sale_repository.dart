@@ -16,11 +16,8 @@ class SaleRepository {
   /// ---------------- STOCK SALE ----------------
   /// - Manual UI
   /// - Excel import
-  Future<SaleModel> createStockSale(
-    SaleModel sale) {
-    sale
-      ..isServicing = false;
-     
+  Future<SaleModel> createStockSale(SaleModel sale) {
+    sale.isServicing = false;
 
     return saleService.createSale(sale);
   }
@@ -28,10 +25,8 @@ class SaleRepository {
   /// ---------------- SERVICING SALE ----------------
   /// - Manual UI
   /// - Excel import
-  Future<SaleModel> createServicingSale(
-    SaleModel sale) {
-    sale
-      ..isServicing = true;
+  Future<SaleModel> createServicingSale(SaleModel sale) {
+    sale.isServicing = true;
 
     return saleService.createSale(sale);
   }
@@ -41,10 +36,7 @@ class SaleRepository {
   /// ---------------- UPDATE SALE ----------------
   /// - Edit mode
   /// - Excel re-import
-  Future<SaleModel> updateSale(
-    SaleModel sale, {
-    bool? isServicingOverride
-  }) {
+  Future<SaleModel> updateSale(SaleModel sale, {bool? isServicingOverride}) {
     // 🔒 prevent accidental change
     if (isServicingOverride != null) {
       sale.isServicing = isServicingOverride;
@@ -56,4 +48,15 @@ class SaleRepository {
   Future<void> deleteSale(int id) {
     return saleService.deleteSale(id);
   }
+
+  Future<SaleItemModel> returnSaleItem({
+    required int saleItemId,
+    required int quantity,
+    String? reason,
+  }) =>
+      saleService.returnSaleItem(
+        saleItemId: saleItemId,
+        quantity: quantity,
+        reason: reason,
+      );
 }

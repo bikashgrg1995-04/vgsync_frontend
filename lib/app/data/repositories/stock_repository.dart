@@ -6,8 +6,7 @@ class StockRepository {
 
   StockRepository({required this.stockService});
 
-  Future<List<StockModel>> getStocks() =>
-      stockService.getStocks();
+  Future<List<StockModel>> getStocks() => stockService.getStocks();
 
   Future<StockModel> create(StockModel stock) =>
       stockService.createStock(stock);
@@ -15,6 +14,5 @@ class StockRepository {
   Future<StockModel> update(StockModel stock) =>
       stockService.updateStock(stock);
 
-  Future<void> delete(int id) =>
-      stockService.deleteStock(id);
+  Future<void> delete(int id) => stockService.deleteStock(id);
 }

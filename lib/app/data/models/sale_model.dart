@@ -10,6 +10,9 @@ class SaleItemModel {
 
   final int quantity;
   final double salePrice;
+  final int returnedQuantity;
+  final DateTime? returnedAt; // 👈 NEW
+  final String? returnReason; // 👈 NEW
 
   SaleItemModel({
     this.id,
@@ -18,18 +21,26 @@ class SaleItemModel {
     this.categoryName,
     required this.quantity,
     required this.salePrice,
+    this.returnedQuantity = 0,
+    this.returnedAt,
+    this.returnReason,
   });
+
+  int get remainingQuantity => quantity - returnedQuantity;
+  bool get isFullyReturned => remainingQuantity <= 0;
+  bool get isPartiallyReturned => returnedQuantity > 0 && !isFullyReturned;
+  bool get hasReturn => returnedQuantity > 0; // 👈 NEW helper
 
   /// Factory to create from stock
   factory SaleItemModel.fromStock(StockModel stock) {
-  return SaleItemModel(
-    id: null,
-    itemId: stock.id,
-    itemName: stock.name,
-    categoryName: stock.categoryName,
-    quantity: 1, // 🔥 important fix (not stock.stock)
-    salePrice: stock.salePrice,
-  );
+    return SaleItemModel(
+      id: null,
+      itemId: stock.id,
+      itemName: stock.name,
+      categoryName: stock.categoryName,
+      quantity: 1, // 🔥 important fix (not stock.stock)
+      salePrice: stock.salePrice,
+    );
   }
 
   /// Copy with optional reset quantity
@@ -41,6 +52,9 @@ class SaleItemModel {
       categoryName: categoryName,
       quantity: resetQuantity ? 1 : quantity, // reset when adding
       salePrice: salePrice,
+      returnedQuantity: resetQuantity ? 0 : returnedQuantity,
+      returnedAt: resetQuantity ? null : returnedAt,
+      returnReason: resetQuantity ? null : returnReason,
     );
   }
 
@@ -57,13 +71,17 @@ class SaleItemModel {
     }
 
     return SaleItemModel(
-      id: json['id'],
-      itemId: parseInt(json['item']) ?? 0,
-      itemName: json['item_name'] ?? '',
-      categoryName: json['category_name'],
-      quantity: json['quantity'] ?? 1,
-      salePrice: (json['sale_price'] ?? 0).toDouble(),
-    );
+        id: json['id'],
+        itemId: parseInt(json['item']) ?? 0,
+        itemName: json['item_name'] ?? '',
+        categoryName: json['category_name'],
+        quantity: json['quantity'] ?? 1,
+        salePrice: (json['sale_price'] ?? 0).toDouble(),
+        returnedQuantity: json['returned_quantity'] ?? 0,
+        returnedAt: json['returned_at'] != null
+            ? DateTime.tryParse(json['returned_at'])
+            : null,
+        returnReason: json['return_reason']);
   }
 
   /// For backend API
@@ -114,6 +132,7 @@ class SaleModel {
   bool isRepairJob;
   bool isAccident;
   bool isWarrantyJob;
+  bool isfittingJob;
 
   /// 🆕 NEW FIELDS
   String? jobDoneOnVehicle;
@@ -154,6 +173,7 @@ class SaleModel {
     this.isRepairJob = false,
     this.isAccident = false,
     this.isWarrantyJob = false,
+    this.isfittingJob = false,
     this.jobDoneOnVehicle,
     this.technicianName,
     this.receivedDate,
@@ -223,6 +243,7 @@ class SaleModel {
       isRepairJob: json['is_repair_job'] ?? false,
       isAccident: json['is_accident'] ?? false,
       isWarrantyJob: json['is_warranty_job'] ?? false,
+      isfittingJob: json['is_fitting_job'] ?? false,
       jobDoneOnVehicle: json['job_done_on_vehicle'],
       technicianName: json['technician_name'],
       receivedDate: parseDate(json['received_date']),
@@ -264,7 +285,9 @@ class SaleModel {
       'is_repair_job': isRepairJob,
       'is_accident': isAccident,
       'is_warranty_job': isWarrantyJob,
+      'is_fitting_job': isfittingJob,
       'job_done_on_vehicle': jobDoneOnVehicle,
+      'technician_name': technicianName,
       'received_date': _formatDate(receivedDate),
       'delivery_date': _formatDate(deliveryDate),
       'follow_up_date': _formatDate(followUpDate),

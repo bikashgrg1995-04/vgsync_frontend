@@ -524,4 +524,41 @@ class PurchaseController extends GetxController {
       return true;
     }).toList();
   }
+
+  // purchase_controller.dart मा थप्नुस् (SalesController.returnSaleItem जस्तै)
+
+  Future<bool> returnPurchaseItem({
+    required int purchaseId,
+    required int purchaseItemId,
+    required int quantity,
+    String? reason,
+  }) async {
+    try {
+      isLoading.value = true;
+      await purchaseRepository.returnPurchaseItem(
+        purchaseItemId: purchaseItemId,
+        quantity: quantity,
+        reason: reason,
+      );
+
+      // net_total/remaining/status backend मा recalc भइसकेकोले, list refetch गर्नु सजिलो र सुरक्षित छ
+      await fetchPurchases();
+      stockController.fetchStocks();
+      globalController.triggerRefresh(DashboardRefreshType.all);
+
+      DesktopToast.show(
+        'Item returned successfully',
+        backgroundColor: Colors.greenAccent,
+      );
+      return true;
+    } catch (e) {
+      DesktopToast.show(
+        'Failed to return item: $e',
+        backgroundColor: Colors.redAccent,
+      );
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }

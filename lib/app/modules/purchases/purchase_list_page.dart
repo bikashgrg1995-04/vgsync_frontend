@@ -3,6 +3,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/modules/purchases/purchase_detail_page.dart';
+import 'package:vgsync_frontend/app/modules/purchases/purchase_return_page.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/app/modules/suppliers/supplier_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/percent_amount_pair.dart';
@@ -99,21 +100,56 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
 
   // ── Page title ─────────────────────────────────────────────────────────────
   Widget _buildPageTitle() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Purchases',
-          style: TextStyle(
-            fontSize: SizeConfig.res(7),
-            fontWeight: FontWeight.w800,
-            color: _textDark,
-            letterSpacing: -0.5,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Purchases',
+              style: TextStyle(
+                fontSize: SizeConfig.res(7),
+                fontWeight: FontWeight.w800,
+                color: _textDark,
+                letterSpacing: -0.5,
+              ),
+            ),
+            Text(
+              'Manage and track all purchase records',
+              style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textMid),
+            ),
+          ],
         ),
-        Text(
-          'Manage and track all purchase records',
-          style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textMid),
+        InkWell(
+          onTap: () => Get.to(() => const PurchaseReturnPage()),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: SizeConfig.sw(0.014),
+              vertical: SizeConfig.sh(0.013),
+            ),
+            decoration: BoxDecoration(
+              color: _primary.withOpacity(0.07),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _primary.withOpacity(0.25)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.assignment_return_rounded,
+                    size: SizeConfig.res(4), color: _primary),
+                SizedBox(width: SizeConfig.sw(0.006)),
+                Text(
+                  'Purchase Returns',
+                  style: TextStyle(
+                    fontSize: SizeConfig.res(3.2),
+                    fontWeight: FontWeight.w600,
+                    color: _primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );

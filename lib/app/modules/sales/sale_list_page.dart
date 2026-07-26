@@ -5,6 +5,7 @@ import 'package:vgsync_frontend/app/controllers/global_controller.dart';
 import 'package:vgsync_frontend/app/data/models/sale_model.dart';
 import 'package:vgsync_frontend/app/modules/sales/sale_controller.dart';
 import 'package:vgsync_frontend/app/modules/sales/sale_detail_page.dart';
+import 'package:vgsync_frontend/app/modules/sales/sale_return_page.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_controller.dart';
 import 'package:vgsync_frontend/app/modules/stock/stock_controller.dart';
 import 'package:vgsync_frontend/app/wigdets/custom_form_dialog.dart';
@@ -26,22 +27,22 @@ class _SaleListPageState extends State<SaleListPage> {
   final GlobalController globalController = Get.find();
 
   // ── Color aliases ──────────────────────────────────────────────────────────
-  static const _bg       = AppColors.background;
-  static const _surface  = AppColors.surface;
-  static const _primary  = AppColors.primary;
-  static const _success  = AppColors.success;
-  static const _warning  = AppColors.warning;
-  static const _danger   = AppColors.error;
-  static const _info     = AppColors.info;
+  static const _bg = AppColors.background;
+  static const _surface = AppColors.surface;
+  static const _primary = AppColors.primary;
+  static const _success = AppColors.success;
+  static const _warning = AppColors.warning;
+  static const _danger = AppColors.error;
+  static const _info = AppColors.info;
   static const _textDark = AppColors.textPrimary;
-  static const _textMid  = AppColors.textSecondary;
-  static const _border   = AppColors.divider;
-  static const _shadow   = Color(0x0F000000);
+  static const _textMid = AppColors.textSecondary;
+  static const _border = AppColors.divider;
+  static const _shadow = Color(0x0F000000);
 
   final statuses = const [
-    {'label': 'All',      'value': 'all'},
-    {'label': 'Paid',     'value': 'paid'},
-    {'label': 'Partial',  'value': 'partial'},
+    {'label': 'All', 'value': 'all'},
+    {'label': 'Paid', 'value': 'paid'},
+    {'label': 'Partial', 'value': 'partial'},
     {'label': 'Not Paid', 'value': 'not_paid'},
   ];
 
@@ -53,9 +54,12 @@ class _SaleListPageState extends State<SaleListPage> {
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'paid':    return _success;
-      case 'partial': return _warning;
-      default:        return _danger;
+      case 'paid':
+        return _success;
+      case 'partial':
+        return _warning;
+      default:
+        return _danger;
     }
   }
 
@@ -83,7 +87,8 @@ class _SaleListPageState extends State<SaleListPage> {
         icon: const Icon(Icons.add, color: AppColors.surface),
         label: const Text(
           'Add Sale',
-          style: TextStyle(color: AppColors.surface, fontWeight: FontWeight.w600),
+          style:
+              TextStyle(color: AppColors.surface, fontWeight: FontWeight.w600),
         ),
         backgroundColor: _primary,
         elevation: 2,
@@ -93,22 +98,57 @@ class _SaleListPageState extends State<SaleListPage> {
 
   // ── Page title ─────────────────────────────────────────────────────────────
   Widget _buildPageTitle() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Sales',
-          style: TextStyle(
-            fontSize: SizeConfig.res(7),
-            fontWeight: FontWeight.w800,
-            color: _textDark,
-            letterSpacing: -0.5,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Sales',
+              style: TextStyle(
+                fontSize: SizeConfig.res(7),
+                fontWeight: FontWeight.w800,
+                color: _textDark,
+                letterSpacing: -0.5,
+              ),
+            ),
+            Text(
+              'Manage and track all sale records',
+              style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textMid),
+            ),
+          ],
+        ),
+        InkWell(
+          onTap: () => Get.to(() => const SaleReturnPage()),
+          child: Container(
+            margin: EdgeInsets.only(left: SizeConfig.sw(0.04)),
+            padding: EdgeInsets.symmetric(
+                horizontal: SizeConfig.sw(0.012),
+                vertical: SizeConfig.sh(0.008)),
+            decoration: BoxDecoration(
+              color: _primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _primary.withOpacity(0.25)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.undo_rounded,
+                    size: SizeConfig.res(4), color: _primary),
+                SizedBox(width: SizeConfig.sw(0.004)),
+                Text(
+                  'Returned Items',
+                  style: TextStyle(
+                    fontSize: SizeConfig.res(3.2),
+                    fontWeight: FontWeight.w600,
+                    color: _primary,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        Text(
-          'Manage and track all sale records',
-          style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textMid),
-        ),
+        )
       ],
     );
   }
@@ -121,7 +161,9 @@ class _SaleListPageState extends State<SaleListPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
+        ],
       ),
       child: Column(
         children: [
@@ -138,13 +180,17 @@ class _SaleListPageState extends State<SaleListPage> {
                   ),
                   child: TextField(
                     controller: controller.searchController,
-                    style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                    style: TextStyle(
+                        fontSize: SizeConfig.res(3.4), color: _textDark),
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
+                      prefixIcon: Icon(Icons.search,
+                          color: _textMid, size: SizeConfig.res(5)),
                       hintText: 'Search sales...',
-                      hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
+                      hintStyle: TextStyle(
+                          color: _textMid, fontSize: SizeConfig.res(3.4)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
                     ),
                     onChanged: (v) => controller.searchText.value = v,
                   ),
@@ -154,7 +200,9 @@ class _SaleListPageState extends State<SaleListPage> {
               Obx(() => _headerButton(
                     label: 'Refresh',
                     icon: Icons.refresh_rounded,
-                    onPressed: controller.isLoading.value ? null : () async => await controller.refreshSales(),
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : () async => await controller.refreshSales(),
                     color: _primary,
                   )),
             ],
@@ -186,14 +234,19 @@ class _SaleListPageState extends State<SaleListPage> {
           vertical: SizeConfig.sh(0.013),
         ),
         decoration: BoxDecoration(
-          color: onPressed == null ? _border.withOpacity(0.3) : color.withOpacity(0.08),
+          color: onPressed == null
+              ? _border.withOpacity(0.3)
+              : color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: onPressed == null ? _border : color.withOpacity(0.25)),
+          border: Border.all(
+              color: onPressed == null ? _border : color.withOpacity(0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: SizeConfig.res(4.5), color: onPressed == null ? _textMid : color),
+            Icon(icon,
+                size: SizeConfig.res(4.5),
+                color: onPressed == null ? _textMid : color),
             SizedBox(width: SizeConfig.sw(0.005)),
             Text(
               label,
@@ -225,12 +278,15 @@ class _SaleListPageState extends State<SaleListPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.calendar_today_rounded, size: SizeConfig.res(4), color: _primary),
+                Icon(Icons.calendar_today_rounded,
+                    size: SizeConfig.res(4), color: _primary),
                 SizedBox(width: SizeConfig.sw(0.006)),
                 Text(
                   controller.filterSelectedDate.value == null
                       ? 'Select Date'
-                      : controller.filterSelectedDate.value!.toIso8601String().split('T')[0],
+                      : controller.filterSelectedDate.value!
+                          .toIso8601String()
+                          .split('T')[0],
                   style: TextStyle(
                     fontSize: SizeConfig.res(3.2),
                     fontWeight: FontWeight.w600,
@@ -241,7 +297,8 @@ class _SaleListPageState extends State<SaleListPage> {
                   SizedBox(width: SizeConfig.sw(0.006)),
                   GestureDetector(
                     onTap: () => controller.filterSelectedDate.value = null,
-                    child: Icon(Icons.close_rounded, size: SizeConfig.res(3.5), color: _primary),
+                    child: Icon(Icons.close_rounded,
+                        size: SizeConfig.res(3.5), color: _primary),
                   ),
                 ],
               ],
@@ -274,7 +331,8 @@ class _SaleListPageState extends State<SaleListPage> {
                   decoration: BoxDecoration(
                     color: isSelected ? color : color.withOpacity(0.07),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isSelected ? color : color.withOpacity(0.3)),
+                    border: Border.all(
+                        color: isSelected ? color : color.withOpacity(0.3)),
                   ),
                   child: Text(
                     s['label']!,
@@ -319,7 +377,8 @@ class _SaleListPageState extends State<SaleListPage> {
             sale.saleDate.month != d.month ||
             sale.saleDate.day != d.day) return false;
       }
-      if (query.isNotEmpty && !sale.customerName.toLowerCase().contains(query)) return false;
+      if (query.isNotEmpty && !sale.customerName.toLowerCase().contains(query))
+        return false;
       return true;
     }).toList();
   }
@@ -335,10 +394,12 @@ class _SaleListPageState extends State<SaleListPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.receipt_long_outlined, size: SizeConfig.res(18), color: _border),
+              Icon(Icons.receipt_long_outlined,
+                  size: SizeConfig.res(18), color: _border),
               SizedBox(height: SizeConfig.sh(0.015)),
               Text('No sales found',
-                  style: TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
+                  style:
+                      TextStyle(fontSize: SizeConfig.res(4), color: _textMid)),
             ],
           ),
         );
@@ -366,7 +427,8 @@ class _SaleListPageState extends State<SaleListPage> {
               foregroundColor: _surface,
               icon: Icons.edit_rounded,
               label: 'Edit',
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.horizontal(left: Radius.circular(12)),
             ),
             SlidableAction(
               onPressed: (_) => controller.deleteSale(context, sale.id ?? 0),
@@ -374,7 +436,8 @@ class _SaleListPageState extends State<SaleListPage> {
               foregroundColor: _surface,
               icon: Icons.delete_rounded,
               label: 'Delete',
-              borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.horizontal(right: Radius.circular(12)),
             ),
           ],
         ),
@@ -387,7 +450,9 @@ class _SaleListPageState extends State<SaleListPage> {
               color: _surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: _border),
-              boxShadow: const [BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))],
+              boxShadow: const [
+                BoxShadow(color: _shadow, blurRadius: 6, offset: Offset(0, 2))
+              ],
             ),
             child: Row(
               children: [
@@ -430,7 +495,8 @@ class _SaleListPageState extends State<SaleListPage> {
                           SizedBox(width: SizeConfig.sw(0.004)),
                           Text(
                             sale.saleDate.toIso8601String().split('T')[0],
-                            style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+                            style: TextStyle(
+                                fontSize: SizeConfig.res(3.2), color: _textMid),
                           ),
                           if (sale.billNo != null) ...[
                             SizedBox(width: SizeConfig.sw(0.016)),
@@ -439,7 +505,9 @@ class _SaleListPageState extends State<SaleListPage> {
                             SizedBox(width: SizeConfig.sw(0.004)),
                             Text(
                               'Bill #${sale.billNo}',
-                              style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+                              style: TextStyle(
+                                  fontSize: SizeConfig.res(3.2),
+                                  color: _textMid),
                             ),
                           ],
                           if (sale.isServicing) ...[
@@ -472,14 +540,21 @@ class _SaleListPageState extends State<SaleListPage> {
                       SizedBox(height: SizeConfig.sh(0.01)),
                       Row(
                         children: [
-                          _amountChip(label: 'Total', value: sale.netTotal, color: _textDark),
+                          _amountChip(
+                              label: 'Total',
+                              value: sale.netTotal,
+                              color: _textDark),
                           SizedBox(width: SizeConfig.sw(0.02)),
-                          _amountChip(label: 'Paid', value: sale.paidAmount, color: _success),
+                          _amountChip(
+                              label: 'Paid',
+                              value: sale.paidAmount,
+                              color: _success),
                           SizedBox(width: SizeConfig.sw(0.02)),
                           _amountChip(
                             label: 'Remaining',
                             value: sale.remainingAmount,
-                            color: sale.remainingAmount > 0 ? _warning : _success,
+                            color:
+                                sale.remainingAmount > 0 ? _warning : _success,
                           ),
                           SizedBox(width: SizeConfig.sw(0.02)),
                           _paidFromBadge(sale.paidFrom),
@@ -488,7 +563,8 @@ class _SaleListPageState extends State<SaleListPage> {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: _textMid, size: SizeConfig.res(5)),
+                Icon(Icons.chevron_right_rounded,
+                    color: _textMid, size: SizeConfig.res(5)),
               ],
             ),
           ),
@@ -519,14 +595,19 @@ class _SaleListPageState extends State<SaleListPage> {
     );
   }
 
-  Widget _amountChip({required String label, required double value, required Color color}) {
+  Widget _amountChip(
+      {required String label, required double value, required Color color}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: SizeConfig.res(2.6), color: _textMid)),
+        Text(label,
+            style: TextStyle(fontSize: SizeConfig.res(2.6), color: _textMid)),
         Text(
           'Rs. ${value.toStringAsFixed(0)}',
-          style: TextStyle(fontSize: SizeConfig.res(3.4), fontWeight: FontWeight.w700, color: color),
+          style: TextStyle(
+              fontSize: SizeConfig.res(3.4),
+              fontWeight: FontWeight.w700,
+              color: color),
         ),
       ],
     );
@@ -567,14 +648,15 @@ class _SaleListPageState extends State<SaleListPage> {
             : 'cash';
     final paidFrom = initialPaidFrom.obs;
 
-    controller.discountAmountController.text = (sale?.discountAmount ?? 0).toStringAsFixed(2);
+    controller.discountAmountController.text =
+        (sale?.discountAmount ?? 0).toStringAsFixed(2);
     controller.updateTotals();
 
     Get.dialog(
       CustomFormDialog(
         title: isEdit ? 'Edit Sale' : 'Add Sale',
         isEditMode: isEdit,
-        width: 0.6,
+        width: 0.8,
         height: 0.9,
         content: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -584,26 +666,35 @@ class _SaleListPageState extends State<SaleListPage> {
               SizedBox(height: SizeConfig.sh(0.02)),
               Row(
                 children: [
-                  SizedBox(width: SizeConfig.sw(0.1),
-                      child: _styledField('Bill No', controller.billNoController)),
+                  SizedBox(
+                      width: SizeConfig.sw(0.1),
+                      child:
+                          _styledField('Bill No', controller.billNoController)),
                   SizedBox(width: SizeConfig.sw(0.02)),
-                  SizedBox(width: SizeConfig.sw(0.2),
-                      child: _styledField('Customer Name', controller.customerNameController)),
+                  SizedBox(
+                      width: SizeConfig.sw(0.2),
+                      child: _styledField(
+                          'Customer Name', controller.customerNameController)),
                   SizedBox(width: SizeConfig.sw(0.02)),
-                  SizedBox(width: SizeConfig.sw(0.15),
-                      child: _styledField('Contact No', controller.contactNoController)),
+                  SizedBox(
+                      width: SizeConfig.sw(0.15),
+                      child: _styledField(
+                          'Contact No', controller.contactNoController)),
                 ],
               ),
               SizedBox(height: SizeConfig.sh(0.02)),
               Row(
                 children: [
-                  SizedBox(width: SizeConfig.sw(0.1),
-                      child: _styledDatePicker('Sale Date', controller.saleDate, required: true)),
+                  SizedBox(
+                      width: SizeConfig.sw(0.1),
+                      child: _styledDatePicker('Sale Date', controller.saleDate,
+                          required: true)),
                   SizedBox(width: SizeConfig.sw(0.02)),
                   SizedBox(
                     width: SizeConfig.sw(0.15),
                     child: Obx(() {
-                      if (staffController.staffs.isEmpty) return const SizedBox();
+                      if (staffController.staffs.isEmpty)
+                        return const SizedBox();
                       if (staffSelected.value == 0) {
                         staffSelected.value = staffController.staffs.first.id!;
                       }
@@ -611,7 +702,8 @@ class _SaleListPageState extends State<SaleListPage> {
                         label: 'Staff',
                         value: staffSelected.value,
                         items: staffController.staffs
-                            .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                            .map((s) => DropdownMenuItem(
+                                value: s.id, child: Text(s.name)))
                             .toList(),
                         onChanged: (v) => staffSelected.value = v ?? 0,
                       );
@@ -622,10 +714,16 @@ class _SaleListPageState extends State<SaleListPage> {
                     width: SizeConfig.sw(0.15),
                     child: Obx(() => _servicingSwitch()),
                   ),
+                  SizedBox(width: SizeConfig.sw(0.02)),
+                  SizedBox(
+                    width: SizeConfig.sw(0.15),
+                    child: Obx(() => _fittingOnlySwitch()),
+                  ),
                 ],
               ),
               SizedBox(height: SizeConfig.sh(0.02)),
               Obx(() {
+                if (controller.isfittingJob.value) return _fittingOnlySection();
                 if (!controller.isServicing.value) return const SizedBox();
                 return _servicingSection();
               }),
@@ -637,13 +735,15 @@ class _SaleListPageState extends State<SaleListPage> {
                 children: [
                   SizedBox(
                     width: SizeConfig.sw(0.4),
-                    child: _styledField('Remarks', controller.remarksController),
+                    child:
+                        _styledField('Remarks', controller.remarksController),
                   ),
                   GestureDetector(
                     onTap: () async {
                       final selectedStock = await _selectStock(context);
                       if (selectedStock != null) {
-                        controller.addItem(SaleItemModel.fromStock(selectedStock));
+                        controller
+                            .addItem(SaleItemModel.fromStock(selectedStock));
                         controller.updateTotals();
                       }
                     },
@@ -783,14 +883,13 @@ class _SaleListPageState extends State<SaleListPage> {
           },
           child: Container(
             padding: EdgeInsets.symmetric(
-                horizontal: SizeConfig.sw(0.012), vertical: SizeConfig.sh(0.018)),
+                horizontal: SizeConfig.sw(0.012),
+                vertical: SizeConfig.sh(0.018)),
             decoration: BoxDecoration(
               color: _surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: required && dateField.value == null
-                    ? _danger
-                    : _border,
+                color: required && dateField.value == null ? _danger : _border,
               ),
             ),
             child: Row(
@@ -834,7 +933,8 @@ class _SaleListPageState extends State<SaleListPage> {
                   dateField.value == null
                       ? label
                       : dateField.value!.toIso8601String().split('T').first,
-                  style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+                  style:
+                      TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
                 ),
               ),
             ],
@@ -845,14 +945,11 @@ class _SaleListPageState extends State<SaleListPage> {
   Widget _servicingSwitch() {
     return Container(
       decoration: BoxDecoration(
-        color: controller.isServicing.value
-            ? _info.withOpacity(0.08)
-            : _bg,
+        color: controller.isServicing.value ? _info.withOpacity(0.08) : _bg,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: controller.isServicing.value
-              ? _info.withOpacity(0.3)
-              : _border,
+          color:
+              controller.isServicing.value ? _info.withOpacity(0.3) : _border,
         ),
       ),
       child: SwitchListTile(
@@ -891,7 +988,8 @@ class _SaleListPageState extends State<SaleListPage> {
                 decoration: BoxDecoration(
                     color: _info.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8)),
-                child: Icon(Icons.build_rounded, color: _info, size: SizeConfig.res(4.5)),
+                child: Icon(Icons.build_rounded,
+                    color: _info, size: SizeConfig.res(4.5)),
               ),
               SizedBox(width: SizeConfig.sw(0.01)),
               Text('Servicing Details',
@@ -920,7 +1018,8 @@ class _SaleListPageState extends State<SaleListPage> {
             _styledField('Technician', controller.technicianNameController),
           ),
           SizedBox(height: SizeConfig.sh(0.01)),
-          _styledField('Job Done On Vehicle', controller.jobDoneOnVehicleController),
+          _styledField(
+              'Job Done On Vehicle', controller.jobDoneOnVehicleController),
           SizedBox(height: SizeConfig.sh(0.016)),
           _sectionLabel('Charges & Dates'),
           _twoCol(
@@ -931,11 +1030,13 @@ class _SaleListPageState extends State<SaleListPage> {
           ),
           SizedBox(height: SizeConfig.sh(0.01)),
           _twoCol(
-            _styledDatePicker('Delivery Date', controller.deliveryDate, required: true),
+            _styledDatePicker('Delivery Date', controller.deliveryDate,
+                required: true),
             _readonlyDateWidget('Follow Up Date', controller.followUpDate),
           ),
           SizedBox(height: SizeConfig.sh(0.01)),
-          _readonlyDateWidget('Post Service Feedback Date', controller.postServiceFeedbackDate),
+          _readonlyDateWidget(
+              'Post Service Feedback Date', controller.postServiceFeedbackDate),
           SizedBox(height: SizeConfig.sh(0.016)),
           _sectionLabel('Service Type'),
           Wrap(
@@ -979,7 +1080,8 @@ class _SaleListPageState extends State<SaleListPage> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             padding: EdgeInsets.symmetric(
-                horizontal: SizeConfig.sw(0.012), vertical: SizeConfig.sh(0.009)),
+                horizontal: SizeConfig.sw(0.012),
+                vertical: SizeConfig.sh(0.009)),
             decoration: BoxDecoration(
               color: value.value ? _info.withOpacity(0.1) : _bg,
               borderRadius: BorderRadius.circular(20),
@@ -999,7 +1101,8 @@ class _SaleListPageState extends State<SaleListPage> {
                     style: TextStyle(
                         fontSize: SizeConfig.res(3.2),
                         color: value.value ? _info : _textMid,
-                        fontWeight: value.value ? FontWeight.w600 : FontWeight.w400)),
+                        fontWeight:
+                            value.value ? FontWeight.w600 : FontWeight.w400)),
               ],
             ),
           ),
@@ -1019,7 +1122,8 @@ class _SaleListPageState extends State<SaleListPage> {
         if (controller.selectedItems.isEmpty) {
           return Center(
             child: Text('No items added yet',
-                style: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4))),
+                style:
+                    TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4))),
           );
         }
         return ListView(
@@ -1060,9 +1164,11 @@ class _SaleListPageState extends State<SaleListPage> {
               style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
               decoration: InputDecoration(
                 labelText: 'Qty',
-                labelStyle: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid),
+                labelStyle:
+                    TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid),
                 isDense: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: _primary),
@@ -1085,9 +1191,11 @@ class _SaleListPageState extends State<SaleListPage> {
               style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
               decoration: InputDecoration(
                 labelText: 'Rate',
-                labelStyle: TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid),
+                labelStyle:
+                    TextStyle(fontSize: SizeConfig.res(2.8), color: _textMid),
                 isDense: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: _primary),
@@ -1138,13 +1246,15 @@ class _SaleListPageState extends State<SaleListPage> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _totalCol('Grand Total', controller.totalAmount.toStringAsFixed(2), _textDark),
+                  _totalCol('Grand Total',
+                      controller.totalAmount.toStringAsFixed(2), _textDark),
                   SizedBox(width: SizeConfig.sw(0.04)),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Discount Amount',
-                          style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.2), color: _textMid)),
                       SizedBox(height: SizeConfig.sh(0.005)),
                       SizedBox(
                         width: SizeConfig.sw(0.05),
@@ -1152,10 +1262,12 @@ class _SaleListPageState extends State<SaleListPage> {
                         child: TextField(
                           controller: controller.discountAmountController,
                           keyboardType: TextInputType.number,
-                          style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.2), color: _textDark),
                           decoration: InputDecoration(
                             isDense: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: const BorderSide(color: _primary),
@@ -1168,18 +1280,19 @@ class _SaleListPageState extends State<SaleListPage> {
                           onChanged: (_) => controller.updateTotals(),
                         ),
                       ),
-                     
                     ],
                   ),
                   SizedBox(width: SizeConfig.sw(0.04)),
-                  _totalCol('Net Total', controller.netAmount.toStringAsFixed(2), _primary,
+                  _totalCol('Net Total',
+                      controller.netAmount.toStringAsFixed(2), _primary,
                       isBold: true),
                   SizedBox(width: SizeConfig.sw(0.04)),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Paid Amount',
-                          style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.2), color: _textMid)),
                       SizedBox(height: SizeConfig.sh(0.005)),
                       SizedBox(
                         width: SizeConfig.sw(0.1),
@@ -1187,13 +1300,16 @@ class _SaleListPageState extends State<SaleListPage> {
                         child: TextField(
                           controller: controller.paidAmountController,
                           keyboardType: TextInputType.number,
-                          style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.2), color: _textDark),
                           decoration: InputDecoration(
                             isDense: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: _success, width: 1.5),
+                              borderSide:
+                                  const BorderSide(color: _success, width: 1.5),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -1222,15 +1338,20 @@ class _SaleListPageState extends State<SaleListPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Paid From',
-                          style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.2), color: _textMid)),
                       SizedBox(height: SizeConfig.sh(0.005)),
                       SizedBox(
                         width: SizeConfig.sw(0.1),
                         child: DropdownButtonFormField<String>(
-                          value: paidFromOptions.contains(paidFrom.value) ? paidFrom.value : null,
-                          style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textDark),
+                          value: paidFromOptions.contains(paidFrom.value)
+                              ? paidFrom.value
+                              : null,
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.2), color: _textDark),
                           items: paidFromOptions
-                              .map((p) => DropdownMenuItem(value: p, child: Text(p.toUpperCase())))
+                              .map((p) => DropdownMenuItem(
+                                  value: p, child: Text(p.toUpperCase())))
                               .toList(),
                           onChanged: (v) {
                             paidFrom.value = v ?? 'cash';
@@ -1241,7 +1362,8 @@ class _SaleListPageState extends State<SaleListPage> {
                             contentPadding: EdgeInsets.symmetric(
                                 horizontal: SizeConfig.sw(0.008),
                                 vertical: SizeConfig.sh(0.012)),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: const BorderSide(color: _primary),
@@ -1260,7 +1382,8 @@ class _SaleListPageState extends State<SaleListPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Status',
-                          style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.2), color: _textMid)),
                       SizedBox(height: SizeConfig.sh(0.005)),
                       _statusPill(controller.saleStatus.value),
                     ],
@@ -1272,11 +1395,13 @@ class _SaleListPageState extends State<SaleListPage> {
         ));
   }
 
-  Widget _totalCol(String label, String value, Color color, {bool isBold = false}) {
+  Widget _totalCol(String label, String value, Color color,
+      {bool isBold = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
+        Text(label,
+            style: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid)),
         SizedBox(height: SizeConfig.sh(0.004)),
         Text(value,
             style: TextStyle(
@@ -1294,7 +1419,8 @@ class _SaleListPageState extends State<SaleListPage> {
       builder: (_) => StatefulBuilder(
         builder: (_, setState) => AlertDialog(
           backgroundColor: _surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text('Select Stock Item',
               style: TextStyle(
                   fontSize: SizeConfig.res(4.5),
@@ -1312,12 +1438,14 @@ class _SaleListPageState extends State<SaleListPage> {
                       border: Border.all(color: _border)),
                   child: TextField(
                     controller: searchCtrl,
-                    style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+                    style: TextStyle(
+                        fontSize: SizeConfig.res(3.4), color: _textDark),
                     decoration: InputDecoration(
                       hintText: 'Search item...',
-                      hintStyle: TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
-                      prefixIcon:
-                          Icon(Icons.search, color: _textMid, size: SizeConfig.res(5)),
+                      hintStyle: TextStyle(
+                          color: _textMid, fontSize: SizeConfig.res(3.4)),
+                      prefixIcon: Icon(Icons.search,
+                          color: _textMid, size: SizeConfig.res(5)),
                       border: InputBorder.none,
                       contentPadding:
                           EdgeInsets.symmetric(vertical: SizeConfig.sh(0.015)),
@@ -1330,14 +1458,19 @@ class _SaleListPageState extends State<SaleListPage> {
                   child: Obx(() {
                     final filtered = stockController.stocks
                         .where((s) =>
-                            s.name.toLowerCase().contains(searchCtrl.text.toLowerCase()) ||
-                            s.itemNo.toLowerCase().contains(searchCtrl.text.toLowerCase()))
+                            s.name
+                                .toLowerCase()
+                                .contains(searchCtrl.text.toLowerCase()) ||
+                            s.itemNo
+                                .toLowerCase()
+                                .contains(searchCtrl.text.toLowerCase()))
                         .toList();
                     if (filtered.isEmpty) {
                       return Center(
                           child: Text('No items found',
                               style: TextStyle(
-                                  color: _textMid, fontSize: SizeConfig.res(3.5))));
+                                  color: _textMid,
+                                  fontSize: SizeConfig.res(3.5))));
                     }
                     return ListView.builder(
                       itemCount: filtered.length,
@@ -1392,16 +1525,20 @@ class _SaleListPageState extends State<SaleListPage> {
                                   Expanded(
                                     flex: 3,
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(s.name,
                                             style: TextStyle(
                                                 fontWeight: FontWeight.w700,
                                                 fontSize: SizeConfig.res(3.6),
-                                                color: isDisabled ? _textMid : _textDark)),
+                                                color: isDisabled
+                                                    ? _textMid
+                                                    : _textDark)),
                                         Text('No: ${s.itemNo}',
                                             style: TextStyle(
-                                                fontSize: SizeConfig.res(3), color: _textMid)),
+                                                fontSize: SizeConfig.res(3),
+                                                color: _textMid)),
                                         if (isOut)
                                           Text('Out of Stock',
                                               style: TextStyle(
@@ -1435,14 +1572,17 @@ class _SaleListPageState extends State<SaleListPage> {
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-                                      Text('Buy: Rs.${s.purchasePrice.toStringAsFixed(0)}',
+                                      Text(
+                                          'Buy: Rs.${s.purchasePrice.toStringAsFixed(0)}',
                                           style: TextStyle(
                                               fontSize: SizeConfig.res(3.2),
                                               fontWeight: FontWeight.w600,
                                               color: _textDark)),
-                                      Text('Sell: Rs.${s.salePrice.toStringAsFixed(0)}',
+                                      Text(
+                                          'Sell: Rs.${s.salePrice.toStringAsFixed(0)}',
                                           style: TextStyle(
-                                              fontSize: SizeConfig.res(3), color: _primary)),
+                                              fontSize: SizeConfig.res(3),
+                                              color: _primary)),
                                     ],
                                   ),
                                 ],
@@ -1458,6 +1598,120 @@ class _SaleListPageState extends State<SaleListPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _fittingOnlySwitch() {
+    return Container(
+      decoration: BoxDecoration(
+        color: controller.isfittingJob.value ? _warning.withOpacity(0.08) : _bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: controller.isfittingJob.value
+              ? _warning.withOpacity(0.3)
+              : _border,
+        ),
+      ),
+      child: SwitchListTile(
+        title: Text(
+          'Fitting Only',
+          style: TextStyle(
+              fontSize: SizeConfig.res(3.2),
+              color: controller.isfittingJob.value ? _warning : _textMid,
+              fontWeight: FontWeight.w600),
+        ),
+        value: controller.isfittingJob.value,
+        activeColor: _warning,
+        onChanged: (v) {
+          controller.isfittingJob.value = v;
+          if (v) controller.isServicing.value = false; // mutually exclusive
+        },
+        dense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.008)),
+      ),
+    );
+  }
+
+  Widget _fittingOnlySection() {
+    return Container(
+      margin: EdgeInsets.only(bottom: SizeConfig.sh(0.015)),
+      padding: EdgeInsets.all(SizeConfig.res(4)),
+      decoration: BoxDecoration(
+        color: _warning.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _warning.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(SizeConfig.res(2)),
+                    decoration: BoxDecoration(
+                        color: _warning.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Icon(Icons.handyman_rounded,
+                        color: _warning, size: SizeConfig.res(4.5)),
+                  ),
+                  SizedBox(width: SizeConfig.sw(0.01)),
+                  Text('Fitting Charge',
+                      style: TextStyle(
+                          fontSize: SizeConfig.res(4),
+                          fontWeight: FontWeight.w700,
+                          color: _textDark)),
+                ],
+              ),
+              SizedBox(height: SizeConfig.sh(0.016)),
+              SizedBox(
+                width: SizeConfig.sw(0.2),
+                child: _styledField(
+                  'Labour / Fitting Charge',
+                  controller.labourChargeController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => controller.updateTotals(),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(width: SizeConfig.sw(0.04)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(SizeConfig.res(2)),
+                    decoration: BoxDecoration(
+                        color: _warning.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Icon(Icons.handyman_rounded,
+                        color: _warning, size: SizeConfig.res(4.5)),
+                  ),
+                  SizedBox(width: SizeConfig.sw(0.01)),
+                  Text('Technician',
+                      style: TextStyle(
+                          fontSize: SizeConfig.res(4),
+                          fontWeight: FontWeight.w700,
+                          color: _textDark)),
+                ],
+              ),
+              SizedBox(height: SizeConfig.sh(0.016)),
+              SizedBox(
+                width: SizeConfig.sw(0.2),
+                child: _styledField(
+                  'Technician',
+                  controller.technicianNameController,
+                  keyboardType: TextInputType.text,
+                  onChanged: (_) => controller.updateTotals(),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

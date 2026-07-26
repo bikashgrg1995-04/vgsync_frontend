@@ -8,7 +8,9 @@ import 'package:vgsync_frontend/app/modules/followups/followup_binding.dart';
 import 'package:vgsync_frontend/app/modules/orders/order_binding.dart';
 import 'package:vgsync_frontend/app/modules/orders/order_list_page.dart';
 import 'package:vgsync_frontend/app/modules/purchases/purchase_binding.dart';
+import 'package:vgsync_frontend/app/modules/purchases/purchase_return_page.dart';
 import 'package:vgsync_frontend/app/modules/sales/sale_binding.dart';
+import 'package:vgsync_frontend/app/modules/sales/sale_return_page.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_binding.dart';
 import 'package:vgsync_frontend/app/modules/staffs/staff_list_page.dart';
 import 'package:vgsync_frontend/app/modules/stock/stock_binding.dart';
@@ -92,7 +94,14 @@ class AppPages {
       binding: SaleBinding(),
     ),
 
-       // ---------- SALES ----------
+    GetPage(
+      name: AppRoutes.saleReturn,
+      page: () => const SaleReturnPage(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 400),
+    ),
+
+    // ---------- SALES ----------
     GetPage(
       name: AppRoutes.bikesales,
       page: () => BikeSaleListPage(),
@@ -108,6 +117,14 @@ class AppPages {
       transition: Transition.rightToLeftWithFade,
       transitionDuration: const Duration(milliseconds: 300),
       binding: PurchaseBinding(),
+    ),
+
+    // ---------- PURCHASE RETURN ----------
+    GetPage(
+      name: AppRoutes.purchaseReturn,
+      page: () => const PurchaseReturnPage(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 300),
     ),
 
     // ---------- FOLLOWUPS ----------

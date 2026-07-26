@@ -15,4 +15,15 @@ class PurchaseRepository {
       purchaseService.updatePurchase(purchase);
 
   Future<void> delete(int id) => purchaseService.deletePurchase(id);
+
+  Future<PurchaseItemModel> returnPurchaseItem({
+    required int purchaseItemId,
+    required int quantity,
+    String? reason,
+  }) =>
+      purchaseService.returnPurchaseItem(
+        purchaseItemId: purchaseItemId,
+        quantity: quantity,
+        reason: reason,
+      );
 }

@@ -107,6 +107,7 @@ class SalesController extends GetxController {
   final isRepairJob = false.obs;
   final isAccident = false.obs;
   final isWarrantyJob = false.obs;
+  final isfittingJob = false.obs;
 
   final saleDate = Rx<DateTime?>(null);
   final receivedDate = Rx<DateTime?>(null);
@@ -286,12 +287,8 @@ class SalesController extends GetxController {
     try {
       isLoading.value = true;
       final created = isServicing.value
-          ? await saleRepository.createServicingSale(
-              sale
-            )
-          : await saleRepository.createStockSale(
-              sale
-            );
+          ? await saleRepository.createServicingSale(sale)
+          : await saleRepository.createStockSale(sale);
 
       sales.add(created);
       _postRefresh();
@@ -393,6 +390,7 @@ class SalesController extends GetxController {
     isRepairJob.value = sale.isRepairJob;
     isAccident.value = sale.isAccident;
     isWarrantyJob.value = sale.isWarrantyJob;
+    isfittingJob.value = sale.isfittingJob;
 
     saleDate.value = sale.saleDate;
     receivedDate.value = sale.receivedDate;
@@ -428,6 +426,7 @@ class SalesController extends GetxController {
       billNo: billNoController.text,
       remarks: remarksController.text,
       isServicing: isServicing.value,
+      isfittingJob: isfittingJob.value,
 
       // ---------- ITEMS ----------
       items: selectedItems.map((e) => e.toModel()).toList(),
@@ -477,6 +476,7 @@ class SalesController extends GetxController {
     isRepairJob.value = false;
     isAccident.value = false;
     isWarrantyJob.value = false;
+    isfittingJob.value = false;
 
     saleDate.value = null;
     receivedDate.value = null;
@@ -539,6 +539,62 @@ class SalesController extends GetxController {
       );
       return false;
     }
+
+    if (isServicing.value == true &&
+        !isfittingJob.value &&
+        deliveryDate.value == null) {
+      DesktopToast.show(
+        'Delivery date is required for servicing',
+        backgroundColor: Colors.redAccent,
+      );
+      return false;
+    }
     return true;
+  }
+
+  // ---------------- RETURN ITEM ----------------
+  Future<bool> returnSaleItem({
+    required int saleId,
+    required int saleItemId,
+    required int quantity,
+    String? reason,
+  }) async {
+    try {
+      isLoading.value = true;
+      final updatedItem = await saleRepository.returnSaleItem(
+        saleItemId: saleItemId,
+        quantity: quantity,
+        reason: reason,
+      );
+
+      // update local sale item in the sales list
+      final saleIndex = sales.indexWhere((s) => s.id == saleId);
+      if (saleIndex != -1) {
+        final sale = sales[saleIndex];
+        final itemIndex = sale.items.indexWhere((i) => i.id == saleItemId);
+        if (itemIndex != -1) {
+          sale.items[itemIndex] = updatedItem;
+        }
+      }
+
+      // refetch sale to get updated totals (net_total, remaining_amount etc.)
+      await fetchSales();
+      stockController.fetchStocks();
+      globalController.triggerRefresh(DashboardRefreshType.all);
+
+      DesktopToast.show(
+        'Item returned successfully',
+        backgroundColor: Colors.greenAccent,
+      );
+      return true;
+    } catch (e) {
+      DesktopToast.show(
+        'Failed to return item: $e',
+        backgroundColor: Colors.redAccent,
+      );
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
   }
 }

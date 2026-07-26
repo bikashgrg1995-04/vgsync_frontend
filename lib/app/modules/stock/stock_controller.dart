@@ -97,19 +97,19 @@ class StockController extends GetxController {
 
   // ---------------- Add Stock ----------------
   Future<bool> addStock() async {
-   final stock = StockModel(
-  id: 0, // 👈 required (backend ignores)
-  itemNo: itemNoController.text,
-  name: nameController.text,
-  group: groupController.text,
-  model: modelController.text,
-  stock: int.tryParse(stockQtyController.text) ?? 0,
-  purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
-  salePrice: double.tryParse(salePriceController.text) ?? 0.0,
-  category: int.tryParse(categorySelectController.text) ?? 0,
-  block: blockController.text,
-  image: null,
-);
+    final stock = StockModel(
+      id: 0, // 👈 required (backend ignores)
+      itemNo: itemNoController.text,
+      name: nameController.text,
+      group: groupController.text,
+      model: modelController.text,
+      stock: int.tryParse(stockQtyController.text) ?? 0,
+      purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
+      salePrice: double.tryParse(salePriceController.text) ?? 0.0,
+      category: int.tryParse(categorySelectController.text) ?? 0,
+      block: blockController.text,
+      image: null,
+    );
 
     if ([stock.name, stock.itemNo].any((e) => e.isEmpty)) {
       DesktopToast.show(
@@ -146,18 +146,18 @@ class StockController extends GetxController {
   // ---------------- Update Stock ----------------
   Future<bool> updateStock(StockModel oldStock) async {
     final updated = StockModel(
-  id: oldStock.id,
-  itemNo: itemNoController.text,
-  name: nameController.text,
-  group: groupController.text,
-  model: modelController.text,
-  stock: int.tryParse(stockQtyController.text) ?? 0,
-  purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
-  salePrice: double.tryParse(salePriceController.text) ?? 0.0,
-  category: int.tryParse(categorySelectController.text) ?? 0,
-  block: blockController.text,
-  image: oldStock.image,
-);
+      id: oldStock.id,
+      itemNo: itemNoController.text,
+      name: nameController.text,
+      group: groupController.text,
+      model: modelController.text,
+      stock: int.tryParse(stockQtyController.text) ?? 0,
+      purchasePrice: double.tryParse(purchasePriceController.text) ?? 0.0,
+      salePrice: double.tryParse(salePriceController.text) ?? 0.0,
+      category: int.tryParse(categorySelectController.text) ?? 0,
+      block: blockController.text,
+      image: oldStock.image,
+    );
 
     if ([updated.name, updated.itemNo].any((e) => e.isEmpty)) {
       DesktopToast.show(
@@ -290,4 +290,17 @@ class StockController extends GetxController {
     searchQuery.value = '';
     await fetchStocks();
   }
+
+  // ================= COMPUTED TOTALS =================
+  int get totalStockQty => stocks.fold(0, (sum, s) => sum + s.stock);
+
+  double get totalStockAmount =>
+      stocks.fold(0.0, (sum, s) => sum + (s.stock * s.purchasePrice));
+
+  // Agar filtered/searched list ko total chaine bhaye (UI bata list pass garera):
+  int totalQtyOf(List<StockModel> list) =>
+      list.fold(0, (sum, s) => sum + s.stock);
+
+  double totalAmountOf(List<StockModel> list) =>
+      list.fold(0.0, (sum, s) => sum + (s.stock * s.purchasePrice));
 }

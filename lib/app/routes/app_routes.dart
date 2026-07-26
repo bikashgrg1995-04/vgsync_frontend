@@ -20,11 +20,17 @@ abstract class AppRoutes {
   // Sales
   static const sales = '/sales';
 
+  //sale return
+  static const saleReturn = '/sale-return';
+
   // Bike Sales
   static const bikesales = '/bikesales';
 
   // Purchases
   static const purchases = '/purchases';
+
+  // Purchase Return
+  static const purchaseReturn = '/purchase-return';
 
   // Followups
   static const followups = '/followups';
