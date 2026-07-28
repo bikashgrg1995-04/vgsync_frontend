@@ -118,6 +118,66 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
         ],
       ),
       actions: [
+        if (widget.purchase.items.any((i) => i.hasReturn))
+          Padding(
+            padding: EdgeInsets.only(right: SizeConfig.sw(0.008)),
+            child: GestureDetector(
+              onTap: _showReturnDetailsDialog,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                    horizontal: SizeConfig.sw(0.014),
+                    vertical: SizeConfig.sh(0.010)),
+                decoration: BoxDecoration(
+                  color: _danger.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _danger.withOpacity(0.25)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.keyboard_return_rounded,
+                        size: SizeConfig.res(4), color: _danger),
+                    SizedBox(width: SizeConfig.sw(0.005)),
+                    Text('Purchase Return',
+                        style: TextStyle(
+                            fontSize: SizeConfig.res(3.4),
+                            fontWeight: FontWeight.w600,
+                            color: _danger)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        Padding(
+          padding: EdgeInsets.only(right: SizeConfig.sw(0.012)),
+          child: GestureDetector(
+            onTap: () =>
+                controller.deletePurchase(context, widget.purchase.id!),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                  horizontal: SizeConfig.sw(0.014),
+                  vertical: SizeConfig.sh(0.010)),
+              decoration: BoxDecoration(
+                color: _danger.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _danger.withOpacity(0.25)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.delete_outline_rounded,
+                      size: SizeConfig.res(4), color: _danger),
+                  SizedBox(width: SizeConfig.sw(0.005)),
+                  Text('Delete',
+                      style: TextStyle(
+                          fontSize: SizeConfig.res(3.4),
+                          fontWeight: FontWeight.w600,
+                          color: _danger)),
+                ],
+              ),
+            ),
+          ),
+        ),
         Obx(() {
           if (!controller.isModified.value) return const SizedBox.shrink();
           return Padding(
@@ -1001,5 +1061,157 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
       ),
     );
     if (selected != null) controller.addItem(selected);
+  }
+
+  void _showReturnDetailsDialog() {
+    final returnedItems =
+        widget.purchase.items.where((i) => i.hasReturn).toList();
+    final totalRefund = returnedItems.fold<double>(
+        0.0, (sum, i) => sum + (i.returnedQuantity * i.price));
+
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: SizeConfig.sw(0.4),
+          constraints: BoxConstraints(maxHeight: SizeConfig.sh(0.7)),
+          padding: EdgeInsets.all(SizeConfig.res(5)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.keyboard_return_rounded,
+                      color: _danger, size: SizeConfig.res(5)),
+                  SizedBox(width: SizeConfig.sw(0.01)),
+                  Expanded(
+                    child: Text('Purchase Return Details',
+                        style: TextStyle(
+                            fontSize: SizeConfig.res(4.5),
+                            fontWeight: FontWeight.w700)),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: SizeConfig.sw(0.01),
+                        vertical: SizeConfig.sh(0.005)),
+                    decoration: BoxDecoration(
+                      color: _danger.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: _danger.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                        'Rs. ${totalRefund.toStringAsFixed(2)} returned',
+                        style: TextStyle(
+                            fontSize: SizeConfig.res(3),
+                            fontWeight: FontWeight.w700,
+                            color: _danger)),
+                  ),
+                  IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Get.back()),
+                ],
+              ),
+              const Divider(),
+              SizedBox(height: SizeConfig.sh(0.01)),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: returnedItems.map((item) {
+                      final refund = item.returnedQuantity * item.price;
+                      return Container(
+                        margin: EdgeInsets.only(bottom: SizeConfig.sh(0.01)),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: SizeConfig.sw(0.012),
+                            vertical: SizeConfig.sh(0.01)),
+                        decoration: BoxDecoration(
+                          color: _bg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: _border),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(item.itemName ?? '',
+                                            style: TextStyle(
+                                                fontSize: SizeConfig.res(3.4),
+                                                fontWeight: FontWeight.w700,
+                                                color: _textDark),
+                                            overflow: TextOverflow.ellipsis),
+                                      ),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: SizeConfig.sw(0.008),
+                                            vertical: SizeConfig.sh(0.004)),
+                                        decoration: BoxDecoration(
+                                          color: (item.isFullyReturned
+                                                  ? _danger
+                                                  : _warning)
+                                              .withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(
+                                              color: (item.isFullyReturned
+                                                      ? _danger
+                                                      : _warning)
+                                                  .withOpacity(0.3)),
+                                        ),
+                                        child: Text(
+                                          item.isFullyReturned
+                                              ? 'FULL RETURN'
+                                              : 'PARTIAL RETURN',
+                                          style: TextStyle(
+                                              fontSize: SizeConfig.res(2.4),
+                                              fontWeight: FontWeight.w700,
+                                              color: item.isFullyReturned
+                                                  ? _danger
+                                                  : _warning),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: SizeConfig.sh(0.004)),
+                                  Text(
+                                      '${item.returnedQuantity} of ${item.quantity} returned'
+                                      '${item.returnedAt != null ? ' · ${item.returnedAt!.toIso8601String().split("T")[0]}' : ''}',
+                                      style: TextStyle(
+                                          fontSize: SizeConfig.res(3),
+                                          color: _textMid)),
+                                  if (item.returnReason != null &&
+                                      item.returnReason!.isNotEmpty) ...[
+                                    SizedBox(height: SizeConfig.sh(0.004)),
+                                    Text('Reason: ${item.returnReason}',
+                                        style: TextStyle(
+                                            fontSize: SizeConfig.res(2.8),
+                                            color: _textMid,
+                                            fontStyle: FontStyle.italic)),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: SizeConfig.sw(0.01)),
+                            Text('Rs. ${refund.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                    fontSize: SizeConfig.res(3.6),
+                                    fontWeight: FontWeight.w800,
+                                    color: _danger)),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

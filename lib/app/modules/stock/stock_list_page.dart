@@ -851,7 +851,7 @@ class _StockTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'Rs. ${stock.salePrice.toStringAsFixed(0)}',
+                    'Rs. ${stock.salePrice.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: SizeConfig.res(3.8),
                       fontWeight: FontWeight.w700,
@@ -860,7 +860,7 @@ class _StockTile extends StatelessWidget {
                   ),
                   SizedBox(height: SizeConfig.sh(0.003)),
                   Text(
-                    'Purchase: Rs. ${stock.purchasePrice.toStringAsFixed(0)}',
+                    'Purchase: Rs. ${stock.purchasePrice.toStringAsFixed(2)}',
                     style: TextStyle(
                         fontSize: SizeConfig.res(2.8), color: _textMid),
                   ),

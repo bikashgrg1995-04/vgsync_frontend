@@ -47,6 +47,8 @@ class SaleReturnPage extends StatelessWidget {
             SizedBox(height: SizeConfig.sh(0.018)),
             _buildHeader(controller, context),
             SizedBox(height: SizeConfig.sh(0.018)),
+            _buildSummaryCard(controller), // 👈 new
+            SizedBox(height: SizeConfig.sh(0.018)),
             Expanded(child: _buildReturnList(controller)),
           ],
         ),
@@ -283,7 +285,7 @@ class SaleReturnPage extends StatelessWidget {
                   style:
                       TextStyle(fontSize: SizeConfig.res(3), color: _textMid)),
               SizedBox(height: SizeConfig.sh(0.004)),
-              Text('Rs. ${refundAmount.toStringAsFixed(0)}',
+              Text('Rs. ${refundAmount.toStringAsFixed(2)}',
                   style: TextStyle(
                       fontSize: SizeConfig.res(4),
                       fontWeight: FontWeight.w800,
@@ -299,6 +301,7 @@ class SaleReturnPage extends StatelessWidget {
   void _openNewReturnDialog(
       BuildContext context, SaleReturnController controller) {
     final saleSearchCtrl = TextEditingController();
+    final RxString dialogSearchQuery = ''.obs; // 👈 new
     final Rxn<SaleModel> selectedSale = Rxn<SaleModel>();
     final Rxn<SaleItemModel> selectedItem = Rxn<SaleItemModel>();
 
@@ -345,12 +348,15 @@ class SaleReturnPage extends StatelessWidget {
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10)),
                           ),
-                          onChanged: (_) => controller.searchText.refresh(),
+                          onChanged: (v) =>
+                              dialogSearchQuery.value = v, // 👈 changed
                         ),
                         SizedBox(height: SizeConfig.sh(0.012)),
                         Expanded(
                           child: Obx(() {
-                            final q = saleSearchCtrl.text.toLowerCase();
+                            final q = dialogSearchQuery.value
+                                .toLowerCase()
+                                .trim(); // 👈 changed
                             final list = controller.returnableSales.where((s) {
                               if (q.isEmpty) return true;
                               return s.customerName.toLowerCase().contains(q) ||
@@ -412,7 +418,7 @@ class SaleReturnPage extends StatelessWidget {
                                 subtitle: Text(
                                     'Remaining: ${item.remainingQuantity} / ${item.quantity}'),
                                 trailing: Text(
-                                    'Rs. ${item.salePrice.toStringAsFixed(0)}'),
+                                    'Rs. ${item.salePrice.toStringAsFixed(2)}'),
                                 onTap: () => selectedItem.value = item,
                               );
                             },
@@ -427,6 +433,11 @@ class SaleReturnPage extends StatelessWidget {
                 final item = selectedItem.value!;
                 final qtyCtrl = TextEditingController(text: '1');
                 final reasonCtrl = TextEditingController();
+                final RxInt qty = 1.obs; // 👈 new, drives refund preview
+
+                qtyCtrl.addListener(() {
+                  qty.value = int.tryParse(qtyCtrl.text) ?? 0;
+                });
 
                 return Expanded(
                   child: Column(
@@ -470,18 +481,49 @@ class SaleReturnPage extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
+                      SizedBox(height: SizeConfig.sh(0.015)),
+                      // 👇 Refund preview, calculated from selling price
+                      Obx(() {
+                        final refund = qty.value * item.salePrice;
+                        return Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                              horizontal: SizeConfig.sw(0.014),
+                              vertical: SizeConfig.sh(0.012)),
+                          decoration: BoxDecoration(
+                            color: _danger.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border:
+                                Border.all(color: _danger.withOpacity(0.25)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Refund Amount',
+                                  style: TextStyle(
+                                      fontSize: SizeConfig.res(3.2),
+                                      color: _textMid)),
+                              Text('Rs. ${refund.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                      fontSize: SizeConfig.res(3.8),
+                                      fontWeight: FontWeight.w800,
+                                      color: _danger)),
+                            ],
+                          ),
+                        );
+                      }),
                       const Spacer(),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            final qty = int.tryParse(qtyCtrl.text) ?? 0;
-                            if (qty <= 0) {
+                            final q = int.tryParse(qtyCtrl.text) ?? 0;
+                            if (q <= 0) {
                               DesktopToast.show('Enter a valid quantity',
                                   backgroundColor: _danger);
                               return;
                             }
-                            if (qty > item.remainingQuantity) {
+                            if (q > item.remainingQuantity) {
                               DesktopToast.show(
                                   'Only ${item.remainingQuantity} left to return',
                                   backgroundColor: _danger);
@@ -490,7 +532,7 @@ class SaleReturnPage extends StatelessWidget {
                             final success = await controller.processReturn(
                               sale: sale,
                               item: item,
-                              quantity: qty,
+                              quantity: q,
                               reason: reasonCtrl.text,
                             );
                             if (success) Get.back();
@@ -514,6 +556,87 @@ class SaleReturnPage extends StatelessWidget {
         ),
       ),
       barrierDismissible: false,
+    );
+  }
+
+  Widget _buildSummaryCard(SaleReturnController controller) {
+    return Obx(() {
+      final entries = controller.filteredEntries;
+      final totalItemsReturned =
+          entries.fold<int>(0, (sum, e) => sum + e.item.returnedQuantity);
+      final totalAmount = entries.fold<double>(
+          0.0, (sum, e) => sum + (e.item.returnedQuantity * e.item.salePrice));
+
+      return Container(
+        padding: EdgeInsets.all(SizeConfig.res(4)),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _border),
+          boxShadow: const [
+            BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
+          ],
+        ),
+        child: Row(
+          children: [
+            _summaryTile(
+              icon: Icons.inventory_2_outlined,
+              label: 'Total Items Returned',
+              value: '$totalItemsReturned',
+              color: _warning,
+            ),
+            Container(
+              width: 1,
+              height: SizeConfig.sh(0.05),
+              color: _border,
+              margin: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.02)),
+            ),
+            _summaryTile(
+              icon: Icons.currency_exchange_rounded,
+              label: 'Total Sale Return',
+              value: 'Rs. ${totalAmount.toStringAsFixed(2)}',
+              color: _danger,
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _summaryTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(SizeConfig.res(2.5)),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: SizeConfig.res(5), color: color),
+          ),
+          SizedBox(width: SizeConfig.sw(0.01)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: TextStyle(
+                      fontSize: SizeConfig.res(2.8), color: _textMid)),
+              SizedBox(height: SizeConfig.sh(0.003)),
+              Text(value,
+                  style: TextStyle(
+                      fontSize: SizeConfig.res(4),
+                      fontWeight: FontWeight.w800,
+                      color: color)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

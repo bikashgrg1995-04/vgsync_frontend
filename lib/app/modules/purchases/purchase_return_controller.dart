@@ -1,7 +1,7 @@
-// app/modules/purchase_return/purchase_return_controller.dart
 import 'package:get/get.dart';
 import 'package:vgsync_frontend/app/data/models/purchase_model.dart';
 import 'package:vgsync_frontend/app/modules/purchases/purchase_controller.dart';
+import 'package:vgsync_frontend/app/modules/suppliers/supplier_controller.dart';
 
 class ReturnedPurchaseItemEntry {
   final PurchaseModel purchase;
@@ -11,6 +11,7 @@ class ReturnedPurchaseItemEntry {
 
 class PurchaseReturnController extends GetxController {
   final PurchaseController purchaseController = Get.find();
+  final SupplierController supplierController = Get.find();
 
   final searchText = ''.obs;
   final isLoading = false.obs;
@@ -25,6 +26,12 @@ class PurchaseReturnController extends GetxController {
     isLoading.value = true;
     await purchaseController.fetchPurchases();
     isLoading.value = false;
+  }
+
+  String _supplierName(int supplierId) {
+    final s = supplierController.suppliers
+        .firstWhereOrNull((s) => s.id == supplierId);
+    return s?.name ?? 'Supplier #$supplierId';
   }
 
   List<ReturnedPurchaseItemEntry> get returnedEntries {
@@ -44,11 +51,15 @@ class PurchaseReturnController extends GetxController {
     return list;
   }
 
+  /// Now searches by customer (supplier) name or bill number (purchase id)
+  /// instead of item name.
   List<ReturnedPurchaseItemEntry> get filteredEntries {
-    final q = searchText.value.toLowerCase();
+    final q = searchText.value.toLowerCase().trim();
     if (q.isEmpty) return returnedEntries;
     return returnedEntries.where((e) {
-      return (e.item.itemName ?? '').toLowerCase().contains(q);
+      final customerName = _supplierName(e.purchase.supplier).toLowerCase();
+      final billNumber = (e.purchase.id ?? '').toString().toLowerCase();
+      return customerName.contains(q) || billNumber.contains(q);
     }).toList();
   }
 

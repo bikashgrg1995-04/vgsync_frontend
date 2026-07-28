@@ -57,6 +57,8 @@ class PurchaseReturnPage extends StatelessWidget {
             SizedBox(height: SizeConfig.sh(0.018)),
             _buildHeader(controller),
             SizedBox(height: SizeConfig.sh(0.018)),
+            _buildSummaryCard(controller), // 👈 new
+            SizedBox(height: SizeConfig.sh(0.018)),
             Expanded(child: _buildReturnList(controller, supplierController)),
           ],
         ),
@@ -99,7 +101,7 @@ class PurchaseReturnPage extends StatelessWidget {
                 decoration: InputDecoration(
                   prefixIcon: Icon(Icons.search,
                       color: _textMid, size: SizeConfig.res(5)),
-                  hintText: 'Search by item name...',
+                  hintText: 'Search by supplier name or bill number...',
                   hintStyle:
                       TextStyle(color: _textMid, fontSize: SizeConfig.res(3.4)),
                   border: InputBorder.none,
@@ -238,16 +240,40 @@ class PurchaseReturnPage extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: SizeConfig.sh(0.006)),
+                // 👇 Bill No + Customer name row
                 Row(
                   children: [
+                    Icon(Icons.receipt_long_outlined,
+                        size: SizeConfig.res(3.2), color: _textMid),
+                    SizedBox(width: SizeConfig.sw(0.004)),
+                    Text('Bill #${purchase.id ?? "-"}',
+                        style: TextStyle(
+                            fontSize: SizeConfig.res(3.2),
+                            fontWeight: FontWeight.w600,
+                            color: _textMid)),
+                    SizedBox(width: SizeConfig.sw(0.014)),
                     Icon(Icons.local_shipping_outlined,
                         size: SizeConfig.res(3.2), color: _textMid),
                     SizedBox(width: SizeConfig.sw(0.004)),
-                    Text(_supplierName(supplierController, purchase.supplier),
+                    Text('Supplier:',
                         style: TextStyle(
-                            fontSize: SizeConfig.res(3.2), color: _textMid)),
-                    if (item.returnedAt != null) ...[
-                      SizedBox(width: SizeConfig.sw(0.014)),
+                            fontSize: SizeConfig.res(3.2),
+                            fontWeight: FontWeight.w600,
+                            color: _textMid)),
+                    SizedBox(width: SizeConfig.sw(0.004)),
+                    Expanded(
+                      child: Text(
+                          _supplierName(supplierController, purchase.supplier),
+                          style: TextStyle(
+                              fontSize: SizeConfig.res(3.2), color: _textMid),
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+                if (item.returnedAt != null) ...[
+                  SizedBox(height: SizeConfig.sh(0.004)),
+                  Row(
+                    children: [
                       Icon(Icons.calendar_today_outlined,
                           size: SizeConfig.res(3.2), color: _textMid),
                       SizedBox(width: SizeConfig.sw(0.004)),
@@ -255,8 +281,8 @@ class PurchaseReturnPage extends StatelessWidget {
                           style: TextStyle(
                               fontSize: SizeConfig.res(3.2), color: _textMid)),
                     ],
-                  ],
-                ),
+                  ),
+                ],
                 if (item.returnReason != null &&
                     item.returnReason!.isNotEmpty) ...[
                   SizedBox(height: SizeConfig.sh(0.006)),
@@ -277,7 +303,7 @@ class PurchaseReturnPage extends StatelessWidget {
                   style:
                       TextStyle(fontSize: SizeConfig.res(3), color: _textMid)),
               SizedBox(height: SizeConfig.sh(0.004)),
-              Text('Rs. ${refundAmount.toStringAsFixed(0)}',
+              Text('Rs. ${refundAmount.toStringAsFixed(2)}',
                   style: TextStyle(
                       fontSize: SizeConfig.res(4),
                       fontWeight: FontWeight.w800,
@@ -295,6 +321,7 @@ class PurchaseReturnPage extends StatelessWidget {
       PurchaseReturnController controller,
       SupplierController supplierController) {
     final purchaseSearchCtrl = TextEditingController();
+    final RxString dialogSearchQuery = ''.obs;
     final Rxn<PurchaseModel> selectedPurchase = Rxn<PurchaseModel>();
     final Rxn<PurchaseItemModel> selectedItem = Rxn<PurchaseItemModel>();
 
@@ -335,24 +362,28 @@ class PurchaseReturnPage extends StatelessWidget {
                         TextField(
                           controller: purchaseSearchCtrl,
                           decoration: InputDecoration(
-                            hintText: 'Search supplier...',
+                            hintText: 'Search by customer name or bill no...',
                             prefixIcon: const Icon(Icons.search),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10)),
                           ),
-                          onChanged: (_) => controller.searchText.refresh(),
+                          onChanged: (value) => dialogSearchQuery.value =
+                              value.toLowerCase().trim(),
                         ),
                         SizedBox(height: SizeConfig.sh(0.012)),
                         Expanded(
                           child: Obx(() {
-                            final q = purchaseSearchCtrl.text.toLowerCase();
+                            final q =
+                                dialogSearchQuery.value.toLowerCase().trim();
                             final list =
                                 controller.returnablePurchases.where((p) {
                               if (q.isEmpty) return true;
                               final name =
                                   _supplierName(supplierController, p.supplier)
                                       .toLowerCase();
-                              return name.contains(q);
+                              final billNumber =
+                                  (p.id ?? '').toString().toLowerCase();
+                              return name.contains(q) || billNumber.contains(q);
                             }).toList();
                             if (list.isEmpty) {
                               return Center(
@@ -367,7 +398,7 @@ class PurchaseReturnPage extends StatelessWidget {
                                   title: Text(_supplierName(
                                       supplierController, p.supplier)),
                                   subtitle: Text(
-                                      p.date.toIso8601String().split("T")[0]),
+                                      'Bill #${p.id ?? "-"} · ${p.date.toIso8601String().split("T")[0]}'),
                                   onTap: () => selectedPurchase.value = p,
                                 );
                               },
@@ -413,7 +444,7 @@ class PurchaseReturnPage extends StatelessWidget {
                                 subtitle: Text(
                                     'Remaining: ${item.remainingQuantity} / ${item.quantity}'),
                                 trailing: Text(
-                                    'Rs. ${item.price.toStringAsFixed(0)}'),
+                                    'Rs. ${item.price.toStringAsFixed(2)}'),
                                 onTap: () => selectedItem.value = item,
                               );
                             },
@@ -514,6 +545,87 @@ class PurchaseReturnPage extends StatelessWidget {
         ),
       ),
       barrierDismissible: false,
+    );
+  }
+
+  Widget _buildSummaryCard(PurchaseReturnController controller) {
+    return Obx(() {
+      final entries = controller.filteredEntries;
+      final totalItemsReturned =
+          entries.fold<int>(0, (sum, e) => sum + e.item.returnedQuantity);
+      final totalAmount = entries.fold<double>(
+          0.0, (sum, e) => sum + (e.item.returnedQuantity * e.item.price));
+
+      return Container(
+        padding: EdgeInsets.all(SizeConfig.res(4)),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _border),
+          boxShadow: const [
+            BoxShadow(color: _shadow, blurRadius: 8, offset: Offset(0, 2))
+          ],
+        ),
+        child: Row(
+          children: [
+            _summaryTile(
+              icon: Icons.inventory_2_outlined,
+              label: 'Total Items Returned',
+              value: '$totalItemsReturned',
+              color: _warning,
+            ),
+            Container(
+              width: 1,
+              height: SizeConfig.sh(0.05),
+              color: _border,
+              margin: EdgeInsets.symmetric(horizontal: SizeConfig.sw(0.02)),
+            ),
+            _summaryTile(
+              icon: Icons.currency_exchange_rounded,
+              label: 'Total Purchase Return',
+              value: 'Rs. ${totalAmount.toStringAsFixed(2)}',
+              color: _danger,
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _summaryTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(SizeConfig.res(2.5)),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: SizeConfig.res(5), color: color),
+          ),
+          SizedBox(width: SizeConfig.sw(0.01)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: TextStyle(
+                      fontSize: SizeConfig.res(2.8), color: _textMid)),
+              SizedBox(height: SizeConfig.sh(0.003)),
+              Text(value,
+                  style: TextStyle(
+                      fontSize: SizeConfig.res(4),
+                      fontWeight: FontWeight.w800,
+                      color: color)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
