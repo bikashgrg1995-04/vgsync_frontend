@@ -58,7 +58,8 @@ class PurchaseReturnController extends GetxController {
     if (q.isEmpty) return returnedEntries;
     return returnedEntries.where((e) {
       final customerName = _supplierName(e.purchase.supplier).toLowerCase();
-      final billNumber = (e.purchase.id ?? '').toString().toLowerCase();
+      final billNumber =
+          (e.purchase.billNo ?? '').toLowerCase(); // ✅ CHANGED from purchase.id
       return customerName.contains(q) || billNumber.contains(q);
     }).toList();
   }

@@ -265,6 +265,15 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                 ),
                 _verticalDivider(),
                 _infoTile(
+                  // ✅ ADD
+                  icon: Icons.receipt_outlined,
+                  label: 'Bill No',
+                  value: (widget.purchase.billNo?.isNotEmpty ?? false)
+                      ? widget.purchase.billNo!
+                      : '-',
+                ),
+                _verticalDivider(),
+                _infoTile(
                   icon: Icons.local_shipping_outlined,
                   label: 'Supplier',
                   value: supplierController.suppliers
@@ -377,6 +386,8 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
             children: [
               Expanded(child: _styledDateField()),
               SizedBox(width: SizeConfig.sw(0.012)),
+              Expanded(child: _billNoField()),
+              SizedBox(width: SizeConfig.sw(0.012)),
               Expanded(child: _supplierDropdown()),
               SizedBox(width: SizeConfig.sw(0.012)),
               Expanded(child: _staffDropdown()),
@@ -410,6 +421,28 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
         ),
       ),
       onTap: () => controller.pickPurchaseDate(context),
+    );
+  }
+
+  Widget _billNoField() {
+    // ✅ ADD
+    return TextField(
+      controller: controller.billNoController,
+      style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+      decoration: InputDecoration(
+        labelText: 'Bill No',
+        labelStyle: TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _primary, width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: _border),
+        ),
+      ),
+      onChanged: (_) => controller.isModified.value = true,
     );
   }
 
@@ -882,6 +915,9 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
       final updatedItems = controller.items.map((i) => i.toModel()).toList();
       final updatedPurchase = widget.purchase.copyWith(
         items: updatedItems,
+        billNo: controller.billNoController.text.trim().isEmpty
+            ? null
+            : controller.billNoController.text.trim(), // ✅ ADD
         paidAmount: double.tryParse(controller.paidController.text) ?? 0,
         discountPercentage: controller.discountPercent,
         discountAmount: controller.discountAmount,

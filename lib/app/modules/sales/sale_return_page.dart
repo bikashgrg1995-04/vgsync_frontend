@@ -15,7 +15,6 @@ class SaleReturnPage extends StatelessWidget {
   static const _primary = AppColors.primary;
   static const _warning = AppColors.warning;
   static const _danger = AppColors.error;
-  static const _success = AppColors.success;
   static const _textDark = AppColors.textPrimary;
   static const _textMid = AppColors.textSecondary;
   static const _border = AppColors.divider;

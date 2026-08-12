@@ -530,6 +530,19 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                                       fontSize: SizeConfig.res(3.2),
                                       color: _textMid),
                                 ),
+                                if (purchase.billNo != null &&
+                                    purchase.billNo!.isNotEmpty) ...[
+                                  // ✅ ADD
+                                  SizedBox(width: SizeConfig.sw(0.012)),
+                                  Icon(Icons.receipt_outlined,
+                                      size: SizeConfig.res(3.2),
+                                      color: _textMid),
+                                  SizedBox(width: SizeConfig.sw(0.004)),
+                                  Text(purchase.billNo!,
+                                      style: TextStyle(
+                                          fontSize: SizeConfig.res(3.2),
+                                          color: _textMid)),
+                                ],
                               ],
                             ),
                             SizedBox(height: SizeConfig.sh(0.01)),
@@ -631,7 +644,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
         builder: (context, setState) => CustomFormDialog(
           title: isEditMode ? "Edit Purchase" : "Add Purchase",
           isEditMode: isEditMode,
-          width: 0.5,
+          width: 0.8,
           height: double.infinity,
           content: SizedBox(
             height: 550,
@@ -893,6 +906,7 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
   }
 
   // ── Form header ────────────────────────────────────────────────────────────
+  // ── Form header ────────────────────────────────────────────────────────────
   Widget _buildFormHeader() {
     return Row(
       children: [
@@ -916,6 +930,25 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
               ),
             ),
             onTap: () => controller.pickPurchaseDate(context),
+          ),
+        ),
+        SizedBox(width: SizeConfig.sw(0.01)),
+        SizedBox(
+          width: SizeConfig.sw(0.12),
+          child: TextField(
+            controller: controller.billNoController,
+            style: TextStyle(fontSize: SizeConfig.res(3.4), color: _textDark),
+            decoration: InputDecoration(
+              labelText: 'Bill No',
+              labelStyle:
+                  TextStyle(fontSize: SizeConfig.res(3.2), color: _textMid),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _primary),
+              ),
+            ),
           ),
         ),
         SizedBox(width: SizeConfig.sw(0.01)),

@@ -23,16 +23,14 @@ class PurchaseItemController {
   late TextEditingController quantityController;
   late TextEditingController priceController;
 
-  PurchaseItemController({
-    required this.item,
-    required this.onChanged,
-  }) {
+  PurchaseItemController({required this.item, required this.onChanged}) {
     quantity.value = item.quantity;
     price.value = item.price;
 
     quantityController = TextEditingController(text: quantity.value.toString());
-    priceController =
-        TextEditingController(text: price.value.toStringAsFixed(2));
+    priceController = TextEditingController(
+      text: price.value.toStringAsFixed(2),
+    );
 
     quantityController.addListener(() {
       quantity.value = int.tryParse(quantityController.text) ?? 1;
@@ -90,6 +88,9 @@ class PurchaseController extends GetxController {
 
   final paidController = TextEditingController(text: '0');
   final dateController = TextEditingController();
+
+  // alongside dateController
+  final billNoController = TextEditingController();
 
   final remaining = 0.0.obs;
   final purchaseStatus = 'not_paid'.obs;
@@ -196,8 +197,9 @@ class PurchaseController extends GetxController {
     final pct = double.tryParse(discountPercentController.text) ?? 0;
     if (pct > 0) {
       _syncingDiscount = true;
-      discountAmountController.text =
-          _round2(total * (pct / 100)).toStringAsFixed(2);
+      discountAmountController.text = _round2(
+        total * (pct / 100),
+      ).toStringAsFixed(2);
       _syncingDiscount = false;
     }
 
@@ -205,9 +207,9 @@ class PurchaseController extends GetxController {
         double.tryParse(transitDiscountPercentController.text) ?? 0;
     if (transitPct > 0) {
       _syncingTransit = true;
-      transitDiscountAmountController.text =
-          _round2(amountBeforeTransitDiscount * (transitPct / 100))
-              .toStringAsFixed(2);
+      transitDiscountAmountController.text = _round2(
+        amountBeforeTransitDiscount * (transitPct / 100),
+      ).toStringAsFixed(2);
       _syncingTransit = false;
     }
 
@@ -327,6 +329,7 @@ class PurchaseController extends GetxController {
   void clearForm() {
     selectedSupplierId.value = null;
     selectedStaffId.value = null;
+    billNoController.clear();
     discountPercentController.text = '0';
     discountAmountController.text = '0';
     transitDiscountPercentController.text = '0';
@@ -339,6 +342,7 @@ class PurchaseController extends GetxController {
   void populateForm(PurchaseModel purchase) {
     selectedSupplierId.value = purchase.supplier;
     selectedStaffId.value = purchase.createdBy;
+    billNoController.text = purchase.billNo ?? ''; // ✅ ADD
     dateController.text = purchase.date.toIso8601String().split('T')[0];
     paidController.text = purchase.paidAmount.toStringAsFixed(2);
 
@@ -353,10 +357,7 @@ class PurchaseController extends GetxController {
 
     items.assignAll(
       purchase.items.map(
-        (i) => PurchaseItemController(
-          item: i,
-          onChanged: _onItemsChanged,
-        ),
+        (i) => PurchaseItemController(item: i, onChanged: _onItemsChanged),
       ),
     );
 
@@ -371,14 +372,19 @@ class PurchaseController extends GetxController {
       id: id,
       supplier: selectedSupplierId.value ?? 0,
       date: DateTime.tryParse(dateController.text) ?? DateTime.now(),
+      billNo: billNoController.text.trim().isEmpty
+          ? null
+          : billNoController.text.trim(),
       items: items
-          .map((i) => PurchaseItemModel(
-                id: i.item.id,
-                item: i.item.item,
-                itemName: i.item.itemName,
-                quantity: i.quantity.value,
-                price: i.price.value,
-              ))
+          .map(
+            (i) => PurchaseItemModel(
+              id: i.item.id,
+              item: i.item.item,
+              itemName: i.item.itemName,
+              quantity: i.quantity.value,
+              price: i.price.value,
+            ),
+          )
           .toList(),
       grandTotal: total,
       discountPercentage: discountPercent,
@@ -428,8 +434,9 @@ class PurchaseController extends GetxController {
   Future<void> updatePurchase(PurchaseModel purchase) async {
     try {
       isLoading.value = true;
-      final updated =
-          await purchaseRepository.update(buildPurchase(id: purchase.id ?? 0));
+      final updated = await purchaseRepository.update(
+        buildPurchase(id: purchase.id ?? 0),
+      );
       final index = purchases.indexWhere((p) => p.id == updated.id);
       if (index != -1) purchases[index] = updated;
       await fetchPurchases();
@@ -455,33 +462,35 @@ class PurchaseController extends GetxController {
   }
 
   Future<void> deletePurchase(BuildContext context, int id) async {
-    ConfirmDialog.show(context,
-        title: "Delete Purchase",
-        message: "Are you sure you want to delete this Purchase?",
-        onConfirm: () async {
-      try {
-        isLoading.value = true;
-        await purchaseRepository.delete(id);
-        purchases.removeWhere((o) => o.id == id);
-        await fetchPurchases();
-        await stockController.fetchStocks();
-        await expenseController.fetchExpenses();
-        globalController.triggerRefresh(DashboardRefreshType.all);
+    ConfirmDialog.show(
+      context,
+      title: "Delete Purchase",
+      message: "Are you sure you want to delete this Purchase?",
+      onConfirm: () async {
+        try {
+          isLoading.value = true;
+          await purchaseRepository.delete(id);
+          purchases.removeWhere((o) => o.id == id);
+          await fetchPurchases();
+          await stockController.fetchStocks();
+          await expenseController.fetchExpenses();
+          globalController.triggerRefresh(DashboardRefreshType.all);
 
-        Get.back(closeOverlays: true);
-        DesktopToast.show(
-          "Purchase Deleted: Success",
-          backgroundColor: Colors.greenAccent,
-        );
-      } catch (e) {
-        DesktopToast.show(
-          "Failed to delete purchase.",
-          backgroundColor: Colors.redAccent,
-        );
-      } finally {
-        isLoading.value = false;
-      }
-    });
+          Get.back(closeOverlays: true);
+          DesktopToast.show(
+            "Purchase Deleted: Success",
+            backgroundColor: Colors.greenAccent,
+          );
+        } catch (e) {
+          DesktopToast.show(
+            "Failed to delete purchase.",
+            backgroundColor: Colors.redAccent,
+          );
+        } finally {
+          isLoading.value = false;
+        }
+      },
+    );
   }
 
   Future<void> refreshSales() async {

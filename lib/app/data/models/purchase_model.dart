@@ -5,6 +5,7 @@ class PurchaseModel {
   final int? id;
   final int supplier;
   final DateTime date;
+  final String? billNo; // optional, for UI display
   final List<PurchaseItemModel> items;
 
   final double grandTotal;
@@ -27,6 +28,7 @@ class PurchaseModel {
     this.id,
     required this.supplier,
     required this.date,
+    this.billNo,
     required this.items,
     this.grandTotal = 0.0,
     this.discountPercentage = 0.0,
@@ -48,6 +50,7 @@ class PurchaseModel {
       id: json['id'],
       supplier: json['supplier'],
       date: _parseDate(json['date']),
+      billNo: json['bill_no'], // optional, for UI display
       items: (json['items'] as List? ?? [])
           .map((e) => PurchaseItemModel.fromJson(e))
           .toList(),
@@ -76,6 +79,7 @@ class PurchaseModel {
       'id': id,
       'supplier': supplier,
       'date': date.toIso8601String(),
+      'bill_no': billNo,
       'items': items.map((e) => e.toJsonForApi()).toList(),
       'grand_total': grandTotal,
       'discount_percentage': discountPercentage,
@@ -114,6 +118,7 @@ extension PurchaseModelCopy on PurchaseModel {
     int? id,
     int? supplier,
     DateTime? date,
+    String? billNo,
     List<PurchaseItemModel>? items,
     double? grandTotal,
     double? discountPercentage,
@@ -132,6 +137,7 @@ extension PurchaseModelCopy on PurchaseModel {
       id: id ?? this.id,
       supplier: supplier ?? this.supplier,
       date: date ?? this.date,
+      billNo: billNo ?? this.billNo,
       items: items ?? this.items,
       grandTotal: grandTotal ?? this.grandTotal,
       discountPercentage: discountPercentage ?? this.discountPercentage,
