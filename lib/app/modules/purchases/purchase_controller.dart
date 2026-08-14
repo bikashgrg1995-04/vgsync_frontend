@@ -95,9 +95,14 @@ class PurchaseController extends GetxController {
   final remaining = 0.0.obs;
   final purchaseStatus = 'not_paid'.obs;
 
+  // VAT (percent + amount pair)
+  final vatPercentController = TextEditingController(text: '0');
+  final vatAmountController = TextEditingController(text: '0');
+
   // guards to prevent infinite listener loops
   bool _syncingDiscount = false;
   bool _syncingTransit = false;
+  bool _syncingVat = false;
 
   // ✅ tolerance for floating point comparisons (paisa-level rounding noise)
   static const double _epsilon = 0.01;
@@ -122,6 +127,9 @@ class PurchaseController extends GetxController {
 
     transitDiscountPercentController.addListener(_onTransitPercentChanged);
     transitDiscountAmountController.addListener(_onTransitAmountChanged);
+
+    vatPercentController.addListener(_onVatPercentChanged);
+    vatAmountController.addListener(_onVatAmountChanged);
 
     paidController.addListener(_recalculateTotals);
 
@@ -162,9 +170,6 @@ class PurchaseController extends GetxController {
     _recalculateTotals();
   }
 
-  // =============================== //
-  // SYNC LOGIC — TRANSIT DISCOUNT //
-  // ===============================
   void _onTransitPercentChanged() {
     if (_syncingTransit) return;
     _syncingTransit = true;
@@ -175,6 +180,7 @@ class PurchaseController extends GetxController {
     transitDiscountAmountController.text = amount.toStringAsFixed(2);
 
     _syncingTransit = false;
+    _resyncVatFromPercent(); // ✅ ADD
     _recalculateTotals();
   }
 
@@ -188,11 +194,10 @@ class PurchaseController extends GetxController {
     transitDiscountPercentController.text = pct.toStringAsFixed(2);
 
     _syncingTransit = false;
+    _resyncVatFromPercent(); // ✅ ADD
     _recalculateTotals();
   }
 
-  // जब items (qty/price) बदलिन्छ, grand total बदलिन्छ —
-  // discount amount लाई current percent अनुसार पुनः calculate गर्नुपर्छ
   void _onItemsChanged() {
     final pct = double.tryParse(discountPercentController.text) ?? 0;
     if (pct > 0) {
@@ -213,7 +218,50 @@ class PurchaseController extends GetxController {
       _syncingTransit = false;
     }
 
+    _resyncVatFromPercent(); // ✅ ADD
     _recalculateTotals();
+  }
+
+  // =============================== //
+  // SYNC LOGIC — VAT //
+  // ===============================
+  void _onVatPercentChanged() {
+    if (_syncingVat) return;
+    _syncingVat = true;
+
+    final pct = double.tryParse(vatPercentController.text) ?? 0;
+    final base = afterDiscountAmount;
+    final amount = _round2(base * (pct / 100));
+    vatAmountController.text = amount.toStringAsFixed(2);
+
+    _syncingVat = false;
+    _recalculateTotals();
+  }
+
+  void _onVatAmountChanged() {
+    if (_syncingVat) return;
+    _syncingVat = true;
+
+    final amount = double.tryParse(vatAmountController.text) ?? 0;
+    final base = afterDiscountAmount;
+    final pct = base > 0 ? (amount / base) * 100 : 0;
+    vatPercentController.text = pct.toStringAsFixed(2);
+
+    _syncingVat = false;
+    _recalculateTotals();
+  }
+
+  // afterDiscountAmount बदलिँदा (item वा transit बदलिँदा) VAT amount
+  // लाई current percent अनुसार पुनः calculate गर्ने
+  void _resyncVatFromPercent() {
+    final vatPct = double.tryParse(vatPercentController.text) ?? 0;
+    if (vatPct > 0) {
+      _syncingVat = true;
+      vatAmountController.text = _round2(
+        afterDiscountAmount * (vatPct / 100),
+      ).toStringAsFixed(2);
+      _syncingVat = false;
+    }
   }
 
   void _recalculateTotals() {
@@ -267,8 +315,16 @@ class PurchaseController extends GetxController {
   double get transitDiscountAmount =>
       _round2(double.tryParse(transitDiscountAmountController.text) ?? 0);
 
-  double get netTotal =>
+  double get afterDiscountAmount => // ✅ NEW
       _round2(amountBeforeTransitDiscount - transitDiscountAmount);
+
+  double get vatPercent => // ✅ NEW
+      double.tryParse(vatPercentController.text) ?? 0;
+  double get vatAmount => // ✅ NEW
+      _round2(double.tryParse(vatAmountController.text) ?? 0);
+
+  double get netTotal => // ✅ CHANGED
+      _round2(afterDiscountAmount + vatAmount);
 
   double get paidAmount => _round2(double.tryParse(paidController.text) ?? 0);
   double get grandTotal => total;
@@ -334,6 +390,8 @@ class PurchaseController extends GetxController {
     discountAmountController.text = '0';
     transitDiscountPercentController.text = '0';
     transitDiscountAmountController.text = '0';
+    vatPercentController.text = '0';    // ✅ ADD
+    vatAmountController.text = '0';     // ✅ ADD
     paidController.text = '0';
     dateController.clear();
     clearItems();
@@ -342,7 +400,7 @@ class PurchaseController extends GetxController {
   void populateForm(PurchaseModel purchase) {
     selectedSupplierId.value = purchase.supplier;
     selectedStaffId.value = purchase.createdBy;
-    billNoController.text = purchase.billNo ?? ''; // ✅ ADD
+    billNoController.text = purchase.billNo ?? '';
     dateController.text = purchase.date.toIso8601String().split('T')[0];
     paidController.text = purchase.paidAmount.toStringAsFixed(2);
 
@@ -355,6 +413,9 @@ class PurchaseController extends GetxController {
     transitDiscountPercentController.text =
         purchase.transitDiscountPercentage.toStringAsFixed(2);
 
+    vatAmountController.text = purchase.vatAmount.toStringAsFixed(2);       // ✅ ADD
+    vatPercentController.text = purchase.vatPercentage.toStringAsFixed(2);  // ✅ ADD
+
     items.assignAll(
       purchase.items.map(
         (i) => PurchaseItemController(item: i, onChanged: _onItemsChanged),
@@ -363,7 +424,6 @@ class PurchaseController extends GetxController {
 
     _recalculateTotals();
   }
-
   // =============================== //
   // BUILD PURCHASE (API READY) //
   // ===============================
@@ -392,6 +452,9 @@ class PurchaseController extends GetxController {
       amountBeforeTransitDiscount: amountBeforeTransitDiscount,
       transitDiscountPercentage: transitDiscountPercent,
       transitDiscountAmount: transitDiscountAmount,
+      afterDiscountAmount: afterDiscountAmount,   // ✅ ADD
+      vatPercentage: vatPercent,                  // ✅ ADD
+      vatAmount: vatAmount,                       // ✅ ADD
       netTotal: netTotal,
       paidAmount: paidAmount,
       remainingAmount: remaining.value,
@@ -399,7 +462,6 @@ class PurchaseController extends GetxController {
       createdBy: selectedStaffId.value,
     );
   }
-
   // =============================== //
   // CRUD OPERATIONS //
   // ===============================

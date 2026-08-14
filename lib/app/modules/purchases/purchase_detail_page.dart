@@ -840,12 +840,27 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
                 icon: Icons.local_offer_outlined,
               ),
               _verticalDivider(),
-              // ✅ NEW
               _totalTile(
                 label: 'Transit Discount',
                 value: controller.transitDiscountAmount,
                 color: _warning,
                 icon: Icons.local_shipping_outlined,
+              ),
+              _verticalDivider(),
+              // ✅ NEW — After Discount
+              _totalTile(
+                label: 'After Discount',
+                value: controller.afterDiscountAmount,
+                color: _textMid,
+                icon: Icons.calculate_outlined,
+              ),
+              _verticalDivider(),
+              // ✅ NEW — VAT
+              _totalTile(
+                label: 'VAT (${controller.vatPercent.toStringAsFixed(1)}%)',
+                value: controller.vatAmount,
+                color: _warning,
+                icon: Icons.percent_rounded,
               ),
               _verticalDivider(),
               _totalTile(
@@ -917,13 +932,16 @@ class _PurchaseDetailPageState extends State<PurchaseDetailPage> {
         items: updatedItems,
         billNo: controller.billNoController.text.trim().isEmpty
             ? null
-            : controller.billNoController.text.trim(), // ✅ ADD
+            : controller.billNoController.text.trim(),
         paidAmount: double.tryParse(controller.paidController.text) ?? 0,
         discountPercentage: controller.discountPercent,
         discountAmount: controller.discountAmount,
         amountBeforeTransitDiscount: controller.amountBeforeTransitDiscount,
         transitDiscountPercentage: controller.transitDiscountPercent,
         transitDiscountAmount: controller.transitDiscountAmount,
+        afterDiscountAmount: controller.afterDiscountAmount, // ✅ ADD
+        vatPercentage: controller.vatPercent, // ✅ ADD
+        vatAmount: controller.vatAmount, // ✅ ADD
         netTotal: controller.netTotal,
         supplier: controller.selectedSupplierId.value,
         createdBy: controller.selectedStaffId.value,

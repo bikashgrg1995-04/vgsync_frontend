@@ -17,7 +17,11 @@ class PurchaseModel {
   final double transitDiscountPercentage; // ✅ NEW
   final double transitDiscountAmount; // ✅ NEW
 
-  final double netTotal; // final amount (transit पछिको)
+  final double afterDiscountAmount; // ✅ NEW
+  final double vatPercentage; // ✅ NEW
+  final double vatAmount; // ✅ NEW
+
+  final double netTotal; // अब यो = afterDiscountAmount + vatAmount
   final double paidAmount;
   final double remainingAmount;
   final String status;
@@ -36,6 +40,9 @@ class PurchaseModel {
     this.amountBeforeTransitDiscount = 0.0,
     this.transitDiscountPercentage = 0.0,
     this.transitDiscountAmount = 0.0,
+    this.afterDiscountAmount = 0.0,
+    this.vatPercentage = 0.0,
+    this.vatAmount = 0.0,
     this.netTotal = 0.0,
     this.paidAmount = 0.0,
     this.remainingAmount = 0.0,
@@ -64,6 +71,11 @@ class PurchaseModel {
           (json['transit_discount_percentage'] as num?)?.toDouble() ?? 0.0,
       transitDiscountAmount:
           (json['transit_discount_amount'] as num?)?.toDouble() ?? 0.0,
+      afterDiscountAmount: // ✅ NEW
+          (json['after_discount_amount'] as num?)?.toDouble() ?? 0.0,
+      vatPercentage: // ✅ NEW
+          (json['vat_percentage'] as num?)?.toDouble() ?? 0.0,
+      vatAmount: (json['vat_amount'] as num?)?.toDouble() ?? 0.0,
       netTotal: (json['net_total'] as num?)?.toDouble() ?? 0.0,
       paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
       remainingAmount: (json['remaining_amount'] as num?)?.toDouble() ?? 0.0,
@@ -87,6 +99,9 @@ class PurchaseModel {
       'amount_before_transit_discount': amountBeforeTransitDiscount,
       'transit_discount_percentage': transitDiscountPercentage,
       'transit_discount_amount': transitDiscountAmount,
+      'after_discount_amount': afterDiscountAmount,
+      'vat_percentage': vatPercentage,
+      'vat_amount': vatAmount,
       'net_total': netTotal,
       'paid_amount': paidAmount,
       'remaining_amount': remainingAmount,
@@ -102,13 +117,13 @@ class PurchaseModel {
   double get subTotal =>
       items.fold<double>(0.0, (sum, i) => sum + i.totalPrice);
 
-  /// Step 1: grand total बाट 20% (वा जुनसुकै) discount झिकेपछिको amount
   double get calculatedAmountBeforeTransitDiscount =>
       grandTotal - discountAmount;
 
-  /// Step 2: त्यो amount बाट transit discount झिकेपछिको final amount
-  double get calculatedNetTotal =>
+  double get calculatedAfterDiscountAmount => // ✅ RENAMED
       amountBeforeTransitDiscount - transitDiscountAmount;
+
+  double get calculatedNetTotal => afterDiscountAmount + vatAmount; // ✅ CHANGED
 
   bool get isPaid => remainingAmount <= 0;
 }
@@ -126,6 +141,9 @@ extension PurchaseModelCopy on PurchaseModel {
     double? amountBeforeTransitDiscount,
     double? transitDiscountPercentage,
     double? transitDiscountAmount,
+    double? afterDiscountAmount,
+    double? vatPercentage,
+    double? vatAmount,
     double? netTotal,
     double? paidAmount,
     double? remainingAmount,
@@ -148,6 +166,9 @@ extension PurchaseModelCopy on PurchaseModel {
           transitDiscountPercentage ?? this.transitDiscountPercentage,
       transitDiscountAmount:
           transitDiscountAmount ?? this.transitDiscountAmount,
+      afterDiscountAmount: afterDiscountAmount ?? this.afterDiscountAmount, // ✅
+      vatPercentage: vatPercentage ?? this.vatPercentage, // ✅
+      vatAmount: vatAmount ?? this.vatAmount,
       netTotal: netTotal ?? this.netTotal,
       paidAmount: paidAmount ?? this.paidAmount,
       remainingAmount: remainingAmount ?? this.remainingAmount,

@@ -687,13 +687,13 @@ class _StockListPageState extends State<StockListPage> {
   }
 
   void _showResult(String message, {required bool isError}) {
-    final overlayState = Get.overlayContext;
-    if (overlayState == null) return; // overlay ready नभए silently skip
-    Get.snackbar(
-      isError ? 'Error' : 'Success',
-      message,
-      backgroundColor: isError ? AppColors.error : AppColors.success,
-      colorText: Colors.white,
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.error : AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }

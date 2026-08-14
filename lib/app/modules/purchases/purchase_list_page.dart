@@ -708,7 +708,6 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                       value: controller.grandTotal.toStringAsFixed(2),
                     ),
                     SizedBox(width: SizeConfig.sw(0.05)),
-                    // ✅ Discount (percent + amount)
                     buildPercentAmountPair(
                       label: 'Discount',
                       percentController: controller.discountPercentController,
@@ -717,8 +716,6 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                       width: 0.06,
                     ),
                     SizedBox(width: SizeConfig.sw(0.03)),
-
-                    // ✅ Transit Discount (percent + amount)
                     buildPercentAmountPair(
                       label: 'Transit Discount',
                       percentController:
@@ -728,12 +725,28 @@ class _PurchaseListPageState extends State<PurchaseListPage> {
                       onChanged: () {},
                       width: 0.06,
                     ),
+                    SizedBox(width: SizeConfig.sw(0.03)),
+                    // ✅ NEW — After Discount (readonly display)
+                    Obx(() => _totalColumn(
+                          label: 'After Discount',
+                          value: controller.afterDiscountAmount
+                              .toStringAsFixed(2),
+                        )),
+                    SizedBox(width: SizeConfig.sw(0.03)),
+                    // ✅ NEW — VAT (percent + amount)
+                    buildPercentAmountPair(
+                      label: 'VAT',
+                      percentController: controller.vatPercentController,
+                      amountController: controller.vatAmountController,
+                      onChanged: () {},
+                      width: 0.06,
+                    ),
                     SizedBox(width: SizeConfig.sw(0.04)),
-                    _totalColumn(
+                    Obx(() => _totalColumn(
                       label: 'Net Total',
                       value: controller.netTotal.toStringAsFixed(2),
                       valueColor: _primary,
-                    ),
+                    )),
                   ],
                 ),
                 SizedBox(height: SizeConfig.sh(0.02)),
